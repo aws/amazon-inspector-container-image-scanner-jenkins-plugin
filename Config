@@ -1,0 +1,30 @@
+package.EeveeCICDJenkinsPlugin = {
+    interfaces = (1.0);
+
+    build-system = happytrails;
+
+    build-tools = {
+        1.0 = {
+            # Anything that consumes or runs this package's artifacts must use
+            # a JDK version equal-or-greater than the JDK used to compile.
+            # `JDK11` and `JDK8` are some alternative packages.
+            JDK17 = 1.0;
+            HappierTrails = 3.6;
+        };
+    };
+
+    dependencies = {
+        1.0 = {
+        };
+    };
+
+    test-dependencies = {
+        1.0 = {
+            JUnit5 = 5.x;
+        };
+    };
+
+    targets = {
+        EeveeCICDJenkinsPlugin-1.0 = { type = javalibrary; };
+    };
+};
