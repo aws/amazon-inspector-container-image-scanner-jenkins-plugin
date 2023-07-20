@@ -1,30 +1,25 @@
 package.EeveeCICDJenkinsPlugin = {
     interfaces = (1.0);
 
-    build-system = happytrails;
-
+    # Use NoOpBuild. See https://w.amazon.com/index.php/BrazilBuildSystem/NoOpBuild
+    build-system = no-op;
     build-tools = {
         1.0 = {
-            # Anything that consumes or runs this package's artifacts must use
-            # a JDK version equal-or-greater than the JDK used to compile.
-            # `JDK11` and `JDK8` are some alternative packages.
-            JDK17 = 1.0;
-            HappierTrails = 3.6;
+            NoOpBuild = 1.0;
         };
     };
 
+    # Use runtime-dependencies for when you want to bring in additional
+    # packages when deploying.
+    # Use dependencies instead if you intend for these dependencies to
+    # be exported to other packages that build against you.
     dependencies = {
         1.0 = {
         };
     };
 
-    test-dependencies = {
+    runtime-dependencies = {
         1.0 = {
-            JUnit5 = 5.x;
         };
-    };
-
-    targets = {
-        EeveeCICDJenkinsPlugin-1.0 = { type = javalibrary; };
     };
 };
