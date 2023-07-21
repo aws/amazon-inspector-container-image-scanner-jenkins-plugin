@@ -1,8 +1,10 @@
-package io.jenkins.plugins.awsinspectorbuildstep;
+package io.jenkins.plugins.awsinspectorbuildstep.sbomparsing;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.gson.Gson;
-import io.jenkins.plugins.awsinspectorbuildstep.Sbom.SbomData;
+import io.jenkins.plugins.awsinspectorbuildstep.models.sbom.Components.Rating;
+import io.jenkins.plugins.awsinspectorbuildstep.models.sbom.Components.Vulnerability;
+import io.jenkins.plugins.awsinspectorbuildstep.models.sbom.SbomData;
 
 import java.util.List;
 
@@ -15,12 +17,12 @@ public class SbomOutputParser {
 
     public Results parseSbom() {
         Results results = new Results();
-        List<SbomData.Vulnerability> vulnerabilities = sbom.getSbom().getVulnerabilities();
+        List<Vulnerability> vulnerabilities = sbom.getSbom().getVulnerabilities();
 
-        for (SbomData.Vulnerability vulnerability : vulnerabilities) {
-            List<SbomData.Rating> ratings = vulnerability.getRatings();
+        for (Vulnerability vulnerability : vulnerabilities) {
+            List<Rating> ratings = vulnerability.getRatings();
 
-            Severity severity = getHighestSeverityFromList(ratings);
+            Severity severity = getHighestRatingFromList(ratings);
             results.increment(severity);
         }
 
@@ -28,10 +30,10 @@ public class SbomOutputParser {
     }
 
     @VisibleForTesting
-    protected Severity getHighestSeverityFromList(List<SbomData.Rating> ratings) {
+    protected Severity getHighestRatingFromList(List<Rating> ratings) {
         Severity highestSeverity = null;
 
-        for (SbomData.Rating rating : ratings) {
+        for (Rating rating : ratings) {
             Severity severity = Severity.getSeverityFromString(rating.getSeverity());
 
             if (highestSeverity == null) {

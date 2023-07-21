@@ -10,7 +10,7 @@
     https://w.amazon.com/bin/view/BrazilBuildSystem/HappierTrails/PropertiesGuide/ -->
 
   <property name="sources.dir" value="${basedir}/src/main/java"/>
-  <property name="tests.dir" value="${basedir}/src/test/java"/>
+  <property name="tests.dir" value="/test/java"/>
 
   <ht:import file="happier-trails.xml"/>
 

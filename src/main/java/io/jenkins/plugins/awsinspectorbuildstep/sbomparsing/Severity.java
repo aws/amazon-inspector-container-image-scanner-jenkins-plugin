@@ -1,4 +1,4 @@
-package io.jenkins.plugins.awsinspectorbuildstep;
+package io.jenkins.plugins.awsinspectorbuildstep.sbomparsing;
 
 import lombok.AllArgsConstructor;
 
@@ -30,6 +30,8 @@ public enum Severity {
                 return MEDIUM;
             case "low":
                 return LOW;
+            case "none":
+                return NONE;
             default:
                 throw new RuntimeException("Severity value doesn't exist!");
         }
