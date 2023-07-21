@@ -1,27 +1,28 @@
-package io.jenkins.plugins.awsinspectorbuildstep;
+package io.jenkins.plugins.awsinspectorbuildstep.sbomparsing;
 
 import lombok.Getter;
 
+import java.util.HashMap;
 import java.util.Map;
 
-import static io.jenkins.plugins.awsinspectorbuildstep.Severity.CRITICAL;
-import static io.jenkins.plugins.awsinspectorbuildstep.Severity.HIGH;
-import static io.jenkins.plugins.awsinspectorbuildstep.Severity.LOW;
-import static io.jenkins.plugins.awsinspectorbuildstep.Severity.MEDIUM;
+import static io.jenkins.plugins.awsinspectorbuildstep.sbomparsing.Severity.CRITICAL;
+import static io.jenkins.plugins.awsinspectorbuildstep.sbomparsing.Severity.HIGH;
+import static io.jenkins.plugins.awsinspectorbuildstep.sbomparsing.Severity.LOW;
+import static io.jenkins.plugins.awsinspectorbuildstep.sbomparsing.Severity.MEDIUM;
 
 public class Results {
 
     @Getter
-    private Map<Severity, Integer> counts = Map.of(
-            CRITICAL, 0,
-            HIGH, 0,
-            MEDIUM, 0,
-            LOW, 0
-    );
+    private Map<Severity, Integer> counts = new HashMap<>();
 
-    public Results() {}
+    public Results() {
+        counts.put(CRITICAL, 0);
+        counts.put(HIGH, 0);
+        counts.put(MEDIUM, 0);
+        counts.put(LOW, 0);
+    }
 
     public void increment(Severity severityToIncrement) {
-        counts.get(severityToIncrement);
+        counts.put(severityToIncrement, counts.get(severityToIncrement) + 1);
     }
 }
