@@ -8,6 +8,7 @@ import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.tasks.Builder;
 import hudson.tasks.BuildStepDescriptor;
+import io.jenkins.plugins.awsinspectorbuildstep.dockerutils.DockerRepositoryArchiver;
 import io.jenkins.plugins.awsinspectorbuildstep.sbomparsing.Results;
 import io.jenkins.plugins.awsinspectorbuildstep.sbomparsing.SbomOutputParser;
 import io.jenkins.plugins.awsinspectorbuildstep.sbomparsing.Severity;
@@ -119,21 +120,27 @@ public class AwsInspectorBuilder extends Builder implements SimpleBuildStep {
     @Override
     public void perform(Run<?, ?> build, FilePath workspace, EnvVars env, Launcher launcher, TaskListener listener) {
         PrintStream printStream = null;
-        
+
         try {
             ArgumentListBuilder args = new ArgumentListBuilder();
 
             String bomermanPath = getBomermanPath(Jenkins.getInstanceOrNull().get());
             System.out.printf("Got bomerman path: %s", bomermanPath);
             args.add(bomermanPath, "container");
-            
-            if (imageType.equals("dockerarchive")) {
-                args.add("--img", archivePath);
+            String path = archivePath;
+
+            if (imageType.equals("local")) {
+                DockerRepositoryArchiver archiver = new DockerRepositoryArchiver(
+                        workspace.getRemote(), localImage, listener.getLogger());
+
+                path = archiver.archiveRepo();
             }
+
+            args.add("--img", path);
 
             String artifactName = getArtifactName(imageType, listener);
             
-            listener.getLogger().println(args.toString());
+            listener.getLogger().println(args);
             
             FilePath target = new FilePath(workspace, artifactName);
             File outFile = new File(build.getRootDir(), "out");
@@ -147,12 +154,7 @@ public class AwsInspectorBuilder extends Builder implements SimpleBuildStep {
             // ref: https://github.com/jenkinsci/rapid7-insightvm-container-assessment-plugin/blob/master/src/main/java/com/rapid7/sdlc/plugin/jenkins/ContainerAssessmentBuilder.java
             // ref: https://github.com/jenkinsci/qualys-cs-plugin/tree/master/src/main/java/com/qualys/plugins/containerSecurity
 
-            // get analysis results
-            String sbomJson = "";
-
-            SbomOutputParser sbomOutputParser = new SbomOutputParser(sbomJson);
-
-            Results results = sbomOutputParser.parseSbom();
+            Results results = new Results();
 
             if (doesBuildPass(results.getCounts())) {
                 build.setResult(Result.SUCCESS);

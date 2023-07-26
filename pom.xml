@@ -8,7 +8,22 @@
             <version>1.18.22</version>
             <scope>compile</scope>
         </dependency>
+
+        <!-- GSON Dependency -->
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.9.1</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/com.github.docker-java/docker-java -->
+        <dependency>
+            <groupId>com.github.docker-java</groupId>
+            <artifactId>docker-java</artifactId>
+            <version>3.3.2</version>
+        </dependency>
     </dependencies>
+
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
@@ -56,51 +71,7 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-            <!-- https://mvnrepository.com/artifact/com.mashape.unirest/unirest-java -->
-            <dependency>
-                <groupId>com.mashape.unirest</groupId>
-                <artifactId>unirest-java</artifactId>
-                <version>1.4.9</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-
-            <!-- https://mvnrepository.com/artifact/software.amazon.awssdk/aws-core -->
-            <dependency>
-                <groupId>software.amazon.awssdk</groupId>
-                <artifactId>aws-core</artifactId>
-                <version>2.20.103</version>
-            </dependency>
-
-            <!-- https://mvnrepository.com/artifact/software.amazon.awssdk/auth -->
-            <dependency>
-                <groupId>software.amazon.awssdk</groupId>
-                <artifactId>auth</artifactId>
-                <version>2.20.103</version>
-            </dependency>
-
-            <!-- https://mvnrepository.com/artifact/com.amazonaws/aws-java-sdk -->
-            <dependency>
-                <groupId>com.amazonaws</groupId>
-                <artifactId>aws-java-sdk</artifactId>
-                <version>1.12.506</version>
-            </dependency>
-
-            <!-- https://mvnrepository.com/artifact/com.mashape.unirest/unirest-java -->
-            <dependency>
-                <groupId>com.mashape.unirest</groupId>
-                <artifactId>unirest-java</artifactId>
-                <version>1.4.9</version>
-            </dependency>
-
-            <!-- GSON Dependency -->
-            <dependency>
-                <groupId>com.google.code.gson</groupId>
-                <artifactId>gson</artifactId>
-                <version>2.9.1</version>
-            </dependency>
         </dependencies>
-
     </dependencyManagement>
 
     <repositories>
