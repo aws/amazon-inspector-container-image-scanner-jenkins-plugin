@@ -1,22 +1,6 @@
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
     <f:block>
-        <b>API Settings:</b>
-        <f:entry title="Access Key" field="accessKey">
-            <f:textbox />
-        </f:entry>
-        <f:entry title="Secret Key" field="secretKey">
-            <f:textbox />
-        </f:entry>
-        <f:entry title="Region" field="region">
-            <f:textbox />
-        </f:entry>
-        <f:entry title="Session Token" field="sessionToken">
-            <f:textbox />
-        </f:entry>
-    </f:block>
-
-    <f:block>
         <b>Container Image Source:</b>
     </f:block>
     <f:radioBlock checked="${instance.isImageType('local') or true}" name="imageType" value="local" title="Local image" inline="true" help="">
@@ -26,15 +10,6 @@
     </f:radioBlock>
     <f:radioBlock checked="${instance.isImageType('remote')}" name="imageType" value="remote" title="Remote image" inline="true" help="">
         <f:entry title="Image" field="remoteImage">
-            <f:textbox />
-        </f:entry>
-        <f:entry title="Registry" field="registry">
-            <f:textbox />
-        </f:entry>
-        <f:entry title="User" field="user">
-            <f:textbox />
-        </f:entry>
-        <f:entry title="Password" field="password">
             <f:textbox />
         </f:entry>
     </f:radioBlock>

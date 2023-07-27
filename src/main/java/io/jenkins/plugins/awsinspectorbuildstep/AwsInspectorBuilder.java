@@ -1,6 +1,9 @@
 package io.jenkins.plugins.awsinspectorbuildstep;
 
-import hudson.*;
+import hudson.EnvVars;
+import hudson.Extension;
+import hudson.FilePath;
+import hudson.Launcher;
 import hudson.model.AbstractProject;
 import hudson.model.Result;
 import hudson.util.ArgumentListBuilder;
@@ -10,9 +13,7 @@ import hudson.tasks.Builder;
 import hudson.tasks.BuildStepDescriptor;
 import io.jenkins.plugins.awsinspectorbuildstep.dockerutils.DockerRepositoryArchiver;
 import io.jenkins.plugins.awsinspectorbuildstep.sbomparsing.Results;
-import io.jenkins.plugins.awsinspectorbuildstep.sbomparsing.SbomOutputParser;
 import io.jenkins.plugins.awsinspectorbuildstep.sbomparsing.Severity;
-import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.io.File;
 import java.io.IOException;
@@ -23,38 +24,26 @@ import java.util.Map;
 import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildStep;
 import org.jenkinsci.Symbol;
+import org.kohsuke.stapler.DataBoundConstructor;
 
 
 public class AwsInspectorBuilder extends Builder implements SimpleBuildStep {
-    private final String accessKey;
-    private final String secretKey;
-    private final String region;
-    private final String sessionToken;
     private final String localImage;
     private final String remoteImage;
     private final String archivePath;
-    private final String registry;
     private final String imageType;
-    private final String user;
-    private final String password;
     private final int countCritical;
     private final int countHigh;
     private final int countMedium;
     private final int countLow;
 
     @DataBoundConstructor
-    public AwsInspectorBuilder(String accessKey, String secretKey, String region, String sessionToken, String localImage, String remoteImage, String archivePath, String registry, String imageType, String user, String password, int countCritical, int countHigh, int countMedium, int countLow) {
-        this.accessKey = accessKey;
-        this.secretKey = secretKey;
-        this.region = region;
-        this.sessionToken = sessionToken;
+    public AwsInspectorBuilder(String localImage, String remoteImage, String archivePath, String imageType,
+                               int countCritical, int countHigh, int countMedium, int countLow) {
         this.localImage = localImage;
         this.remoteImage = remoteImage;
         this.archivePath = archivePath;
-        this.registry = registry;
         this.imageType = imageType;
-        this.user = user;
-        this.password = password;
         this.countCritical = countCritical;
         this.countHigh = countHigh;
         this.countMedium = countMedium;
@@ -107,7 +96,8 @@ public class AwsInspectorBuilder extends Builder implements SimpleBuildStep {
         return criticalExceedsLimit || highExceedsLimit || mediumExceedsLimit || lowExceedsLimit;
     }
 
-    private void startProcess(Launcher launcher, ArgumentListBuilder args, PrintStream printStream) throws IOException, InterruptedException {
+    private void startProcess(Launcher launcher, ArgumentListBuilder args, PrintStream printStream)
+            throws IOException, InterruptedException {
         Launcher.ProcStarter ps = launcher.launch();
         ps.cmds(args);
         ps.stdin(null);
@@ -130,10 +120,9 @@ public class AwsInspectorBuilder extends Builder implements SimpleBuildStep {
             String path = archivePath;
 
             if (imageType.equals("local")) {
-                DockerRepositoryArchiver archiver = new DockerRepositoryArchiver(
-                        workspace.getRemote(), localImage, listener.getLogger());
-
-                path = archiver.archiveRepo();
+                DockerRepositoryArchiver archiver = new DockerRepositoryArchiver(localImage, listener.getLogger());
+                File destinationFile = archiver.createArchiveDestination(workspace.getRemote());
+                path = archiver.archiveRepo(destinationFile);
             }
 
             args.add("--img", path);
@@ -173,6 +162,7 @@ public class AwsInspectorBuilder extends Builder implements SimpleBuildStep {
             }
         }
     }
+
 
     @Symbol("AWS Inspector")
     @Extension

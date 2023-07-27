@@ -1,9 +1,9 @@
 package io.jenkins.plugins.awsinspectorbuildstep.dockerutils;
 
 import com.github.dockerjava.api.DockerClient;
-import com.github.dockerjava.api.command.InspectImageResponse;
 import com.github.dockerjava.api.command.SaveImageCmd;
 import com.github.dockerjava.api.exception.DockerClientException;
+import com.google.common.annotations.VisibleForTesting;
 import lombok.AllArgsConstructor;
 
 import java.io.File;
@@ -17,34 +17,23 @@ import static com.github.dockerjava.core.DockerClientBuilder.getInstance;
 
 @AllArgsConstructor
 public class DockerRepositoryArchiver {
-    String destinationDir;
     String imageId;
     PrintStream logger;
 
-    public String archiveRepo() {
-        String destinationPath = String.format("%s/%s.tar", destinationDir, imageId);
-        logger.printf("Got destination path %s", destinationPath);
+    public String archiveRepo(File destinationFile) {
 
         try (DockerClient dockerClient = getInstance().build()) {
-            InspectImageResponse response = dockerClient.inspectImageCmd(imageId).exec();
-            return saveRepositoryAsArchive(dockerClient, response.getId(), destinationPath);
+            saveRepositoryAsArchive(dockerClient, destinationFile);
+
+            return destinationFile.getAbsolutePath();
         } catch (IOException | DockerClientException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
-        return destinationPath;
     }
 
-    private String saveRepositoryAsArchive(DockerClient dockerClient, String imageId, String destinationPath)
-            throws IOException {
+    @VisibleForTesting
+    protected void saveRepositoryAsArchive(DockerClient dockerClient, File destinationFile) {
         logger.println("Saving repo to archive");
-
-        File destinationFile = new File(destinationPath);
-        File destinationDir = destinationFile.getParentFile();
-        logger.printf("Saving archive to %s", destinationFile);
-
-        if (!destinationDir.exists() && !destinationDir.mkdirs()) {
-            throw new IOException("Failed to create destination directory: " + destinationDir.getAbsolutePath());
-        }
 
         try (OutputStream outputStream = new FileOutputStream(destinationFile)) {
             SaveImageCmd saveImageCmd = dockerClient.saveImageCmd(imageId);
@@ -56,8 +45,20 @@ public class DockerRepositoryArchiver {
             }
 
             logger.println("Repository saved as a tarball archive successfully.");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
+    }
 
-        return destinationFile.getAbsolutePath();
+    public File createArchiveDestination(String destinationDirName) {
+        String destinationPath = String.format("%s/%s.tar", destinationDirName, imageId);
+        logger.printf("Got destination path %s", destinationPath);
+
+        File destinationFile = new File(destinationPath);
+        destinationFile.getParentFile().mkdirs();
+
+        logger.printf("Saving archive to %s", destinationFile);
+
+        return destinationFile;
     }
 }
