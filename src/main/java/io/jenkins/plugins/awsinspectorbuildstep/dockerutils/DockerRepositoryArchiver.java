@@ -17,8 +17,8 @@ import static com.github.dockerjava.core.DockerClientBuilder.getInstance;
 
 @AllArgsConstructor
 public class DockerRepositoryArchiver {
-    String imageId;
-    PrintStream logger;
+    private String imageId;
+    private PrintStream logger;
 
     public String archiveRepo(File destinationFile) {
 
