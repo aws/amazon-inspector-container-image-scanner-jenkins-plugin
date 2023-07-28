@@ -21,7 +21,6 @@ public class DockerRepositoryArchiver {
     private PrintStream logger;
 
     public String archiveRepo(File destinationFile) {
-
         try (DockerClient dockerClient = getInstance().build()) {
             saveRepositoryAsArchive(dockerClient, destinationFile);
 
