@@ -5,14 +5,20 @@ import com.google.gson.Gson;
 import io.jenkins.plugins.awsinspectorbuildstep.models.sbom.Components.Rating;
 import io.jenkins.plugins.awsinspectorbuildstep.models.sbom.Components.Vulnerability;
 import io.jenkins.plugins.awsinspectorbuildstep.models.sbom.SbomData;
+import lombok.Getter;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.List;
 
 public class SbomOutputParser {
+    @Getter
     private SbomData sbom;
 
-    public SbomOutputParser(String sbomJson) {
-        this.sbom = new Gson().fromJson(sbomJson, SbomData.class);
+    public SbomOutputParser(String filePath) throws IOException {
+        String sbomData = Files.readString(Paths.get(filePath));
+        this.sbom = new Gson().fromJson(sbomData, SbomData.class);
     }
 
     public Results parseSbom() {

@@ -11,7 +11,9 @@ import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.tasks.Builder;
 import hudson.tasks.BuildStepDescriptor;
+import io.jenkins.plugins.awsinspectorbuildstep.csvconversion.CsvConverter;
 import io.jenkins.plugins.awsinspectorbuildstep.dockerutils.DockerRepositoryArchiver;
+import io.jenkins.plugins.awsinspectorbuildstep.models.sbom.SbomData;
 import io.jenkins.plugins.awsinspectorbuildstep.sbomparsing.Results;
 import io.jenkins.plugins.awsinspectorbuildstep.sbomparsing.Severity;
 
@@ -112,29 +114,29 @@ public class AwsInspectorBuilder extends Builder implements SimpleBuildStep {
         PrintStream printStream = null;
 
         try {
+            String imageId = "";
             ArgumentListBuilder args = new ArgumentListBuilder();
 
             String bomermanPath = getBomermanPath(Jenkins.getInstanceOrNull().get());
             System.out.printf("Got bomerman path: %s", bomermanPath);
             args.add(bomermanPath, "container");
             String path = archivePath;
+            args.add("--img", path);
 
             if (imageType.equals("local")) {
                 DockerRepositoryArchiver archiver = new DockerRepositoryArchiver(localImage, listener.getLogger());
                 File destinationFile = archiver.createArchiveDestination(workspace.getRemote());
                 path = archiver.archiveRepo(destinationFile);
+                imageId = localImage;
             }
 
-            args.add("--img", path);
-
             String artifactName = getArtifactName(imageType, listener);
-            
-            listener.getLogger().println(args);
             
             FilePath target = new FilePath(workspace, artifactName);
             File outFile = new File(build.getRootDir(), "out");
 
             printStream = new PrintStream(outFile, StandardCharsets.UTF_8);
+            listener.getLogger().println(args);
             startProcess(launcher, args, printStream);
             FilePath outFilePath = new FilePath(outFile);
             outFilePath.copyTo(target);
@@ -142,7 +144,11 @@ public class AwsInspectorBuilder extends Builder implements SimpleBuildStep {
             // send SBOM to API for analysis
             // ref: https://github.com/jenkinsci/rapid7-insightvm-container-assessment-plugin/blob/master/src/main/java/com/rapid7/sdlc/plugin/jenkins/ContainerAssessmentBuilder.java
             // ref: https://github.com/jenkinsci/qualys-cs-plugin/tree/master/src/main/java/com/qualys/plugins/containerSecurity
+            SbomData sbomData = null;
+            CsvConverter converter = new CsvConverter(sbomData);
 
+            String fileName = String.format("%scsv.csv", imageId);
+            converter.convert(String.format("%s/%s", build.getRootDir().getAbsolutePath(), fileName));
             Results results = new Results();
             boolean doesBuildPass = !doesBuildFail(results.getCounts());
             listener.getLogger().printf("Results: %s\nDoes Build Pass: %s\n",
