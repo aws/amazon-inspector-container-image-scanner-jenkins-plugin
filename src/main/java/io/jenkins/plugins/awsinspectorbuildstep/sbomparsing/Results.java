@@ -25,4 +25,9 @@ public class Results {
     public void increment(Severity severityToIncrement) {
         counts.put(severityToIncrement, counts.get(severityToIncrement) + 1);
     }
+
+    public String toString() {
+        return String.format("Critical: %s, High: %s, Medium: %s, Low: %s",
+                counts.get(CRITICAL), counts.get(HIGH), counts.get(MEDIUM), counts.get(LOW));
+    }
 }

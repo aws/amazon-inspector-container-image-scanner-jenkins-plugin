@@ -87,7 +87,7 @@ public class AwsInspectorBuilder extends Builder implements SimpleBuildStep {
             return artifactName;
     }
 
-    private boolean doesBuildPass(Map<Severity, Integer> counts) {
+    private boolean doesBuildFail(Map<Severity, Integer> counts) {
         boolean criticalExceedsLimit = counts.get(Severity.CRITICAL) > countCritical;
         boolean highExceedsLimit = counts.get(Severity.HIGH) > countCritical;
         boolean mediumExceedsLimit = counts.get(Severity.MEDIUM) > countCritical;
@@ -144,8 +144,11 @@ public class AwsInspectorBuilder extends Builder implements SimpleBuildStep {
             // ref: https://github.com/jenkinsci/qualys-cs-plugin/tree/master/src/main/java/com/qualys/plugins/containerSecurity
 
             Results results = new Results();
+            boolean doesBuildPass = !doesBuildFail(results.getCounts());
+            listener.getLogger().printf("Results: %s\nDoes Build Pass: %s\n",
+                    results, doesBuildPass);
 
-            if (doesBuildPass(results.getCounts())) {
+            if (doesBuildPass) {
                 build.setResult(Result.SUCCESS);
             } else {
                 build.setResult(Result.FAILURE);
