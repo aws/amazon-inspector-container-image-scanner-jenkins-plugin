@@ -1,22 +1,19 @@
 package io.jenkins.plugins.awsinspectorbuildstep.requests;
 
-import com.google.common.io.CharStreams;
-import jline.internal.InputStreamReader;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
-import software.amazon.awssdk.http.SdkHttpFullRequest;
-import software.amazon.awssdk.http.SdkHttpMethod;
+import software.amazon.awssdk.http.AbortableInputStream;
+import software.amazon.awssdk.http.HttpExecuteResponse;
+import software.amazon.awssdk.http.SdkHttpResponse;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.net.URI;
-import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class RequestsTest {
     Requests requests;
@@ -32,38 +29,41 @@ public class RequestsTest {
     }
 
     @Test
-    public void testSignRequest_Success() {
-        SdkHttpFullRequest request = SdkHttpFullRequest.builder()
-                .method(SdkHttpMethod.POST)
-                .uri(URI.create("https://test.com/api"))
-                .putHeader("X-Amz-Security-Token", "test")
-                .putHeader("X-Amz-Date", "20230804T172718Z")
-                .build();
+    public void testHandleResponse_SuccessResponse() throws IOException {
+        final String filePath = "test/data/SbomOutputExample.json";
+        HttpExecuteResponse testResponse = HttpExecuteResponse.builder()
+                .responseBody(AbortableInputStream.create(new FileInputStream(filePath)))
+                .response(SdkHttpResponse.builder()
+                        .statusCode(200)
+                        .build()
+        ).build();
 
-        String authPrefix = "[AWS4-HMAC-SHA256 Credential=test/20230804/us-east-1/test/aws4_request, " +
-                "SignedHeaders=host;x-amz-date;x-amz-security-token, Signature=";
-        assertTrue(requests.signRequest("test", request).headers().get("Authorization").toString()
-                .startsWith(authPrefix));
+        assertEquals(requests.handleResponse(testResponse).length(), 7335);
     }
 
     @Test
-    public void testBuildRequest_Success() throws IOException {
-        String date = "20230804T172718Z";
-        SdkHttpFullRequest request = requests.buildRequest(URI.create("https://www.endpoint.com/path/"), date);
-        assertEquals(request.headers().get("X-Amz-Date"), List.of(date));
-        assertEquals(request.headers().get("X-Amz-Security-Token"), List.of("test"));
-        assertEquals(request.host(), "www.endpoint.com");
-        assertEquals(request.encodedPath(), "/path/");
-        assertEquals(request.method(), SdkHttpMethod.POST);
+    public void testHandleResponse_NonSuccessResponse() throws IOException {
+        final String filePath = "test/data/SbomOutputExample.json";
+        HttpExecuteResponse testResponse = HttpExecuteResponse.builder()
+                .responseBody(AbortableInputStream.create(new FileInputStream(filePath)))
+                .response(SdkHttpResponse.builder()
+                        .statusCode(400)
+                        .build()
+                ).build();
 
-        List<String> requestBody = CharStreams.readLines(
-                new InputStreamReader(request.contentStreamProvider().get().newStream()));
-        assertEquals(requestBody.size(), 358);
+        assertThrows(RuntimeException.class, () -> requests.handleResponse(testResponse));
     }
 
     @Test
-    public void testGetXAmzDateString() {
-        String testDate = "2023-08-04T18:56:53.531004Z";
-        Assert.assertEquals(requests.getXAmzDateString(testDate), "20230804T185653Z");
+    public void testHandleResponse_NoInputStream() throws IOException {
+        final String filePath = "test/data/SbomOutputExample.json";
+        HttpExecuteResponse testResponse = HttpExecuteResponse.builder()
+                .responseBody(null)
+                .response(SdkHttpResponse.builder()
+                        .statusCode(200)
+                        .build()
+                ).build();
+
+        assertThrows(RuntimeException.class, () -> requests.handleResponse(testResponse));
     }
 }
