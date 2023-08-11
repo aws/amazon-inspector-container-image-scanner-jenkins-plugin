@@ -1,5 +1,6 @@
 package io.jenkins.plugins.awsinspectorbuildstep;
 
+import com.google.gson.Gson;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
@@ -13,7 +14,9 @@ import hudson.tasks.Builder;
 import hudson.tasks.BuildStepDescriptor;
 import io.jenkins.plugins.awsinspectorbuildstep.csvconversion.CsvConverter;
 import io.jenkins.plugins.awsinspectorbuildstep.dockerutils.DockerRepositoryArchiver;
+import io.jenkins.plugins.awsinspectorbuildstep.dockerutils.EcrImagePuller;
 import io.jenkins.plugins.awsinspectorbuildstep.models.sbom.SbomData;
+import io.jenkins.plugins.awsinspectorbuildstep.requests.Requests;
 import io.jenkins.plugins.awsinspectorbuildstep.sbomparsing.Results;
 import io.jenkins.plugins.awsinspectorbuildstep.sbomparsing.Severity;
 
@@ -27,11 +30,12 @@ import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildStep;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 
 
 public class AwsInspectorBuilder extends Builder implements SimpleBuildStep {
     private final String localImage;
-    private final String remoteImage;
+    private final String remoteImageUri;
     private final String archivePath;
     private final String imageType;
     private final int countCritical;
@@ -40,10 +44,10 @@ public class AwsInspectorBuilder extends Builder implements SimpleBuildStep {
     private final int countLow;
 
     @DataBoundConstructor
-    public AwsInspectorBuilder(String localImage, String remoteImage, String archivePath, String imageType,
+    public AwsInspectorBuilder(String localImage, String remoteImageUri, String archivePath, String imageType,
                                int countCritical, int countHigh, int countMedium, int countLow) {
         this.localImage = localImage;
-        this.remoteImage = remoteImage;
+        this.remoteImageUri = remoteImageUri;
         this.archivePath = archivePath;
         this.imageType = imageType;
         this.countCritical = countCritical;
@@ -114,7 +118,7 @@ public class AwsInspectorBuilder extends Builder implements SimpleBuildStep {
         PrintStream printStream = null;
 
         try {
-            String imageId = "";
+            String imageId = localImage;
             ArgumentListBuilder args = new ArgumentListBuilder();
 
             String bomermanPath = getBomermanPath(Jenkins.getInstanceOrNull().get());
@@ -123,11 +127,16 @@ public class AwsInspectorBuilder extends Builder implements SimpleBuildStep {
             String path = archivePath;
             args.add("--img", path);
 
-            if (imageType.equals("local")) {
-                DockerRepositoryArchiver archiver = new DockerRepositoryArchiver(localImage, listener.getLogger());
+            if (imageType.equals("remote")) {
+                EcrImagePuller imagePuller = new EcrImagePuller(remoteImageUri);
+                imagePuller.pullDockerImage("us-east-1");
+                imageId = remoteImageUri;
+            }
+
+            if (imageType.equals("local") || imageType.equals("remote")) {
+                DockerRepositoryArchiver archiver = new DockerRepositoryArchiver(imageId, listener.getLogger());
                 File destinationFile = archiver.createArchiveDestination(workspace.getRemote());
                 path = archiver.archiveRepo(destinationFile);
-                imageId = localImage;
             }
 
             String artifactName = getArtifactName(imageType, listener);
@@ -144,7 +153,11 @@ public class AwsInspectorBuilder extends Builder implements SimpleBuildStep {
             // send SBOM to API for analysis
             // ref: https://github.com/jenkinsci/rapid7-insightvm-container-assessment-plugin/blob/master/src/main/java/com/rapid7/sdlc/plugin/jenkins/ContainerAssessmentBuilder.java
             // ref: https://github.com/jenkinsci/qualys-cs-plugin/tree/master/src/main/java/com/qualys/plugins/containerSecurity
-            SbomData sbomData = null;
+            AwsBasicCredentials credentials = AwsBasicCredentials.create("", "");
+            Requests requests = new Requests(credentials, "", path, listener.getLogger());
+
+
+            SbomData sbomData = new SbomData(new Gson().fromJson(requests.getSbom(), SbomData.class));
             CsvConverter converter = new CsvConverter(sbomData);
 
             String fileName = String.format("%scsv.csv", imageId);

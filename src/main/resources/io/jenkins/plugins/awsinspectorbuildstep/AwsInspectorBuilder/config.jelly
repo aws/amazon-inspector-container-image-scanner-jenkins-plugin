@@ -8,8 +8,8 @@
             <f:textbox />
         </f:entry>
     </f:radioBlock>
-    <f:radioBlock checked="${instance.isImageType('remote')}" name="imageType" value="remote" title="Remote image" inline="true" help="">
-        <f:entry title="Image" field="remoteImage">
+    <f:radioBlock checked="${instance.isImageType('remote')}" name="imageType" value="remote" title="Remote Image Uri" inline="true" help="">
+        <f:entry title="Image" field="remoteImageUri">
             <f:textbox />
         </f:entry>
     </f:radioBlock>
