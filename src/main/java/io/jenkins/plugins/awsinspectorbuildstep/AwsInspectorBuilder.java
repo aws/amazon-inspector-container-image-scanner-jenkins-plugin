@@ -1,96 +1,83 @@
 package io.jenkins.plugins.awsinspectorbuildstep;
 
+import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
+import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import com.google.gson.Gson;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.AbstractProject;
+import hudson.model.Item;
 import hudson.model.Result;
+import hudson.security.ACL;
 import hudson.util.ArgumentListBuilder;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.tasks.Builder;
 import hudson.tasks.BuildStepDescriptor;
+import hudson.util.ListBoxModel;
+import io.jenkins.plugins.awsinspectorbuildstep.credentials.CredentialsHelper;
 import io.jenkins.plugins.awsinspectorbuildstep.csvconversion.CsvConverter;
 import io.jenkins.plugins.awsinspectorbuildstep.dockerutils.DockerRepositoryArchiver;
 import io.jenkins.plugins.awsinspectorbuildstep.dockerutils.EcrImagePuller;
+import io.jenkins.plugins.awsinspectorbuildstep.models.sbom.Components.Vulnerability;
 import io.jenkins.plugins.awsinspectorbuildstep.models.sbom.SbomData;
 import io.jenkins.plugins.awsinspectorbuildstep.requests.Requests;
 import io.jenkins.plugins.awsinspectorbuildstep.sbomparsing.Results;
+import io.jenkins.plugins.awsinspectorbuildstep.sbomparsing.SbomOutputParser;
 import io.jenkins.plugins.awsinspectorbuildstep.sbomparsing.Severity;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildStep;
 import org.jenkinsci.Symbol;
+import org.jenkinsci.plugins.plaincredentials.StringCredentials;
+import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 
 
 public class AwsInspectorBuilder extends Builder implements SimpleBuildStep {
-    private final String localImage;
-    private final String remoteImageUri;
     private final String archivePath;
-    private final String imageType;
+    private final String accessKeyId;
+    private final String secretKeyId;
+    private final String sessionTokenId;
     private final int countCritical;
     private final int countHigh;
     private final int countMedium;
     private final int countLow;
 
     @DataBoundConstructor
-    public AwsInspectorBuilder(String localImage, String remoteImageUri, String archivePath, String imageType,
-                               int countCritical, int countHigh, int countMedium, int countLow) {
-        this.localImage = localImage;
-        this.remoteImageUri = remoteImageUri;
+    public AwsInspectorBuilder(String archivePath,
+                               String accessKeyId, String secretKeyId, String sessionTokenId, int countCritical,
+                               int countHigh, int countMedium, int countLow) {
         this.archivePath = archivePath;
-        this.imageType = imageType;
+        this.accessKeyId = accessKeyId;
+        this.secretKeyId = secretKeyId;
+        this.sessionTokenId = sessionTokenId;
         this.countCritical = countCritical;
         this.countHigh = countHigh;
         this.countMedium = countMedium;
         this.countLow = countLow;
     }
 
-    public String isImageType(String type) {
-        if (this.imageType == null) {
-            // default for new step GUI
-            return "local".equals(type) ? "true" : "false";
-        } else {
-            return this.imageType.equals(type) ? "true" : "false";
-        }
-    }
-
     private String getBomermanPath(Jenkins jenkins) {
         String jenkinsRoot = jenkins.getInstanceOrNull().get().getRootDir().getAbsolutePath();
-        return String.format("%s/../bomerman", jenkinsRoot);
-    }
-
-
-    private String getArtifactName(String imageType, TaskListener listener) {
-        String artifactName = "bomerman_results";
-
-        switch (imageType) {
-                case "local":
-                    // archive local image
-                    artifactName += "-local.json";
-                    break;
-                case "remote":
-                    // Pull remote image from repo & archive it, then use local
-                    artifactName += "-remote.json";
-                    break;
-                case "dockerarchive":
-                    artifactName += "-tar.json";
-                    break;
-                default:
-                    listener.getLogger().println("unknown option");
-            }
-
-            return artifactName;
+        return String.format("%s/../bomerman15", jenkinsRoot);
     }
 
     private boolean doesBuildFail(Map<Severity, Integer> counts) {
@@ -118,29 +105,15 @@ public class AwsInspectorBuilder extends Builder implements SimpleBuildStep {
         PrintStream printStream = null;
 
         try {
-            String imageId = localImage;
             ArgumentListBuilder args = new ArgumentListBuilder();
 
             String bomermanPath = getBomermanPath(Jenkins.getInstanceOrNull().get());
             System.out.printf("Got bomerman path: %s", bomermanPath);
-            args.add(bomermanPath, "container");
-            String path = archivePath;
-            args.add("--img", path);
 
-            if (imageType.equals("remote")) {
-                EcrImagePuller imagePuller = new EcrImagePuller(remoteImageUri);
-                imagePuller.pullDockerImage("us-east-1");
-                imageId = remoteImageUri;
-            }
+            args.add(bomermanPath, "container", "--image", archivePath);
 
-            if (imageType.equals("local") || imageType.equals("remote")) {
-                DockerRepositoryArchiver archiver = new DockerRepositoryArchiver(imageId, listener.getLogger());
-                File destinationFile = archiver.createArchiveDestination(workspace.getRemote());
-                path = archiver.archiveRepo(destinationFile);
-            }
+            String artifactName = "bomerman_results-out.json";
 
-            String artifactName = getArtifactName(imageType, listener);
-            
             FilePath target = new FilePath(workspace, artifactName);
             File outFile = new File(build.getRootDir(), "out");
 
@@ -150,19 +123,24 @@ public class AwsInspectorBuilder extends Builder implements SimpleBuildStep {
             FilePath outFilePath = new FilePath(outFile);
             outFilePath.copyTo(target);
 
-            // send SBOM to API for analysis
-            // ref: https://github.com/jenkinsci/rapid7-insightvm-container-assessment-plugin/blob/master/src/main/java/com/rapid7/sdlc/plugin/jenkins/ContainerAssessmentBuilder.java
-            // ref: https://github.com/jenkinsci/qualys-cs-plugin/tree/master/src/main/java/com/qualys/plugins/containerSecurity
-            AwsBasicCredentials credentials = AwsBasicCredentials.create("", "");
-            Requests requests = new Requests(credentials, "", path, listener.getLogger());
+            String sbom = processBomermanFile(listener.getLogger(), outFile);
 
+            CredentialsHelper provider = new CredentialsHelper(listener.getLogger(), build.getParent(), "us-east-1");
+            AwsBasicCredentials basicCreds = AwsBasicCredentials.create(provider.getKeyFromStore(accessKeyId),
+                    provider.getKeyFromStore(secretKeyId));
+            Requests requests = new Requests(basicCreds, provider.getKeyFromStore(sessionTokenId),
+                    sbom, listener.getLogger());
 
-            SbomData sbomData = new SbomData(new Gson().fromJson(requests.getSbom(), SbomData.class));
-            CsvConverter converter = new CsvConverter(sbomData);
+            listener.getLogger().println("Trasnlating to sbomdata");
+            String responseData = requests.getSbom();
+            SbomData sbomData = new Gson().fromJson(responseData, SbomData.class);
+//            CsvConverter converter = new CsvConverter(listener.getLogger(), sbomData);
+//            String fileName = String.format("%scsv.csv", imageId);
+//            converter.convert(String.format("%s/%s", build.getRootDir().getAbsolutePath(), fileName));
 
-            String fileName = String.format("%scsv.csv", imageId);
-            converter.convert(String.format("%s/%s", build.getRootDir().getAbsolutePath(), fileName));
-            Results results = new Results();
+            SbomOutputParser parser = new SbomOutputParser(sbomData);
+            Results results = parser.parseSbom();
+
             boolean doesBuildPass = !doesBuildFail(results.getCounts());
             listener.getLogger().printf("Results: %s\nDoes Build Pass: %s\n",
                     results, doesBuildPass);
@@ -175,9 +153,10 @@ public class AwsInspectorBuilder extends Builder implements SimpleBuildStep {
 
         } catch (RuntimeException e) {
             listener.getLogger().println("RuntimeException:" + e.toString());
-
+            e.printStackTrace();
         } catch (Exception e) {
             listener.getLogger().println("Exception:" + e.toString());
+            e.printStackTrace();
         } finally {
             if (printStream != null) {
                 printStream.close();
@@ -185,6 +164,31 @@ public class AwsInspectorBuilder extends Builder implements SimpleBuildStep {
         }
     }
 
+    public static int findStartIndex(List<String> list) {
+        for (int i = 0; i < list.size(); i++) {
+            if (list.get(i).length() > 0 && list.get(i).charAt(0) == '{') {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    public static String processBomermanFile(PrintStream logger, File outFile) throws IOException {
+        String rawFileContent = new String(new FileInputStream(outFile).readAllBytes(), StandardCharsets.UTF_8);
+        logger.println(rawFileContent);
+        String[] splitRawFileContent = rawFileContent.split("\n");
+        List<String> lines = new ArrayList<>();
+        for (String line : splitRawFileContent) {
+            lines.add(line);
+        }
+
+        lines = lines.subList(findStartIndex(lines), lines.size());
+        lines.add("\n}");
+        lines.add(0, "{\n\"output\": \"DEFAULT\",\n\"sbom\":");
+
+        return String.join("\n", lines);
+    }
 
     @Symbol("AWS Inspector")
     @Extension

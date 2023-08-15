@@ -16,14 +16,17 @@ public class SbomOutputParser {
     @Getter
     private SbomData sbom;
 
-    public SbomOutputParser(String filePath) throws IOException {
-        String sbomData = Files.readString(Paths.get(filePath));
-        this.sbom = new Gson().fromJson(sbomData, SbomData.class);
+    public SbomOutputParser(SbomData sbomData) {
+        this.sbom = sbomData;
     }
 
     public Results parseSbom() {
         Results results = new Results();
         List<Vulnerability> vulnerabilities = sbom.getSbom().getVulnerabilities();
+
+        if (vulnerabilities == null) {
+            return results;
+        }
 
         for (Vulnerability vulnerability : vulnerabilities) {
             List<Rating> ratings = vulnerability.getRatings();
