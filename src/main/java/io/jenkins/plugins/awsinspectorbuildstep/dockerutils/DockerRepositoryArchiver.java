@@ -32,7 +32,6 @@ public class DockerRepositoryArchiver {
 
     @VisibleForTesting
     protected void saveRepositoryAsArchive(DockerClient dockerClient, File destinationFile) {
-        logger.println("Saving repo to archive");
 
         try (OutputStream outputStream = new FileOutputStream(destinationFile)) {
             SaveImageCmd saveImageCmd = dockerClient.saveImageCmd(imageId);

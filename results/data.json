@@ -1,0 +1,737 @@
+{
+  "sbom": {
+    "bomFormat": "CycloneDX",
+    "specVersion": "1.5",
+    "serialNumber": "urn:uuid:068297a6-12af-4733-9e89-6e7d8ee5c920",
+    "version": 1,
+    "metadata": {
+      "component": {
+        "bom-ref": "comp-1",
+        "type": "container",
+        "name": "/Users/waltwilo/Downloads/alpine.tar",
+        "properties": [
+          {
+            "name": "amazon:inspector:sbom_scanner:warning",
+            "value": "Component skipped: no purl provided."
+          }
+        ]
+      },
+      "properties": [
+        {
+          "name": "amazon:inspector:sbom_scanner:critical_vulnerabilities",
+          "value": "1"
+        },
+        {
+          "name": "amazon:inspector:sbom_scanner:high_vulnerabilities",
+          "value": "4"
+        },
+        {
+          "name": "amazon:inspector:sbom_scanner:medium_vulnerabilities",
+          "value": "2"
+        },
+        {
+          "name": "amazon:inspector:sbom_scanner:low_vulnerabilities",
+          "value": "0"
+        }
+      ],
+      "tools": [
+        {
+          "name": "CycloneDX SBOM API",
+          "vendor": "Amazon Inspector",
+          "version": "empty:c376e06673997dd38c45669a4b1d8e3f:15e7ecbe47730f4671d1024a6ec3e432:4a30521c0927df570a0e570ed127c262"
+        }
+      ],
+      "timestamp": "2023-08-15T02:58:35.543Z"
+    },
+    "components": [
+      {
+        "bom-ref": "comp-2",
+        "type": "application",
+        "name": "musl",
+        "version": "1.2.2-r3",
+        "purl": "pkg:apk/alpine/musl@1.2.2-r3?arch=x86_64&distro=3.14.7",
+        "properties": [
+          {
+            "name": "amazon:inspector:sbom_scanner:info",
+            "value": "Component scanned: no vulnerabilities found."
+          }
+        ]
+      },
+      {
+        "bom-ref": "comp-3",
+        "type": "application",
+        "name": "busybox",
+        "version": "1.33.1-r8",
+        "purl": "pkg:apk/alpine/busybox@1.33.1-r8?arch=x86_64&distro=3.14.7",
+        "properties": [
+          {
+            "name": "amazon:inspector:sbom_scanner:info",
+            "value": "Component scanned: no vulnerabilities found."
+          }
+        ]
+      },
+      {
+        "bom-ref": "comp-4",
+        "type": "application",
+        "name": "alpine-baselayout",
+        "version": "3.2.0-r16",
+        "purl": "pkg:apk/alpine/alpine-baselayout@3.2.0-r16?arch=x86_64&distro=3.14.7",
+        "properties": [
+          {
+            "name": "amazon:inspector:sbom_scanner:warning",
+            "value": "Component skipped: unsupported application."
+          }
+        ]
+      },
+      {
+        "bom-ref": "comp-5",
+        "type": "application",
+        "name": "alpine-keys",
+        "version": "2.4-r0",
+        "purl": "pkg:apk/alpine/alpine-keys@2.4-r0?arch=x86_64&distro=3.14.7",
+        "properties": [
+          {
+            "name": "amazon:inspector:sbom_scanner:warning",
+            "value": "Component skipped: unsupported application."
+          }
+        ]
+      },
+      {
+        "bom-ref": "comp-6",
+        "type": "application",
+        "name": "libcrypto1.1",
+        "version": "1.1.1q-r0",
+        "purl": "pkg:apk/alpine/libcrypto1.1@1.1.1q-r0?arch=x86_64&distro=3.14.7",
+        "properties": [
+          {
+            "name": "amazon:inspector:sbom_scanner:warning",
+            "value": "Component skipped: unsupported application."
+          }
+        ]
+      },
+      {
+        "bom-ref": "comp-7",
+        "type": "application",
+        "name": "openssl",
+        "version": "1.1.1q-r0",
+        "purl": "pkg:apk/alpine/openssl@1.1.1q-r0?arch=x86_64&distro=3.14.7"
+      },
+      {
+        "bom-ref": "comp-8",
+        "type": "application",
+        "name": "libssl1.1",
+        "version": "1.1.1q-r0",
+        "purl": "pkg:apk/alpine/libssl1.1@1.1.1q-r0?arch=x86_64&distro=3.14.7",
+        "properties": [
+          {
+            "name": "amazon:inspector:sbom_scanner:warning",
+            "value": "Component skipped: unsupported application."
+          }
+        ]
+      },
+      {
+        "bom-ref": "comp-9",
+        "type": "application",
+        "name": "ca-certificates-bundle",
+        "version": "20211220-r0",
+        "purl": "pkg:apk/alpine/ca-certificates-bundle@20211220-r0?arch=x86_64&distro=3.14.7",
+        "properties": [
+          {
+            "name": "amazon:inspector:sbom_scanner:warning",
+            "value": "Component skipped: unsupported application."
+          }
+        ]
+      },
+      {
+        "bom-ref": "comp-10",
+        "type": "application",
+        "name": "ca-certificates",
+        "version": "20211220-r0",
+        "purl": "pkg:apk/alpine/ca-certificates@20211220-r0?arch=x86_64&distro=3.14.7",
+        "properties": [
+          {
+            "name": "amazon:inspector:sbom_scanner:warning",
+            "value": "Component skipped: unsupported application."
+          }
+        ]
+      },
+      {
+        "bom-ref": "comp-11",
+        "type": "application",
+        "name": "libretls",
+        "version": "3.3.3p1-r3",
+        "purl": "pkg:apk/alpine/libretls@3.3.3p1-r3?arch=x86_64&distro=3.14.7",
+        "properties": [
+          {
+            "name": "amazon:inspector:sbom_scanner:info",
+            "value": "Component scanned: no vulnerabilities found."
+          }
+        ]
+      },
+      {
+        "bom-ref": "comp-12",
+        "type": "application",
+        "name": "ssl_client",
+        "version": "1.33.1-r8",
+        "purl": "pkg:apk/alpine/ssl_client@1.33.1-r8?arch=x86_64&distro=3.14.7",
+        "properties": [
+          {
+            "name": "amazon:inspector:sbom_scanner:warning",
+            "value": "Component skipped: unsupported application."
+          }
+        ]
+      },
+      {
+        "bom-ref": "comp-13",
+        "type": "application",
+        "name": "zlib",
+        "version": "1.2.12-r1",
+        "purl": "pkg:apk/alpine/zlib@1.2.12-r1?arch=x86_64&distro=3.14.7"
+      },
+      {
+        "bom-ref": "comp-14",
+        "type": "application",
+        "name": "apk-tools",
+        "version": "2.12.7-r0",
+        "purl": "pkg:apk/alpine/apk-tools@2.12.7-r0?arch=x86_64&distro=3.14.7",
+        "properties": [
+          {
+            "name": "amazon:inspector:sbom_scanner:info",
+            "value": "Component scanned: no vulnerabilities found."
+          }
+        ]
+      },
+      {
+        "bom-ref": "comp-15",
+        "type": "application",
+        "name": "scanelf",
+        "version": "1.3.2-r0",
+        "purl": "pkg:apk/alpine/scanelf@1.3.2-r0?arch=x86_64&distro=3.14.7",
+        "properties": [
+          {
+            "name": "amazon:inspector:sbom_scanner:warning",
+            "value": "Component skipped: unsupported application."
+          }
+        ]
+      },
+      {
+        "bom-ref": "comp-16",
+        "type": "application",
+        "name": "pax-utils",
+        "version": "1.3.2-r0",
+        "purl": "pkg:apk/alpine/pax-utils@1.3.2-r0?arch=x86_64&distro=3.14.7",
+        "properties": [
+          {
+            "name": "amazon:inspector:sbom_scanner:warning",
+            "value": "Component skipped: unsupported application."
+          }
+        ]
+      },
+      {
+        "bom-ref": "comp-17",
+        "type": "application",
+        "name": "musl-utils",
+        "version": "1.2.2-r3",
+        "purl": "pkg:apk/alpine/musl-utils@1.2.2-r3?arch=x86_64&distro=3.14.7",
+        "properties": [
+          {
+            "name": "amazon:inspector:sbom_scanner:warning",
+            "value": "Component skipped: unsupported application."
+          }
+        ]
+      },
+      {
+        "bom-ref": "comp-18",
+        "type": "application",
+        "name": "libc-utils",
+        "version": "0.7.2-r3",
+        "purl": "pkg:apk/alpine/libc-utils@0.7.2-r3?arch=x86_64&distro=3.14.7",
+        "properties": [
+          {
+            "name": "amazon:inspector:sbom_scanner:warning",
+            "value": "Component skipped: unsupported application."
+          }
+        ]
+      },
+      {
+        "bom-ref": "comp-19",
+        "type": "application",
+        "name": "libc-dev",
+        "version": "0.7.2-r3",
+        "purl": "pkg:apk/alpine/libc-dev@0.7.2-r3?arch=x86_64&distro=3.14.7",
+        "properties": [
+          {
+            "name": "amazon:inspector:sbom_scanner:warning",
+            "value": "Component skipped: unsupported application."
+          }
+        ]
+      }
+    ],
+    "vulnerabilities": [
+      {
+        "bom-ref": "vuln-1",
+        "id": "CVE-2022-4450",
+        "source": {
+          "name": "NVD",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2022-4450"
+        },
+        "ratings": [
+          {
+            "source": {
+              "name": "NVD",
+              "url": "https://www.first.org/cvss/v3-1/"
+            },
+            "score": 7.5,
+            "severity": "high",
+            "method": "CVSSv31",
+            "vector": "AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+          },
+          {
+            "source": {
+              "name": "EPSS",
+              "url": "https://www.first.org/epss/"
+            },
+            "score": 5.1E-4,
+            "severity": "none",
+            "method": "other",
+            "vector": "model:v2023.03.01,date:2023-08-09T00:00:00+0000"
+          }
+        ],
+        "cwes": [
+          415
+        ],
+        "description": "The function PEM_read_bio_ex() reads a PEM file from a BIO and parses and decodes the \"name\" (e.g. \"CERTIFICATE\"), any header data and the payload data. If the function succeeds then the \"name_out\", \"header\" and \"data\" arguments are populated with pointers to buffers containing the relevant decoded data. The caller is responsible for freeing those buffers. It is possible to construct a PEM file that results in 0 bytes of payload data. In this case PEM_read_bio_ex() will return a failure code but will populate the header argument with a pointer to a buffer that has already been freed. If the caller also frees this buffer then a double free will occur. This will most likely lead to a crash. This could be exploited by an attacker who has the ability to supply malicious PEM files for parsing to achieve a denial of service attack. The functions PEM_read_bio() and PEM_read() are simple wrappers around PEM_read_bio_ex() and therefore these functions are also directly affected. These functions are also called indirectly by a number of other OpenSSL functions including PEM_X509_INFO_read_bio_ex() and SSL_CTX_use_serverinfo_file() which are also vulnerable. Some OpenSSL internal uses of these functions are not vulnerable because the caller does not free the header argument if PEM_read_bio_ex() returns a failure code. These locations include the PEM_read_bio_TYPE() functions as well as the decoders introduced in OpenSSL 3.0. The OpenSSL asn1parse command line application is also impacted by this issue.",
+        "advisories": [
+          {
+            "url": "https://git.openssl.org/gitweb/?p=openssl.git;a=commitdiff;h=bbcf509bd046b34cca19c766bbddc31683d0858b"
+          },
+          {
+            "url": "https://git.openssl.org/gitweb/?p=openssl.git;a=commitdiff;h=63bcf189be73a9cc1264059bed6f57974be74a83"
+          },
+          {
+            "url": "https://www.openssl.org/news/secadv/20230207.txt"
+          }
+        ],
+        "created": "2023-02-08T20:15:00Z",
+        "updated": "2023-07-19T00:57:00Z",
+        "affects": [
+          {
+            "ref": "comp-7"
+          }
+        ],
+        "properties": [
+          {
+            "name": "amazon:inspector:sbom_scanner:fixed_version:comp-7",
+            "value": "1.1.1t-r0"
+          }
+        ]
+      },
+      {
+        "bom-ref": "vuln-2",
+        "id": "CVE-2022-37434",
+        "source": {
+          "name": "NVD",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2022-37434"
+        },
+        "ratings": [
+          {
+            "source": {
+              "name": "NVD",
+              "url": "https://www.first.org/cvss/v3-1/"
+            },
+            "score": 9.8,
+            "severity": "critical",
+            "method": "CVSSv31",
+            "vector": "AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+          },
+          {
+            "source": {
+              "name": "EPSS",
+              "url": "https://www.first.org/epss/"
+            },
+            "score": 0.00215,
+            "severity": "none",
+            "method": "other",
+            "vector": "model:v2023.03.01,date:2023-08-09T00:00:00+0000"
+          }
+        ],
+        "cwes": [
+          787
+        ],
+        "description": "zlib through 1.2.12 has a heap-based buffer over-read or buffer overflow in inflate in inflate.c via a large gzip header extra field. NOTE: only applications that call inflateGetHeader are affected. Some common applications bundle the affected zlib source code but may be unable to call inflateGetHeader (e.g., see the nodejs/node reference).",
+        "advisories": [
+          {
+            "url": "https://support.apple.com/kb/HT213488"
+          },
+          {
+            "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/NMBOJ77A7T7PQCARMDUK75TE6LLESZ3O/"
+          },
+          {
+            "url": "https://support.apple.com/kb/HT213489"
+          },
+          {
+            "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/PAVPQNCG3XRLCLNSQRM3KAN5ZFMVXVTY/"
+          },
+          {
+            "url": "https://lists.debian.org/debian-lts-announce/2022/09/msg00012.html"
+          },
+          {
+            "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/YRQAI7H4M4RQZ2IWZUEEXECBE5D56BH2/"
+          },
+          {
+            "url": "https://www.debian.org/security/2022/dsa-5218"
+          },
+          {
+            "url": "https://support.apple.com/kb/HT213491"
+          },
+          {
+            "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/JWN4VE3JQR4O2SOUS5TXNLANRPMHWV4I/"
+          },
+          {
+            "url": "https://support.apple.com/kb/HT213493"
+          },
+          {
+            "url": "https://support.apple.com/kb/HT213494"
+          },
+          {
+            "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/X5U7OTKZSHY2I3ZFJSR2SHFHW72RKGDK/"
+          },
+          {
+            "url": "https://support.apple.com/kb/HT213490"
+          }
+        ],
+        "created": "2022-08-05T07:15:00Z",
+        "updated": "2023-07-19T00:56:00Z",
+        "affects": [
+          {
+            "ref": "comp-13"
+          }
+        ],
+        "properties": [
+          {
+            "name": "amazon:inspector:sbom_scanner:fixed_version:comp-13",
+            "value": "1.2.12-r2"
+          }
+        ]
+      },
+      {
+        "bom-ref": "vuln-3",
+        "id": "CVE-2023-0464",
+        "source": {
+          "name": "NVD",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2023-0464"
+        },
+        "ratings": [
+          {
+            "source": {
+              "name": "NVD",
+              "url": "https://www.first.org/cvss/v3-1/"
+            },
+            "score": 7.5,
+            "severity": "high",
+            "method": "CVSSv31",
+            "vector": "AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+          },
+          {
+            "source": {
+              "name": "EPSS",
+              "url": "https://www.first.org/epss/"
+            },
+            "score": 0.00193,
+            "severity": "none",
+            "method": "other",
+            "vector": "model:v2023.03.01,date:2023-08-09T00:00:00+0000"
+          }
+        ],
+        "cwes": [
+          295
+        ],
+        "description": "A security vulnerability has been identified in all supported versions\n\nof OpenSSL related to the verification of X.509 certificate chains\nthat include policy constraints.  Attackers may be able to exploit this\nvulnerability by creating a malicious certificate chain that triggers\nexponential use of computational resources, leading to a denial-of-service\n(DoS) attack on affected systems.\n\nPolicy processing is disabled by default but can be enabled by passing\nthe `-policy' argument to the command line utilities or by calling the\n`X509_VERIFY_PARAM_set1_policies()' function.",
+        "advisories": [
+          {
+            "url": "https://git.openssl.org/gitweb/?p=openssl.git;a=commitdiff;h=2dcd4f1e3115f38cefa43e3efbe9b801c27e642e"
+          },
+          {
+            "url": "https://lists.debian.org/debian-lts-announce/2023/06/msg00011.html"
+          },
+          {
+            "url": "https://git.openssl.org/gitweb/?p=openssl.git;a=commitdiff;h=2017771e2db3e2b96f89bbe8766c3209f6a99545"
+          },
+          {
+            "url": "https://git.openssl.org/gitweb/?p=openssl.git;a=commitdiff;h=959c59c7a0164117e7f8366466a32bb1f8d77ff1"
+          },
+          {
+            "url": "https://git.openssl.org/gitweb/?p=openssl.git;a=commitdiff;h=879f7080d7e141f415c79eaa3a8ac4a3dad0348b"
+          },
+          {
+            "url": "https://www.openssl.org/news/secadv/20230322.txt"
+          },
+          {
+            "url": "https://www.debian.org/security/2023/dsa-5417"
+          }
+        ],
+        "created": "2023-03-22T17:15:00Z",
+        "updated": "2023-06-08T19:15:00Z",
+        "affects": [
+          {
+            "ref": "comp-7"
+          }
+        ],
+        "properties": [
+          {
+            "name": "amazon:inspector:sbom_scanner:fixed_version:comp-7",
+            "value": "1.1.1t-r1"
+          }
+        ]
+      },
+      {
+        "bom-ref": "vuln-4",
+        "id": "CVE-2023-0465",
+        "source": {
+          "name": "NVD",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2023-0465"
+        },
+        "ratings": [
+          {
+            "source": {
+              "name": "NVD",
+              "url": "https://www.first.org/cvss/v3-1/"
+            },
+            "score": 5.3,
+            "severity": "medium",
+            "method": "CVSSv31",
+            "vector": "AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N"
+          },
+          {
+            "source": {
+              "name": "EPSS",
+              "url": "https://www.first.org/epss/"
+            },
+            "score": 0.00132,
+            "severity": "none",
+            "method": "other",
+            "vector": "model:v2023.03.01,date:2023-08-09T00:00:00+0000"
+          }
+        ],
+        "cwes": [
+          295
+        ],
+        "description": "Applications that use a non-default option when verifying certificates may be\nvulnerable to an attack from a malicious CA to circumvent certain checks.\n\nInvalid certificate policies in leaf certificates are silently ignored by\nOpenSSL and other certificate policy checks are skipped for that certificate.\nA malicious CA could use this to deliberately assert invalid certificate policies\nin order to circumvent policy checking on the certificate altogether.\n\nPolicy processing is disabled by default but can be enabled by passing\nthe `-policy' argument to the command line utilities or by calling the\n`X509_VERIFY_PARAM_set1_policies()' function.",
+        "advisories": [
+          {
+            "url": "https://git.openssl.org/gitweb/?p=openssl.git;a=commitdiff;h=1dd43e0709fece299b15208f36cc7c76209ba0bb"
+          },
+          {
+            "url": "https://lists.debian.org/debian-lts-announce/2023/06/msg00011.html"
+          },
+          {
+            "url": "https://git.openssl.org/gitweb/?p=openssl.git;a=commitdiff;h=10325176f3d3e98c6e2b3bf5ab1e3b334de6947a"
+          },
+          {
+            "url": "https://git.openssl.org/gitweb/?p=openssl.git;a=commitdiff;h=facfb1ab745646e97a1920977ae4a9965ea61d5c"
+          },
+          {
+            "url": "https://www.openssl.org/news/secadv/20230328.txt"
+          },
+          {
+            "url": "https://www.debian.org/security/2023/dsa-5417"
+          },
+          {
+            "url": "https://git.openssl.org/gitweb/?p=openssl.git;a=commitdiff;h=b013765abfa80036dc779dd0e50602c57bb3bf95"
+          }
+        ],
+        "created": "2023-03-28T15:15:00Z",
+        "updated": "2023-06-08T19:15:00Z",
+        "affects": [
+          {
+            "ref": "comp-7"
+          }
+        ],
+        "properties": [
+          {
+            "name": "amazon:inspector:sbom_scanner:fixed_version:comp-7",
+            "value": "1.1.1t-r2"
+          }
+        ]
+      },
+      {
+        "bom-ref": "vuln-5",
+        "id": "CVE-2022-4304",
+        "source": {
+          "name": "NVD",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2022-4304"
+        },
+        "ratings": [
+          {
+            "source": {
+              "name": "NVD",
+              "url": "https://www.first.org/cvss/v3-1/"
+            },
+            "score": 5.9,
+            "severity": "medium",
+            "method": "CVSSv31",
+            "vector": "AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:N/A:N"
+          },
+          {
+            "source": {
+              "name": "EPSS",
+              "url": "https://www.first.org/epss/"
+            },
+            "score": 0.00124,
+            "severity": "none",
+            "method": "other",
+            "vector": "model:v2023.03.01,date:2023-08-09T00:00:00+0000"
+          }
+        ],
+        "description": "A timing based side channel exists in the OpenSSL RSA Decryption implementation which could be sufficient to recover a plaintext across a network in a Bleichenbacher style attack. To achieve a successful decryption an attacker would have to be able to send a very large number of trial messages for decryption. The vulnerability affects all RSA padding modes: PKCS#1 v1.5, RSA-OEAP and RSASVE. For example, in a TLS connection, RSA is commonly used by a client to send an encrypted pre-master secret to the server. An attacker that had observed a genuine connection between a client and a server could use this flaw to send trial messages to the server and record the time taken to process them. After a sufficiently large number of messages the attacker could recover the pre-master secret used for the original connection and thus be able to decrypt the application data sent over that connection.",
+        "advisories": [
+          {
+            "url": "https://www.openssl.org/news/secadv/20230207.txt"
+          }
+        ],
+        "created": "2023-02-08T20:15:00Z",
+        "updated": "2023-07-19T00:57:00Z",
+        "affects": [
+          {
+            "ref": "comp-7"
+          }
+        ],
+        "properties": [
+          {
+            "name": "amazon:inspector:sbom_scanner:fixed_version:comp-7",
+            "value": "1.1.1t-r0"
+          }
+        ]
+      },
+      {
+        "bom-ref": "vuln-6",
+        "id": "CVE-2023-0286",
+        "source": {
+          "name": "NVD",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2023-0286"
+        },
+        "ratings": [
+          {
+            "source": {
+              "name": "NVD",
+              "url": "https://www.first.org/cvss/v3-1/"
+            },
+            "score": 7.4,
+            "severity": "high",
+            "method": "CVSSv31",
+            "vector": "AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:N/A:H"
+          },
+          {
+            "source": {
+              "name": "EPSS",
+              "url": "https://www.first.org/epss/"
+            },
+            "score": 8.6E-4,
+            "severity": "none",
+            "method": "other",
+            "vector": "model:v2023.03.01,date:2023-08-09T00:00:00+0000"
+          }
+        ],
+        "cwes": [
+          843
+        ],
+        "description": "There is a type confusion vulnerability relating to X.400 address processing inside an X.509 GeneralName. X.400 addresses were parsed as an ASN1_STRING but the public structure definition for GENERAL_NAME incorrectly specified the type of the x400Address field as ASN1_TYPE. This field is subsequently interpreted by the OpenSSL function GENERAL_NAME_cmp as an ASN1_TYPE rather than an ASN1_STRING. When CRL checking is enabled (i.e. the application sets the X509_V_FLAG_CRL_CHECK flag), this vulnerability may allow an attacker to pass arbitrary pointers to a memcmp call, enabling them to read memory contents or enact a denial of service. In most cases, the attack requires the attacker to provide both the certificate chain and CRL, neither of which need to have a valid signature. If the attacker only controls one of these inputs, the other input must already contain an X.400 address as a CRL distribution point, which is uncommon. As such, this vulnerability is most likely to only affect applications which have implemented their own functionality for retrieving CRLs over a network.",
+        "advisories": [
+          {
+            "url": "https://git.openssl.org/gitweb/?p=openssl.git;a=commitdiff;h=2f7530077e0ef79d98718138716bc51ca0cad658"
+          },
+          {
+            "url": "https://git.openssl.org/gitweb/?p=openssl.git;a=commitdiff;h=2c6c9d439b484e1ba9830d8454a34fa4f80fdfe9"
+          },
+          {
+            "url": "https://ftp.openbsd.org/pub/OpenBSD/LibreSSL/libressl-3.6.2-relnotes.txt"
+          },
+          {
+            "url": "https://git.openssl.org/gitweb/?p=openssl.git;a=commitdiff;h=fd2af07dc083a350c959147097003a14a5e8ac4d"
+          },
+          {
+            "url": "https://www.openssl.org/news/secadv/20230207.txt"
+          },
+          {
+            "url": "https://ftp.openbsd.org/pub/OpenBSD/patches/7.2/common/018_x509.patch.sig"
+          }
+        ],
+        "created": "2023-02-08T20:15:00Z",
+        "updated": "2023-07-19T00:54:00Z",
+        "affects": [
+          {
+            "ref": "comp-7"
+          }
+        ],
+        "properties": [
+          {
+            "name": "amazon:inspector:sbom_scanner:fixed_version:comp-7",
+            "value": "1.1.1t-r0"
+          }
+        ]
+      },
+      {
+        "bom-ref": "vuln-7",
+        "id": "CVE-2023-0215",
+        "source": {
+          "name": "NVD",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2023-0215"
+        },
+        "ratings": [
+          {
+            "source": {
+              "name": "NVD",
+              "url": "https://www.first.org/cvss/v3-1/"
+            },
+            "score": 7.5,
+            "severity": "high",
+            "method": "CVSSv31",
+            "vector": "AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+          },
+          {
+            "source": {
+              "name": "EPSS",
+              "url": "https://www.first.org/epss/"
+            },
+            "score": 0.00174,
+            "severity": "none",
+            "method": "other",
+            "vector": "model:v2023.03.01,date:2023-08-09T00:00:00+0000"
+          }
+        ],
+        "cwes": [
+          416
+        ],
+        "description": "The public API function BIO_new_NDEF is a helper function used for streaming\nASN.1 data via a BIO. It is primarily used internally to OpenSSL to support the\nSMIME, CMS and PKCS7 streaming capabilities, but may also be called directly by\nend user applications.\n\nThe function receives a BIO from the caller, prepends a new BIO_f_asn1 filter\nBIO onto the front of it to form a BIO chain, and then returns the new head of\nthe BIO chain to the caller. Under certain conditions, for example if a CMS\nrecipient public key is invalid, the new filter BIO is freed and the function\nreturns a NULL result indicating a failure. However, in this case, the BIO chain\nis not properly cleaned up and the BIO passed by the caller still retains\ninternal pointers to the previously freed filter BIO. If the caller then goes on\nto call BIO_pop() on the BIO then a use-after-free will occur. This will most\nlikely result in a crash.\n\n\n\nThis scenario occurs directly in the internal function B64_write_ASN1() which\nmay cause BIO_new_NDEF() to be called and will subsequently call BIO_pop() on\nthe BIO. This internal function is in turn called by the public API functions\nPEM_write_bio_ASN1_stream, PEM_write_bio_CMS_stream, PEM_write_bio_PKCS7_stream,\nSMIME_write_ASN1, SMIME_write_CMS and SMIME_write_PKCS7.\n\nOther public API functions that may be impacted by this include\ni2d_ASN1_bio_stream, BIO_new_CMS, BIO_new_PKCS7, i2d_CMS_bio_stream and\ni2d_PKCS7_bio_stream.\n\nThe OpenSSL cms and smime command line applications are similarly affected.\n\n\n\n",
+        "advisories": [
+          {
+            "url": "https://git.openssl.org/gitweb/?p=openssl.git;a=commitdiff;h=c3829dd8825c654652201e16f8a0a0c46ee3f344"
+          },
+          {
+            "url": "https://git.openssl.org/gitweb/?p=openssl.git;a=commitdiff;h=8818064ce3c3c0f1b740a5aaba2a987e75bfbafd"
+          },
+          {
+            "url": "https://git.openssl.org/gitweb/?p=openssl.git;a=commitdiff;h=9816136fe31d92ace4037d5da5257f763aeeb4eb"
+          },
+          {
+            "url": "https://www.openssl.org/news/secadv/20230207.txt"
+          }
+        ],
+        "created": "2023-02-08T20:15:00Z",
+        "updated": "2023-07-19T00:55:00Z",
+        "affects": [
+          {
+            "ref": "comp-7"
+          }
+        ],
+        "properties": [
+          {
+            "name": "amazon:inspector:sbom_scanner:fixed_version:comp-7",
+            "value": "1.1.1t-r0"
+          }
+        ]
+      }
+    ]
+  },
+  "status": "SBOM parsed successfully, 7 vulnerabilities found"
+}

@@ -1,6 +1,9 @@
 package io.jenkins.plugins.awsinspectorbuildstep.sbomparsing;
 
+import com.google.common.base.Charsets;
+import com.google.gson.Gson;
 import io.jenkins.plugins.awsinspectorbuildstep.models.sbom.Components.Rating;
+import io.jenkins.plugins.awsinspectorbuildstep.models.sbom.SbomData;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -14,10 +17,22 @@ import static org.junit.Assert.assertEquals;
 
 public class SbomOutputParserTest {
     @Test
+    public void testParseNullVulnSbom() throws IOException {
+        // Convert file at path to text
+        String sbom = readStringFromFile("test/data/SbomOutputExampleNullVuln.json");
+        SbomData sbomData = new Gson().fromJson(sbom, SbomData.class);
+        SbomOutputParser parser = new SbomOutputParser(sbomData);
+        Map<Severity, Integer> results = parser.parseSbom().getCounts();
+
+        assertEquals(Optional.ofNullable(results.get(Severity.CRITICAL)), Optional.of(0));
+    }
+
+    @Test
     public void testParseSbom() throws IOException {
         // Convert file at path to text
         String sbom = readStringFromFile("test/data/SbomOutputExample.json");
-        SbomOutputParser parser = new SbomOutputParser(sbom);
+        SbomData sbomData = new Gson().fromJson(sbom, SbomData.class);
+        SbomOutputParser parser = new SbomOutputParser(sbomData);
         Map<Severity, Integer> results = parser.parseSbom().getCounts();
 
         assertEquals(Optional.ofNullable(results.get(Severity.CRITICAL)), Optional.of(1));
@@ -26,7 +41,8 @@ public class SbomOutputParserTest {
     @Test
     public void getHighestSeverityFromList() throws IOException {
         String sbom = readStringFromFile("test/data/SbomOutputExample.json");
-        SbomOutputParser parser = new SbomOutputParser(sbom);
+        SbomData sbomData = new Gson().fromJson(sbom, SbomData.class);
+        SbomOutputParser parser = new SbomOutputParser(sbomData);
 
         List<Rating> ratings = List.of(
                 Rating.builder()

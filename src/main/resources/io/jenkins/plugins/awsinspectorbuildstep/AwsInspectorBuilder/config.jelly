@@ -3,21 +3,23 @@
     <f:block>
         <b>Container Image Source:</b>
     </f:block>
-    <f:radioBlock checked="${instance.isImageType('local') or true}" name="imageType" value="local" title="Local image" inline="true" help="">
-        <f:entry title="Image" field="localImage">
-            <f:textbox />
-        </f:entry>
-    </f:radioBlock>
-    <f:radioBlock checked="${instance.isImageType('remote')}" name="imageType" value="remote" title="Remote Image Uri" inline="true" help="">
-        <f:entry title="Image" field="remoteImageUri">
-            <f:textbox />
-        </f:entry>
-    </f:radioBlock>
-    <f:radioBlock checked="${instance.isImageType('dockerarchive')}" name="imageType" value="dockerarchive" title="docker-archive" inline="true" help="">
-        <f:entry title="Docker Archive path" field="archivePath" help="">
-            <f:textbox />
-        </f:entry>
-    </f:radioBlock>
+
+    <f:entry title="Access Key Id" field="accessKeyId" help="The ID of the Access Key Id inside the jenkins credential store.">
+        <f:textbox/>
+    </f:entry>
+
+    <f:entry title="Secret Key Id" field="secretKeyId" help="The ID of the Secret Key Id inside the jenkins credential store.">
+        <f:textbox />
+    </f:entry>
+
+    <f:entry title="Session Token Credential Id" field="sessionTokenId" help="The ID of the session token credential inside the jenkins credential store.">
+        <f:textbox />
+    </f:entry>
+
+    <f:entry title="Image Id" field="archivePath" help="An identifier for the image intended to be scanned.">
+        <f:textbox />
+    </f:entry>
+
     <f:block>
         <b>Failure Criteria:</b>
     </f:block>

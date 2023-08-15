@@ -5,11 +5,11 @@ import lombok.Getter;
 import software.amazon.awssdk.http.SdkHttpFullRequest;
 import software.amazon.awssdk.http.SdkHttpMethod;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
+import java.io.ByteArrayInputStream;
 import java.io.PrintStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
@@ -20,7 +20,7 @@ import java.util.TimeZone;
 public class UnsignedRequestHelper {
     @Getter
     SdkHttpFullRequest request;
-    public UnsignedRequestHelper(PrintStream logger, String sessionToken, String filePath) throws URISyntaxException {
+    public UnsignedRequestHelper(PrintStream logger, String sessionToken, String sbomData) throws URISyntaxException {
         final String endpoint = "https://prod.us-east-1.api.eevee.aws.dev/scan/sbom/cyclonedx";
         String xAmzDate = getXAmzDateString(Date.from(Instant.now()));
 
@@ -29,14 +29,7 @@ public class UnsignedRequestHelper {
                 .uri(new URI(endpoint))
                 .putHeader("X-Amz-Security-Token", sessionToken)
                 .putHeader("X-Amz-Date", xAmzDate)
-                .contentStreamProvider(() -> {
-                    try {
-                        return new FileInputStream(filePath);
-                    } catch (FileNotFoundException e) {
-                        logger.printf("Couldn't find file at path %s", filePath);
-                        throw new RuntimeException(e);
-                    }
-                })
+                .contentStreamProvider(() -> new ByteArrayInputStream(sbomData.getBytes(StandardCharsets.UTF_8)))
                 .build();
     }
 

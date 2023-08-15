@@ -1,6 +1,9 @@
 package io.jenkins.plugins.awsinspectorbuildstep.csvconversion;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Charsets;
+import com.google.common.io.CharStreams;
+import com.google.gson.Gson;
 import io.jenkins.plugins.awsinspectorbuildstep.models.sbom.Components.Affect;
 import io.jenkins.plugins.awsinspectorbuildstep.models.sbom.Components.Component;
 import io.jenkins.plugins.awsinspectorbuildstep.models.sbom.Components.Property;
@@ -8,8 +11,14 @@ import io.jenkins.plugins.awsinspectorbuildstep.models.sbom.Components.Rating;
 import io.jenkins.plugins.awsinspectorbuildstep.models.sbom.Components.Vulnerability;
 import io.jenkins.plugins.awsinspectorbuildstep.models.sbom.SbomData;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -19,16 +28,25 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class CsvConverter {
+    public static void main(String[] args) throws IOException {
+        InputStream inputStream = new FileInputStream("/Users/waltwilo/workplace/EeveeCICDPlugin/src/EeveeCICDJenkinsPlugin/results/data.json");
+        SbomData sbomData = new Gson().fromJson(CharStreams.toString(new InputStreamReader(inputStream)), SbomData.class);
+        CsvConverter converter = new CsvConverter(System.out, sbomData);
+        converter.convert("/Users/waltwilo/workplace/EeveeCICDPlugin/src/EeveeCICDJenkinsPlugin/results/out.csv");
+    }
     private SbomData sbomData;
     private Map<String, Component> componentMap;
+    private PrintStream logger;
 
-    public CsvConverter(SbomData sbomData) {
+    public CsvConverter(PrintStream logger, SbomData sbomData) {
+        this.logger = logger;
         this.sbomData = sbomData;
         this.componentMap = populateComponentMap(sbomData);
     }
 
     public void convert(String outputFileName) {
         List<List<String>> dataLineArray = buildCsvDataLines();
+        logger.println("Converting");
 
         try (PrintWriter writer = new PrintWriter(new FileWriter(outputFileName))) {
             for (List<String> lineArray : dataLineArray) {
@@ -38,6 +56,7 @@ public class CsvConverter {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+        logger.println("Conversion done");
     }
 
     private Map<String, Component> populateComponentMap(SbomData sbomData) {
@@ -53,6 +72,7 @@ public class CsvConverter {
     @VisibleForTesting
     protected List<List<String>> buildCsvDataLines() {
         List<List<String>> dataLines = new ArrayList<>();
+        logger.println("Getting data lines");
         List<String> headers = List.of("CVE", "Severity", "Description", "Package Name", "Package Installed Version",
                 "Package Fixed Version", "Exploit Available");
         dataLines.add(headers);
@@ -69,6 +89,8 @@ public class CsvConverter {
                 dataLines.add(dataLine);
             }
         }
+
+        logger.println(dataLines);
 
         return dataLines;
     }
@@ -92,6 +114,7 @@ public class CsvConverter {
     @VisibleForTesting
     protected String getExploitAvailable(Vulnerability vulnerability) {
         final String exploitAvailableName = "amazon:inspector:sbom_scanner:exploit_available";
+        vulnerability.getProperties().forEach(x -> logger.println(x.getName()));
 
         return vulnerability.getProperties().stream()
                 .filter(v -> v.getName().equals(exploitAvailableName))

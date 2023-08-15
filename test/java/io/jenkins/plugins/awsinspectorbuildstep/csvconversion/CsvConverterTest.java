@@ -1,5 +1,6 @@
 package io.jenkins.plugins.awsinspectorbuildstep.csvconversion;
 
+import com.google.gson.Gson;
 import io.jenkins.plugins.awsinspectorbuildstep.models.sbom.Components.Component;
 import io.jenkins.plugins.awsinspectorbuildstep.models.sbom.Components.Vulnerability;
 import io.jenkins.plugins.awsinspectorbuildstep.models.sbom.SbomData;
@@ -11,6 +12,7 @@ import org.mockito.MockitoAnnotations;
 import java.io.IOException;
 import java.util.List;
 
+import static io.jenkins.plugins.awsinspectorbuildstep.sbomparsing.SbomOutputParserTest.readStringFromFile;
 import static org.junit.Assert.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -25,10 +27,11 @@ public class CsvConverterTest {
     public void setUp() throws IOException {
         MockitoAnnotations.openMocks(this);
         String testFilePath = "test/data/SbomOutputExample.json";
-        sbomData = new SbomOutputParser(testFilePath).getSbom();
+        String sbom = readStringFromFile(testFilePath);
+        sbomData = new Gson().fromJson(sbom, SbomData.class);
         vulnerability = sbomData.getSbom().getVulnerabilities().get(0);
         component = sbomData.getSbom().getComponents().get(0);
-        csvConverter = new CsvConverter(sbomData);
+        csvConverter = new CsvConverter(System.out, sbomData);
     }
 
     @Test
