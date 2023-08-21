@@ -1,3 +1,14 @@
 /annotation-generated-src/
 /annotation-generated-tst/
+/work/
+/workspace/
+/.idea/
+/target/
+/build/
+/lib/
+
+.crux_dry_run_build
+
+
+
 

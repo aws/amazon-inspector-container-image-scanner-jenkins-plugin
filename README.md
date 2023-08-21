@@ -39,15 +39,19 @@ The Aquasec Scanner plugin is the basis of this POC: https://github.com/jenkinsc
 ```bash
 # file that defines plugin GUI
 <<<<<<< HEAD
+<<<<<<< HEAD
 src/main/resources/io/jenkins/plugins/amazoninspectorbuildstep/AmazonInspectorBuilder/config.jelly
 
 # plugin entry point
 src/main/java/io/jenkins/plugins/amazoninspectorbuildstep/AmazonInspectorBuilder.java
 =======
 src/main/resources/io/jenkins/plugins/awsinspectorbuildstep/AwsInspectorBuilder/config.jelly
+=======
+src/main/resources/io/jenkins/plugins/awsinspectorbuildstep/AmazonInspectorBuilder/config.jelly
+>>>>>>> 373437b (Code Cleanup & Refactor)
 
 # plugin source file
-src/main/java/io/jenkins/plugins/awsinspectorbuildstep/AwsInspectorBuilder.java
+src/main/java/io/jenkins/plugins/awsinspectorbuildstep/AmazonInspectorBuilder.java
 
 # sample result files
 results/
