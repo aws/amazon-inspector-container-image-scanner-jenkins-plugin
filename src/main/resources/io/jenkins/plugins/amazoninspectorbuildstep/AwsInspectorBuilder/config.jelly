@@ -1,0 +1,62 @@
+
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+    <f:block>
+        <f:entry field="accessKeyId" title="Access Key">
+            <f:select />
+        </f:entry>
+
+        <f:entry field="secretKeyId" title="Secret Key">
+            <f:select />
+        </f:entry>
+
+        <f:entry field="sessionTokenId" title="Session Token">
+            <f:select />
+        </f:entry>
+    </f:block>
+
+    <f:entry field="awsRegion" title="AWS Region">
+        <f:select />
+    </f:entry>
+
+    <f:entry title="Image Id" field="archivePath">
+        <f:textbox placeholder="/Users/user/Downloads/alpine.tar or alpine:latest" />
+    </f:entry>
+
+
+    <f:entry>
+        <!-- Add CSS to align the textboxes horizontally -->
+        <style>
+            .horizontal-textboxes {
+            display: flex;
+            align-items: center;
+            }
+            .horizontal-textboxes .textbox {
+            margin-right: 5%;
+            }
+        </style>
+        <f:block>
+            <b>Maximum Vulnerabilities Allowed in Validated SBOM:</b>
+        </f:block>
+        <div class="horizontal-textboxes">
+            <div class="textbox">
+                <strong>Maximum Critical</strong>
+                <br></br>
+                <f:textbox default="0" field="countCritical" />
+            </div>
+            <div class="textbox">
+                <strong>Maximum High</strong>
+                <f:textbox default="0" field="countHigh" />
+            </div>
+            <div class="textbox">
+                <strong>Maximum Medium</strong>
+                <f:textbox default="5" field="countMedium" />
+            </div>
+            <div class="textbox">
+                <strong>Maximum Low</strong>
+                <f:textbox default="10" field="countLow" />
+            </div>
+            <!-- Add more textboxes as needed -->
+        </div>
+    </f:entry>
+</j:jelly>
