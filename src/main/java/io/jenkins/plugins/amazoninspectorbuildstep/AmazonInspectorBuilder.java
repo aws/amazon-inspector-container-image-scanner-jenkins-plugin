@@ -27,8 +27,10 @@ import io.jenkins.plugins.amazoninspectorbuildstep.sbomparsing.Severity;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -111,7 +113,8 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
             String bomermanPath = getBomermanPath(Jenkins.getInstanceOrNull().get());
             args.add(bomermanPath, "container", "--image", archivePath);
-            String artifactName = String.format("%s-bomerman_results-out.json", build.getDisplayName());
+            String artifactName = String.format("%s-%s-bomerman_results-out.json", build.getParent().getDisplayName(),
+                    build.getDisplayName()).replaceAll("[ #]", "");
 
             FilePath target = new FilePath(workspace, artifactName);
 
@@ -127,14 +130,22 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             listener.getLogger().println("Trasnlating to sbomdata");
             String responseData = requests.requestSbom();
             SbomData sbomData = new Gson().fromJson(responseData, SbomData.class);
+            String sbomFileName = String.format("%s-%s-json.json", build.getParent().getDisplayName(),
+                    build.getDisplayName()).replaceAll("[ #]", "");
+            String sbomPath = String.format("%s/%s", build.getRootDir().getAbsolutePath(), sbomFileName);
+            writeSbomDataToFile(responseData, sbomPath);
 
             CsvConverter converter = new CsvConverter(listener.getLogger(), sbomData);
-            String fileName = String.format("%scsv.csv", build.getDisplayName());
-            converter.convert(String.format("%s/%s", build.getRootDir().getAbsolutePath(), fileName));
+            String csvFileName = String.format("%s-%s-csv.csv", build.getParent().getDisplayName(),
+                    build.getDisplayName()).replaceAll("[ #]", "");;
+            String csvPath = String.format("%s/%s", build.getRootDir().getAbsolutePath(), csvFileName);
+            converter.convert(csvPath);
 
             SbomOutputParser parser = new SbomOutputParser(sbomData);
             Results results = parser.parseSbom();
 
+            listener.getLogger().printf("CSV Output File: %s\n", csvPath);
+            listener.getLogger().printf("JSON Output File: %s\n", sbomPath);
             boolean doesBuildPass = !doesBuildFail(results.getCounts());
             listener.getLogger().printf("Results: %s\nDoes Build Pass: %s\n",
                     results, doesBuildPass);
@@ -185,6 +196,16 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         }
 
         return -1;
+    }
+
+    public static void writeSbomDataToFile(String sbomData, String outputFilePath) {
+        try (PrintWriter writer = new PrintWriter(new FileWriter(outputFilePath))) {
+            for (String line : sbomData.split("\n")) {
+                writer.println(line);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public static String processBomermanFile(PrintStream logger, File outFile) throws IOException {
