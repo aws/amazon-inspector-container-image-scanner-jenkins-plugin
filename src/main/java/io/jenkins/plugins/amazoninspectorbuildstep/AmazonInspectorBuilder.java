@@ -1,5 +1,6 @@
 package io.jenkins.plugins.amazoninspectorbuildstep;
 
+import com.amazonaws.auth.AWSSessionCredentials;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.google.gson.Gson;
 import hudson.EnvVars;
@@ -45,6 +46,7 @@ import software.amazon.awssdk.regions.Region;
 
 public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     private final String archivePath;
+    private final String iamRole;
     private final String accessKeyId;
     private final String secretKeyId;
     private final String sessionTokenId;
@@ -56,9 +58,11 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     private Job<?, ?> job;
 
     @DataBoundConstructor
-    public AmazonInspectorBuilder(String archivePath, String accessKeyId, String secretKeyId, String sessionTokenId,
-                                  String awsRegion, int countCritical, int countHigh, int countMedium, int countLow) {
+    public AmazonInspectorBuilder(String archivePath, String iamRole, String accessKeyId, String secretKeyId,
+                                  String sessionTokenId, String awsRegion, int countCritical,
+                                  int countHigh, int countMedium, int countLow) {
         this.archivePath = archivePath;
+        this.iamRole = iamRole;
         this.accessKeyId = accessKeyId;
         this.secretKeyId = secretKeyId;
         this.sessionTokenId = sessionTokenId;
@@ -118,11 +122,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
             String sbom = processBomermanFile(listener.getLogger(), outFile);
 
-            CredentialsHelper provider = new CredentialsHelper(listener.getLogger(), build.getParent(), "us-east-1");
-            AwsBasicCredentials basicCreds = AwsBasicCredentials.create(provider.getKeyFromStore(accessKeyId),
-                    provider.getKeyFromStore(secretKeyId));
-            Requests requests = new Requests(basicCreds, provider.getKeyFromStore(sessionTokenId),
-                    sbom, listener.getLogger(), awsRegion);
+            Requests requests = createRequestsHelper(listener.getLogger(), build.getParent(), sbom);
 
             listener.getLogger().println("Trasnlating to sbomdata");
             String responseData = requests.requestSbom();
@@ -149,12 +149,32 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             listener.getLogger().println("Plugin execution ran into an error and is being aborted!");
             build.setResult(Result.ABORTED);
             listener.getLogger().println("Exception:" + e);
-            e.printStackTrace();
+            e.printStackTrace(listener.getLogger());
         } finally {
             if (printStream != null) {
                 printStream.close();
             }
         }
+    }
+
+    private Requests createRequestsHelper(PrintStream logger, Job<?,?> parent, String sbom) {
+        CredentialsHelper provider = new CredentialsHelper(logger, parent, "us-east-1");
+
+        AwsBasicCredentials basicCreds = null;
+        String sessionToken = null;
+
+        if (iamRole != null) {
+            AWSSessionCredentials sessionCredentials = provider.getCredentialsFromRole(iamRole);
+            basicCreds = AwsBasicCredentials.create(sessionCredentials.getAWSAccessKeyId(),
+                    sessionCredentials.getAWSSecretKey());
+            sessionToken = sessionCredentials.getSessionToken();
+        } else {
+            basicCreds = AwsBasicCredentials.create(provider.getKeyFromStore(accessKeyId),
+                    provider.getKeyFromStore(secretKeyId));
+            sessionToken = provider.getKeyFromStore(this.sessionTokenId);
+        }
+
+        return new Requests(basicCreds, sessionToken, sbom, logger, awsRegion);
     }
 
     public static int findBomermanStartLineIndex(List<String> list) {
@@ -233,7 +253,6 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
             return items;
         }
-
 
         @Override
         public boolean isApplicable(Class<? extends AbstractProject> aClass) {
