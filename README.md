@@ -4,6 +4,35 @@
 
 Jenkins Build Step plugin that will run a Trivy scan to produce a CycloneDX SBOM of the specified container image.
 
+## AWS Authentication
+
+To interact with the SBOM api, AWS credentials must be provided. The allowed authentication methods are via an IAM Role
+arn or temporary credentials.
+
+### IAM Role
+This is the reccomended authentication method.
+
+To use an IAM Role, simply fill in "IAM Role" with a valid AWS IAM Role ARN during build step configuration.
+
+The arn should be in the form `arn:aws:iam::{ACCOUNT_ID}:role/{ROLE_NAME}`.
+
+### Temporary Credentials
+
+To authenticate with temporary credentials:
+
+1. Find your access key, secret key, and session token.
+2. In the Jenkins dashboard home page, go to Credentials.
+3. Select a credentials store of your choice.
+4. Click "Add Credentials"
+5. In the "Kind" dropdown, select "Secret text"
+6. In the "ID" box, enter the ID you would like to use to refer to the credentials by.
+7. In the "Secret" box, enter your credential value.
+8. Optionally, enter a description for your key.
+9. During build step configuration of the plugin, under "AWS Credential Type Selection",
+    select the respective credential IDs from the dropdown boxes.
+
+Note: These credentials will expire, the secret value of each credential will need to be updated occasionally.
+
 ## Developing a Jenkins Plugin
 To get started, use the Jenkins plugin tutorial (https://www.jenkins.io/doc/developer/tutorial/) to create a plugin skeleton.
 
