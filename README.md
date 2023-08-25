@@ -33,25 +33,13 @@ To authenticate with temporary credentials:
 
 Note: These credentials will expire, the secret value of each credential will need to be updated occasionally.
 
-## Developing a Jenkins Plugin
-To get started, use the Jenkins plugin tutorial (https://www.jenkins.io/doc/developer/tutorial/) to create a plugin skeleton.
-
-The tutorial is not great at explaining how the plugin works, but the following references were helpful:  
-https://www.velotio.com/engineering-blog/jenkins-plugin-development  
-https://www.baeldung.com/jenkins-custom-plugin
-
-The Aquasec Scanner plugin is the basis of this POC: https://github.com/jenkinsci/aqua-security-scanner-plugin
-
 #### Files of Interest
 ```bash
 # file that defines plugin GUI
-src/main/resources/io/jenkins/plugins/awsinspectorbuildstep/AmazonInspectorBuilder/config.jelly
+src/main/resources/io/jenkins/plugins/amazoninspectorbuildstep/AmazonInspectorBuilder/config.jelly
 
 # plugin source file
-src/main/java/io/jenkins/plugins/awsinspectorbuildstep/AmazonInspectorBuilder.java
-
-# sample result files
-results/
+src/main/java/io/jenkins/plugins/amazoninspectorbuildstep/AmazonInspectorBuilder.java
 ```
 
 ## Running the POC
@@ -59,7 +47,7 @@ results/
 1. Install Trivy on your development system (https://github.com/aquasecurity/trivy#quick-start)
 2. Install Docker on your development system (to test the local image option)
 
-### Configuring & Running the Plugin
+### Configuring & Running the Plugin Locally
 The plugin currently supports three types of container images: local, remote, and Docker archive.
 ```bash
 # to start a Jenkins instance with the plugin
@@ -84,3 +72,8 @@ mvn hpi:run
 8. Click the "Build Now" button
 9. Check "<project dir>/work/workspace/<build job name>" for the SBOM file
 ```
+
+## Copyright & License
+Amazon Inspector CICD Plugin is Copyright (c) Amazon. All Rights Reserved.
+
+Permission to modify and redistribute is granted under the terms of the Apache License 2.0
