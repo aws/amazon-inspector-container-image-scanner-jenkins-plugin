@@ -16,6 +16,10 @@ To use an IAM Role, simply fill in "IAM Role" with a valid AWS IAM Role ARN duri
 
 The arn should be in the form `arn:aws:iam::{ACCOUNT_ID}:role/{ROLE_NAME}`.
 
+The Role must provide the following permissions: `eevee:ScanCycloneDxSbom`
+
+Some or all of the permissions may not be shown as valid options.
+
 ### Temporary Credentials
 
 To authenticate with temporary credentials:
