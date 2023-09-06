@@ -37,14 +37,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import io.jenkins.plugins.amazoninspectorbuildstep.utils.InspectorRegions;
 import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildStep;
 import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.plaincredentials.StringCredentials;
 import org.kohsuke.stapler.DataBoundConstructor;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
-import software.amazon.awssdk.regions.Region;
 
 import static io.jenkins.plugins.amazoninspectorbuildstep.utils.InspectorRegions.INSPECTOR_REGIONS;
 
@@ -279,6 +277,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             ListBoxModel items = new ListBoxModel();
 
             items.add("Select AWS Region", null);
+
             for (String region : INSPECTOR_REGIONS) {
                 items.add(region, region);
             }
