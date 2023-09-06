@@ -29,5 +29,5 @@ public class InspectorRegions {
                 "af-south-1",
                 "us-iso-west-1",
                 "eu-central-2"
-        );
+    );
 }
