@@ -37,6 +37,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import io.jenkins.plugins.amazoninspectorbuildstep.utils.InspectorRegions;
 import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildStep;
 import org.jenkinsci.Symbol;
@@ -44,6 +45,8 @@ import org.jenkinsci.plugins.plaincredentials.StringCredentials;
 import org.kohsuke.stapler.DataBoundConstructor;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.regions.Region;
+
+import static io.jenkins.plugins.amazoninspectorbuildstep.utils.InspectorRegions.INSPECTOR_REGIONS;
 
 
 public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
@@ -57,18 +60,22 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     private final int countHigh;
     private final int countMedium;
     private final int countLow;
+    private final boolean csvOutput;
+    private final boolean jsonOutput;
     private Job<?, ?> job;
 
     @DataBoundConstructor
     public AmazonInspectorBuilder(String archivePath, String iamRole, String accessKeyId, String secretKeyId,
-                                  String sessionTokenId, String awsRegion, int countCritical,
-                                  int countHigh, int countMedium, int countLow) {
+                                  String sessionTokenId, String awsRegion, boolean csvOutput, boolean jsonOutput,
+                                  int countCritical, int countHigh, int countMedium, int countLow) {
         this.archivePath = archivePath;
         this.iamRole = iamRole;
         this.accessKeyId = accessKeyId;
         this.secretKeyId = secretKeyId;
         this.sessionTokenId = sessionTokenId;
         this.awsRegion = awsRegion;
+        this.csvOutput = csvOutput;
+        this.jsonOutput = jsonOutput;
         this.countCritical = countCritical;
         this.countHigh = countHigh;
         this.countMedium = countMedium;
@@ -127,16 +134,16 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
             Requests requests = createRequestsHelper(listener.getLogger(), build.getParent(), sbom);
 
-            listener.getLogger().println("Trasnlating to sbomdata");
+            listener.getLogger().println("Translating to SBOM data.");
             String responseData = requests.requestSbom();
             SbomData sbomData = new Gson().fromJson(responseData, SbomData.class);
-            String sbomFileName = String.format("%s-%s-json.json", build.getParent().getDisplayName(),
+            String sbomFileName = String.format("%s-%s.json", build.getParent().getDisplayName(),
                     build.getDisplayName()).replaceAll("[ #]", "");
             String sbomPath = String.format("%s/%s", build.getRootDir().getAbsolutePath(), sbomFileName);
             writeSbomDataToFile(responseData, sbomPath);
 
             CsvConverter converter = new CsvConverter(listener.getLogger(), sbomData);
-            String csvFileName = String.format("%s-%s-csv.csv", build.getParent().getDisplayName(),
+            String csvFileName = String.format("%s-%s.csv", build.getParent().getDisplayName(),
                     build.getDisplayName()).replaceAll("[ #]", "");;
             String csvPath = String.format("%s/%s", build.getRootDir().getAbsolutePath(), csvFileName);
             converter.convert(csvPath);
@@ -144,8 +151,14 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             SbomOutputParser parser = new SbomOutputParser(sbomData);
             Results results = parser.parseSbom();
 
-            listener.getLogger().printf("CSV Output File: %s\n", csvPath);
-            listener.getLogger().printf("JSON Output File: %s\n", sbomPath);
+            if (csvOutput) {
+                listener.getLogger().printf("CSV Output File: file://%s\n", csvPath.replace(" ", "%20"));
+            }
+
+            if (jsonOutput) {
+                listener.getLogger().printf("JSON Output File: file://%s\n", sbomPath.replace(" ", "%20"));
+            }
+
             boolean doesBuildPass = !doesBuildFail(results.getCounts());
             listener.getLogger().printf("Results: %s\nDoes Build Pass: %s\n",
                     results, doesBuildPass);
@@ -174,12 +187,14 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         AwsBasicCredentials basicCreds = null;
         String sessionToken = null;
 
-        if (iamRole != null) {
+        if (iamRole != null && iamRole.length() > 0) {
+            logger.printf("Using IAM Role %s\n", iamRole);
             AWSSessionCredentials sessionCredentials = provider.getCredentialsFromRole(iamRole);
             basicCreds = AwsBasicCredentials.create(sessionCredentials.getAWSAccessKeyId(),
                     sessionCredentials.getAWSSecretKey());
             sessionToken = sessionCredentials.getSessionToken();
         } else {
+            logger.println("Using temporary credentials.");
             basicCreds = AwsBasicCredentials.create(provider.getKeyFromStore(accessKeyId),
                     provider.getKeyFromStore(secretKeyId));
             sessionToken = provider.getKeyFromStore(this.sessionTokenId);
@@ -210,9 +225,6 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
     public static String processBomermanFile(PrintStream logger, File outFile) throws IOException {
         String rawFileContent = new String(new FileInputStream(outFile).readAllBytes(), StandardCharsets.UTF_8);
-
-        logger.println("Bomerman Output: ");
-        logger.println(rawFileContent);
 
         String[] splitRawFileContent = rawFileContent.split("\n");
         List<String> lines = new ArrayList<>();
@@ -266,10 +278,9 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         public ListBoxModel doFillAwsRegionItems() {
             ListBoxModel items = new ListBoxModel();
 
-            List<Region> regions = Region.regions();
             items.add("Select AWS Region", null);
-            for (Region region : Region.regions()) {
-                items.add(region.id(), region.id());
+            for (String region : INSPECTOR_REGIONS) {
+                items.add(region, region);
             }
 
             return items;

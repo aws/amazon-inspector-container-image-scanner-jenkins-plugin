@@ -32,6 +32,11 @@
         <f:select />
     </f:entry>
 
+    <f:checkbox title="Output CSV at end of build." field="csvOutput"></f:checkbox>
+    <br/>
+    <f:checkbox title="Output SBOM json at end of build." field="jsonOutput"></f:checkbox>
+    <br/>
+
     <strong>Image Id</strong>
     <f:entry field="archivePath">
         <f:textbox placeholder="/Users/user/Downloads/alpine.tar or alpine:latest" />
@@ -49,7 +54,7 @@
             }
         </style>
         <f:block>
-            <b>Maximum Vulnerabilities Allowed in Validated SBOM:</b>
+            <b>Maximum Vulnerabilities Allowed in Image:</b>
         </f:block>
         <div class="horizontal-textboxes">
             <div class="textbox">

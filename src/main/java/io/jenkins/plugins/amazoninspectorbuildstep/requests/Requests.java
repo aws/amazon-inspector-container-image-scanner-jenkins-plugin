@@ -30,7 +30,7 @@ public class Requests {
 
     public String requestSbom() throws RetriesExceededLimitException, InterruptedException, URISyntaxException,
             IOException {
-        logger.println("Checking sbom for vulnerabilities.");
+        logger.println("Checking SBOM for vulnerabilities.");
 
         SdkHttpFullRequest unsignedRequest = new UnsignedRequestHelper(logger, region, sessionToken, sbomData)
                 .getRequest();
@@ -61,7 +61,7 @@ public class Requests {
             } else {
                 logger.printf("Request failed - %s: %s\n", response.httpResponse().statusCode(),
                         response.httpResponse().statusText().orElse("No Status Text"));
-                logger.printf("Response Body: \n%s", responseBody);
+                logger.printf("Response Body: \n%s\n", responseBody);
 
                 retryWaitHandler.sleep();
             }

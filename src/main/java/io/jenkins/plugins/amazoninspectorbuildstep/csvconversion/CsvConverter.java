@@ -63,7 +63,13 @@ public class CsvConverter {
                 "Package Fixed Version", "Exploit Available");
         dataLines.add(headers);
 
-        for (Vulnerability vulnerability : sbomData.getSbom().getVulnerabilities()) {
+        List<Vulnerability> vulnerabilities = sbomData.getSbom().getVulnerabilities();
+
+        if (vulnerabilities == null) {
+            return dataLines;
+        }
+
+        for (Vulnerability vulnerability : vulnerabilities) {
             for (Affect componentRef : vulnerability.getAffects()) {
                 CsvData csvData = buildCsvData(vulnerability, componentMap.get(componentRef.getRef()));
 
@@ -75,8 +81,6 @@ public class CsvConverter {
                 dataLines.add(dataLine);
             }
         }
-
-        logger.println(dataLines);
 
         return dataLines;
     }
@@ -104,7 +108,7 @@ public class CsvConverter {
 
         return vulnerability.getProperties().stream()
                 .filter(v -> v.getName().equals(exploitAvailableName))
-                .findFirst().get().getValue();
+                .findFirst().orElse(Property.builder().name(exploitAvailableName).value("").build()).getValue();
     }
 
     @VisibleForTesting
