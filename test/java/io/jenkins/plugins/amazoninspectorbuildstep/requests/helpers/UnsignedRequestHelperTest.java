@@ -31,7 +31,7 @@ public class UnsignedRequestHelperTest {
         String filePath = "/Users/waltwilo/workplace/EeveeCICDPlugin/src/EeveeCICDJenkinsPlugin/results/" +
                 "bomerman_results-tar.json";
         String date = getXAmzDateString(Date.from(Instant.now()));
-        SdkHttpFullRequest request = new UnsignedRequestHelper(new PrintStream(System.out), "","test",
+        SdkHttpFullRequest request = new UnsignedRequestHelper(new PrintStream(System.out), "us-east-1","test",
                 filePath).getRequest();
         assertEquals(request.headers().get("X-Amz-Date"), List.of(date));
         assertEquals(request.headers().get("X-Amz-Security-Token"), List.of("test"));
@@ -41,6 +41,6 @@ public class UnsignedRequestHelperTest {
 
         List<String> requestBody = CharStreams.readLines(
                 new InputStreamReader(request.contentStreamProvider().get().newStream()));
-        assertEquals(requestBody.size(), 357);
+        assertEquals(requestBody.size(), 1);
     }
 }

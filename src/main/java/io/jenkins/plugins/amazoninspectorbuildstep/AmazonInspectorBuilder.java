@@ -27,8 +27,10 @@ import io.jenkins.plugins.amazoninspectorbuildstep.sbomparsing.Severity;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
@@ -36,6 +38,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 
 import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildStep;
@@ -43,7 +47,6 @@ import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.plaincredentials.StringCredentials;
 import org.kohsuke.stapler.DataBoundConstructor;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
-
 import static io.jenkins.plugins.amazoninspectorbuildstep.utils.InspectorRegions.INSPECTOR_REGIONS;
 
 
@@ -60,6 +63,9 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     private final int countLow;
     private final boolean csvOutput;
     private final boolean jsonOutput;
+    private final static String BOMERMAN_JAR_PATH_FORMAT =
+            "%s/plugins/aws-inspector-scanner/WEB-INF/lib/aws-inspector-scanner.jar";
+    private final static String BOMERMAN_SRC_PATH_FORMAT = "%s/../src/main/resources/bomerman";
     private Job<?, ?> job;
 
     @DataBoundConstructor
@@ -78,11 +84,6 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         this.countHigh = countHigh;
         this.countMedium = countMedium;
         this.countLow = countLow;
-    }
-
-    private String getBomermanPath(Jenkins jenkins) {
-        String jenkinsRoot = jenkins.getInstanceOrNull().get().getRootDir().getAbsolutePath();
-        return String.format("%s/../bomerman15", jenkinsRoot);
     }
 
     private boolean doesBuildFail(Map<Severity, Integer> counts) {
@@ -108,6 +109,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     @Override
     public void perform(Run<?, ?> build, FilePath workspace, EnvVars env, Launcher launcher, TaskListener listener)
             throws IOException {
+
         File outFile = new File(build.getRootDir(), "out");
         this.job = build.getParent();
 
@@ -116,13 +118,17 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         try {
             ArgumentListBuilder args = new ArgumentListBuilder();
 
-            String bomermanPath = getBomermanPath(Jenkins.getInstanceOrNull().get());
+            String jenkinsRootPath = Jenkins.getInstanceOrNull().get().getRootDir().getAbsolutePath();
+            String bomermanPath = getBomermanPath(jenkinsRootPath);
+
+            if (isJarPath(jenkinsRootPath)) {
+                bomermanPath = copyBomermanToDir(bomermanPath, jenkinsRootPath);
+            }
+
             args.add(bomermanPath, "container", "--image", archivePath);
             String artifactName = String.format("%s-%s-bomerman_results-out.json", build.getParent().getDisplayName(),
                     build.getDisplayName()).replaceAll("[ #]", "");
-
             FilePath target = new FilePath(workspace, artifactName);
-
             listener.getLogger().println(args);
             startProcess(launcher, args, printStream);
             FilePath outFilePath = new FilePath(outFile);
@@ -177,6 +183,52 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                 printStream.close();
             }
         }
+    }
+
+    private String getBomermanPath(String jenkinsRootPath) {
+        String bomermanSrcPath = String.format(BOMERMAN_SRC_PATH_FORMAT, jenkinsRootPath);
+        String bomermanJarPath = String.format(BOMERMAN_JAR_PATH_FORMAT, jenkinsRootPath);
+
+        if (new File(bomermanSrcPath).exists()) {
+            System.out.println("Using Src path");
+            return bomermanSrcPath;
+        }
+
+        return bomermanJarPath;
+    }
+
+    private boolean isJarPath(String jenkinsRootPath) {
+        String bomermanSrcPath = String.format(BOMERMAN_SRC_PATH_FORMAT, jenkinsRootPath);
+        String bomermanJarPath = String.format(BOMERMAN_JAR_PATH_FORMAT, jenkinsRootPath);
+
+        if (new File(bomermanSrcPath).exists()) {
+            return false;
+        }
+
+        if (new File(bomermanJarPath).exists()) {
+            return true;
+        }
+
+        throw new RuntimeException("Bomerman does not exist in either resources folder or top level of jar.");
+    }
+
+    public static String copyBomermanToDir(String srcPath, String destDirPath) throws IOException {
+        File tempFile = new File(destDirPath, "bomerman");
+
+        JarFile jarFile = new JarFile(srcPath);
+        JarEntry entry = jarFile.getJarEntry("bomerman");
+        try (InputStream inputStream = jarFile.getInputStream(entry);
+             FileOutputStream outputStream = new FileOutputStream(tempFile)) {
+            byte[] buffer = new byte[4096];
+            int bytesRead;
+            while ((bytesRead = inputStream.read(buffer)) != -1) {
+                outputStream.write(buffer, 0, bytesRead);
+            }
+        }
+
+        tempFile.setExecutable(true);
+
+        return tempFile.getAbsolutePath();
     }
 
     private Requests createRequestsHelper(PrintStream logger, Job<?,?> parent, String sbom) {
