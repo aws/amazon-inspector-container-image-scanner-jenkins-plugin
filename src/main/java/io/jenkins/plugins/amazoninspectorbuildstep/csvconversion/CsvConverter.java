@@ -73,6 +73,8 @@ public class CsvConverter {
             for (Affect componentRef : vulnerability.getAffects()) {
                 CsvData csvData = buildCsvData(vulnerability, componentMap.get(componentRef.getRef()));
 
+                System.out.println(csvData.getDescription());
+
                 List<String> dataLine = List.of(csvData.getCve(), csvData.getSeverity(),
                         csvData.getDescription(), csvData.getPackageName(),
                         csvData.getPackageInstalledVersion(), csvData.getPackageFixedVersion(),
@@ -93,7 +95,7 @@ public class CsvConverter {
         return CsvData.builder()
                 .cve(vulnerability.getId())
                 .severity(getSeverity(vulnerability))
-                .description(String.format("\"%s\"", vulnerability.getDescription()))
+                .description(String.format("\"%s\"", vulnerability.getDescription().replace(",", ".")))
                 .packageName(component.getName())
                 .packageFixedVersion(fixedVersion)
                 .packageInstalledVersion(installedVersion)
@@ -104,8 +106,6 @@ public class CsvConverter {
     @VisibleForTesting
     protected String getExploitAvailable(Vulnerability vulnerability) {
         final String exploitAvailableName = "amazon:inspector:sbom_scanner:exploit_available";
-        vulnerability.getProperties().forEach(x -> logger.println(x.getName()));
-
         return vulnerability.getProperties().stream()
                 .filter(v -> v.getName().equals(exploitAvailableName))
                 .findFirst().orElse(Property.builder().name(exploitAvailableName).value("").build()).getValue();

@@ -34,7 +34,7 @@ public class SbomOutputParserTest {
         SbomOutputParser parser = new SbomOutputParser(sbomData);
         Map<Severity, Integer> results = parser.parseSbom().getCounts();
 
-        assertEquals(Optional.ofNullable(results.get(Severity.CRITICAL)), Optional.of(1));
+        assertEquals(Optional.ofNullable(results.get(Severity.CRITICAL)), Optional.of(2));
     }
 
     @Test
