@@ -25,9 +25,11 @@ import io.jenkins.plugins.amazoninspectorbuildstep.sbomparsing.Results;
 import io.jenkins.plugins.amazoninspectorbuildstep.sbomparsing.SbomOutputParser;
 import io.jenkins.plugins.amazoninspectorbuildstep.sbomparsing.Severity;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
@@ -47,6 +49,8 @@ import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.plaincredentials.StringCredentials;
 import org.kohsuke.stapler.DataBoundConstructor;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+
+import static io.jenkins.plugins.amazoninspectorbuildstep.utils.BomermanProcessing.processBomermanFile;
 import static io.jenkins.plugins.amazoninspectorbuildstep.utils.InspectorRegions.INSPECTOR_REGIONS;
 
 
@@ -253,16 +257,6 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         return new Requests(basicCreds, sessionToken, sbom, logger, awsRegion);
     }
 
-    public static int findBomermanStartLineIndex(List<String> list) {
-        for (int i = 0; i < list.size(); i++) {
-            if (list.get(i).length() > 0 && list.get(i).charAt(0) == '{') {
-                return i;
-            }
-        }
-
-        return -1;
-    }
-
     public static void writeSbomDataToFile(String sbomData, String outputFilePath) {
         try (PrintWriter writer = new PrintWriter(new FileWriter(outputFilePath))) {
             for (String line : sbomData.split("\n")) {
@@ -271,22 +265,6 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    public static String processBomermanFile(PrintStream logger, File outFile) throws IOException {
-        String rawFileContent = new String(new FileInputStream(outFile).readAllBytes(), StandardCharsets.UTF_8);
-
-        String[] splitRawFileContent = rawFileContent.split("\n");
-        List<String> lines = new ArrayList<>();
-        for (String line : splitRawFileContent) {
-            lines.add(line);
-        }
-
-        lines = lines.subList(findBomermanStartLineIndex(lines), lines.size());
-        lines.add("\n}");
-        lines.add(0, "{\n\"output\": \"DEFAULT\",\n\"sbom\":");
-
-        return String.join("\n", lines);
     }
 
     @Symbol("Amazon Inspector")
