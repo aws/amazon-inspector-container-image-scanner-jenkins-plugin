@@ -235,6 +235,8 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         return tempFile.getAbsolutePath();
     }
 
+
+
     private Requests createRequestsHelper(PrintStream logger, Job<?,?> parent, String sbom) {
         CredentialsHelper provider = new CredentialsHelper(logger, parent, "us-east-1");
 
