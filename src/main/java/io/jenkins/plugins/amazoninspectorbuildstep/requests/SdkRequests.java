@@ -1,64 +1,55 @@
 package io.jenkins.plugins.amazoninspectorbuildstep.requests;
 
-import com.amazonaws.auth.AWSSessionCredentials;
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicSessionCredentials;
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
-import com.amazonaws.auth.STSAssumeRoleSessionCredentialsProvider;
-import com.amazonaws.client.builder.AwsClientBuilder;
-import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
+import lombok.AllArgsConstructor;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
-import software.amazon.awssdk.core.document.Document;
 import software.amazon.awssdk.http.SdkHttpClient;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
+import software.amazon.awssdk.protocols.json.internal.unmarshall.document.DocumentUnmarshaller;
+import software.amazon.awssdk.protocols.jsoncore.JsonNodeParser;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.inspectorscan.InspectorScanClient;
 import software.amazon.awssdk.services.inspectorscan.model.ScanSbomRequest;
 import software.amazon.awssdk.services.inspectorscan.model.ScanSbomResponse;
 import software.amazon.awssdk.services.sts.StsClient;
-import software.amazon.awssdk.services.sts.StsClientBuilder;
 import software.amazon.awssdk.services.sts.auth.StsAssumeRoleCredentialsProvider;
 import software.amazon.awssdk.services.sts.model.AssumeRoleRequest;
+import software.amazon.awssdk.core.document.Document;
 
 import java.net.URI;
 import java.net.URISyntaxException;
 
+@AllArgsConstructor
 public class SdkRequests {
-    public SdkRequests() {
-    }
+    String region;
+    String roleArn;
 
-    public String requestSbom(String sbom) throws URISyntaxException {
-
+    public Document requestSbom(String sbom) throws URISyntaxException {
         SdkHttpClient client = ApacheHttpClient.builder().build();
         InspectorScanClient scanClient = InspectorScanClient.builder()
-                .region(Region.of("us-east-1"))
+                .region(Region.of(region))
                 .httpClient(client)
                 .credentialsProvider(getCredentialProvider())
                 .endpointOverride(new URI("https://beta.us-east-1.waystar.inspector.aws.a2z.com"))
                 .build();
 
-        ScanSbomRequest request = ScanSbomRequest.builder().sbom(Document.fromString(sbom)).build();
+        JsonNodeParser jsonNodeParser = JsonNodeParser.create();
+        DocumentUnmarshaller unmarshaller = new DocumentUnmarshaller();
+        Document document = jsonNodeParser.parse(sbom).visit(unmarshaller);
+
+        ScanSbomRequest request = ScanSbomRequest.builder().sbom(document).build();
         ScanSbomResponse response = scanClient.scanSbom(request);
 
-        return response.sbom().asString();
+        return response.sbom();
     }
 
     public StsAssumeRoleCredentialsProvider getCredentialProvider() {
         StsClient stsClient = StsClient.builder()
-                .region(Region.of("us-east-1"))
+                .region(Region.of(region))
                 .credentialsProvider(ProfileCredentialsProvider.create())
                 .build();
 
-
         return StsAssumeRoleCredentialsProvider.builder().stsClient(stsClient).refreshRequest(AssumeRoleRequest.builder()
-                .roleArn("arn:aws:iam::414879708742:role/waltwilo-admin")
-                .roleSessionName("test").build()).build();
-    }
-
-    public static void main(String[] args) throws URISyntaxException {
-
-        String sbom = "{ SBOM CONTENT }";
-        SdkRequests requests = new SdkRequests();
-        requests.requestSbom(sbom);
+                .roleArn(roleArn)
+                .roleSessionName("inspectorscan").build()).build();
     }
 }

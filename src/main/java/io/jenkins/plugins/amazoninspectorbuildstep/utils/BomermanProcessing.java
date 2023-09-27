@@ -34,14 +34,16 @@ public class BomermanProcessing {
 
         String[] splitRawFileContent = rawFileContent.split("\n");
         List<String> lines = new ArrayList<>();
+        List<String> prependLines = new ArrayList<>();
         for (String line : splitRawFileContent) {
-            lines.add(line);
+            lines.add(line.replaceAll("time=.+file=.+\"", ""));
+        }
+
+        for (String line : prependLines) {
+            lines.add(0, line);
         }
 
         lines = lines.subList(findBomermanStartLineIndex(lines), findBomermanEndLineIndex(lines)+1);
-        lines.add(0, "{\n\"output\": \"DEFAULT\",\n\"sbom\":");
-        lines.add("}");
-
         return String.join("\n", lines);
     }
 }

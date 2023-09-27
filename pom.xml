@@ -82,6 +82,14 @@
             <version>1.12.535</version>
         </dependency>
 
+        <!-- https://mvnrepository.com/artifact/software.amazon.awssdk/core -->
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>core</artifactId>
+            <version>2.20.153</version>
+            <type>pom</type>
+        </dependency>
+
         <!-- https://mvnrepository.com/artifact/com.amazonaws/aws-java-sdk -->
         <dependency>
             <groupId>com.amazonaws</groupId>
@@ -108,6 +116,19 @@
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-sts</artifactId>
             <version>1.12.556</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/software.amazon.awssdk/aws-json-protocol -->
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>aws-json-protocol</artifactId>
+            <version>2.20.153</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>inspectorscan</artifactId>
+            <version>2.0</version>
         </dependency>
     </dependencies>
 
@@ -187,11 +208,34 @@
                                 <resource>
                                     <directory>${project.basedir}/src/main/resources</directory>
                                     <includes>
-                                        <include>bomerman15</include>
+                                        <include>bomerman</include>
+                                        <include>bomerman_linux_amd64</include>
                                     </includes>
                                 </resource>
                             </resources>
                         </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-install-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>install-external-non-maven-jar-MWS-Client-into-local-maven-repo</id>
+                        <phase>package</phase>
+                        <configuration>
+                            <groupId>com.amazonaws</groupId>
+                            <artifactId>inspectorscan</artifactId>
+                            <version>2.0</version>
+                            <file>${project.basedir}/src/main/resources/AwsJavaSdk-InspectorScan-2.0.jar</file>
+                            <packaging>jar</packaging>
+                            <generatePom>true</generatePom>
+                        </configuration>
+                        <goals>
+                            <goal>install-file</goal>
+                        </goals>
                     </execution>
                 </executions>
             </plugin>

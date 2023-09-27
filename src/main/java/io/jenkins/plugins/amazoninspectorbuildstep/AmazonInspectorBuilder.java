@@ -19,8 +19,10 @@ import hudson.tasks.BuildStepDescriptor;
 import hudson.util.ListBoxModel;
 import io.jenkins.plugins.amazoninspectorbuildstep.credentials.CredentialsHelper;
 import io.jenkins.plugins.amazoninspectorbuildstep.csvconversion.CsvConverter;
+import io.jenkins.plugins.amazoninspectorbuildstep.models.sbom.Sbom;
 import io.jenkins.plugins.amazoninspectorbuildstep.models.sbom.SbomData;
 import io.jenkins.plugins.amazoninspectorbuildstep.requests.Requests;
+import io.jenkins.plugins.amazoninspectorbuildstep.requests.SdkRequests;
 import io.jenkins.plugins.amazoninspectorbuildstep.sbomparsing.Results;
 import io.jenkins.plugins.amazoninspectorbuildstep.sbomparsing.SbomOutputParser;
 import io.jenkins.plugins.amazoninspectorbuildstep.sbomparsing.Severity;
@@ -139,12 +141,14 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             outFilePath.copyTo(target);
 
             String sbom = processBomermanFile(listener.getLogger(), outFile);
-
-            Requests requests = createRequestsHelper(listener.getLogger(), build.getParent(), sbom);
+            SdkRequests requests = new SdkRequests(awsRegion, iamRole);
 
             listener.getLogger().println("Translating to SBOM data.");
-            String responseData = requests.requestSbom();
-            SbomData sbomData = new Gson().fromJson(responseData, SbomData.class);
+            String responseData = requests.requestSbom(sbom).toString();
+            System.out.println(responseData);
+
+
+            SbomData sbomData = SbomData.builder().sbom(new Gson().fromJson(responseData, Sbom.class)).build();
             String sbomFileName = String.format("%s-%s.json", build.getParent().getDisplayName(),
                     build.getDisplayName()).replaceAll("[ #]", "");
             String sbomPath = String.format("%s/%s", build.getRootDir().getAbsolutePath(), sbomFileName);
