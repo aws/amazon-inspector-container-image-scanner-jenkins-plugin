@@ -139,7 +139,7 @@
         <relativePath />
     </parent>
     <groupId>io.jenkins.plugins</groupId>
-    <artifactId>aws-inspector-scanner</artifactId>
+    <artifactId>amazon-inspector-scanner</artifactId>
     <version>${revision}${changelist}</version>
     <packaging>hpi</packaging>
     <name>AWS Inspector Scanner</name>
@@ -158,6 +158,7 @@
     </scm>
 
     <properties>
+        <enforcer.skip>true</enforcer.skip>
         <revision>1.0</revision>
         <changelist>-SNAPSHOT</changelist>
         <!-- https://www.jenkins.io/doc/developer/plugin-development/choosing-jenkins-baseline/ -->

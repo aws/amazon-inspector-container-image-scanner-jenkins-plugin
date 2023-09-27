@@ -34,13 +34,9 @@ public class BomermanProcessing {
 
         String[] splitRawFileContent = rawFileContent.split("\n");
         List<String> lines = new ArrayList<>();
-        List<String> prependLines = new ArrayList<>();
+
         for (String line : splitRawFileContent) {
             lines.add(line.replaceAll("time=.+file=.+\"", ""));
-        }
-
-        for (String line : prependLines) {
-            lines.add(0, line);
         }
 
         lines = lines.subList(findBomermanStartLineIndex(lines), findBomermanEndLineIndex(lines)+1);

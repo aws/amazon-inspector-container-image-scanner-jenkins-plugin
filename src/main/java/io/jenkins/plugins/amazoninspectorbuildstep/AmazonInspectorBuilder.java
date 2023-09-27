@@ -70,7 +70,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     private final boolean csvOutput;
     private final boolean jsonOutput;
     private final static String BOMERMAN_JAR_PATH_FORMAT =
-            "%s/plugins/aws-inspector-scanner/WEB-INF/lib/aws-inspector-scanner.jar";
+            "%s/plugins/amazon-inspector-scanner/WEB-INF/lib/amazon-inspector-scanner.jar";
     private final static String BOMERMAN_SRC_PATH_FORMAT = "%s/../src/main/resources/bomerman";
     private Job<?, ?> job;
 

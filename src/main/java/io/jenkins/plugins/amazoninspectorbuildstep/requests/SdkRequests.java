@@ -45,7 +45,6 @@ public class SdkRequests {
     public StsAssumeRoleCredentialsProvider getCredentialProvider() {
         StsClient stsClient = StsClient.builder()
                 .region(Region.of(region))
-                .credentialsProvider(ProfileCredentialsProvider.create())
                 .build();
 
         return StsAssumeRoleCredentialsProvider.builder().stsClient(stsClient).refreshRequest(AssumeRoleRequest.builder()
