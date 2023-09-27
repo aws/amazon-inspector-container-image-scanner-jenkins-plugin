@@ -73,7 +73,6 @@ public class CsvConverter {
             for (Affect componentRef : vulnerability.getAffects()) {
                 CsvData csvData = buildCsvData(vulnerability, componentMap.get(componentRef.getRef()));
 
-                System.out.println(csvData.getDescription());
 
                 List<String> dataLine = List.of(csvData.getCve(), csvData.getSeverity(),
                         csvData.getDescription(), csvData.getPackageName(),

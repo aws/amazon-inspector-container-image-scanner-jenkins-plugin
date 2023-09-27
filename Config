@@ -15,7 +15,6 @@ package.EeveeCICDJenkinsPlugin = {
     # be exported to other packages that build against you.
     dependencies = {
         1.0 = {
-            AwsJavaSdk-InspectorScan = 2.0;
         };
     };
 
