@@ -29,7 +29,7 @@ public class SdkRequests {
                 .region(Region.of(region))
                 .httpClient(client)
                 .credentialsProvider(getCredentialProvider())
-                .endpointOverride(new URI("https://beta.us-east-1.waystar.inspector.aws.a2z.com"))
+                .endpointOverride(new URI(String.format("https://prod.%s.waystar.inspector.aws.a2z.com", region)))
                 .build();
 
         JsonNodeParser jsonNodeParser = JsonNodeParser.create();
