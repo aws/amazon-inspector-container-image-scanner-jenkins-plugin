@@ -39,13 +39,6 @@
             <version>2.10.1</version>
         </dependency>
 
-        <!-- https://mvnrepository.com/artifact/com.github.docker-java/docker-java -->
-        <dependency>
-            <groupId>com.github.docker-java</groupId>
-            <artifactId>docker-java</artifactId>
-            <version>3.3.2</version>
-        </dependency>
-
         <!-- https://mvnrepository.com/artifact/org.jenkins-ci.plugins/plain-credentials -->
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
