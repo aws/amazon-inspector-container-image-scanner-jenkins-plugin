@@ -1,6 +1,5 @@
 package io.jenkins.plugins.amazoninspectorbuildstep;
 
-import com.amazonaws.auth.AWSSessionCredentials;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.google.gson.Gson;
 import hudson.EnvVars;
@@ -11,7 +10,6 @@ import hudson.model.AbstractProject;
 import hudson.model.Job;
 import hudson.model.Result;
 import hudson.security.ACL;
-import hudson.util.ArgumentListBuilder;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.tasks.Builder;
@@ -19,42 +17,35 @@ import hudson.tasks.BuildStepDescriptor;
 import hudson.util.ListBoxModel;
 import io.jenkins.plugins.amazoninspectorbuildstep.bomerman.BomermanJarHandler;
 import io.jenkins.plugins.amazoninspectorbuildstep.bomerman.BomermanRunner;
-import io.jenkins.plugins.amazoninspectorbuildstep.credentials.CredentialsHelper;
 import io.jenkins.plugins.amazoninspectorbuildstep.csvconversion.CsvConverter;
 import io.jenkins.plugins.amazoninspectorbuildstep.models.sbom.Sbom;
 import io.jenkins.plugins.amazoninspectorbuildstep.models.sbom.SbomData;
-import io.jenkins.plugins.amazoninspectorbuildstep.requests.Requests;
 import io.jenkins.plugins.amazoninspectorbuildstep.requests.SdkRequests;
 import io.jenkins.plugins.amazoninspectorbuildstep.sbomparsing.Results;
 import io.jenkins.plugins.amazoninspectorbuildstep.sbomparsing.SbomOutputParser;
 import io.jenkins.plugins.amazoninspectorbuildstep.sbomparsing.Severity;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
 
 import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildStep;
 import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.plaincredentials.StringCredentials;
 import org.kohsuke.stapler.DataBoundConstructor;
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 
-import static io.jenkins.plugins.amazoninspectorbuildstep.utils.BomermanProcessing.processBomermanFile;
 import static io.jenkins.plugins.amazoninspectorbuildstep.utils.InspectorRegions.BETA_REGIONS;
 
 
 public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
+    public static PrintStream logger;
     private final String archivePath;
     private final String iamRole;
     private final String awsRegion;
@@ -92,20 +83,10 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         return criticalExceedsLimit || highExceedsLimit || mediumExceedsLimit || lowExceedsLimit;
     }
 
-    private void startProcess(Launcher launcher, ArgumentListBuilder args, PrintStream printStream)
-            throws IOException, InterruptedException {
-        Launcher.ProcStarter ps = launcher.launch();
-        ps.cmds(args);
-        ps.stdin(null);
-        ps.stderr(printStream);
-        ps.stdout(printStream);
-        ps.quiet(true);
-        ps.join();
-    }
-
     @Override
     public void perform(Run<?, ?> build, FilePath workspace, EnvVars env, Launcher launcher, TaskListener listener)
             throws IOException {
+        logger = listener.getLogger();
 
         File outFile = new File(build.getRootDir(), "out");
         this.job = build.getParent();
@@ -118,7 +99,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             String jenkinsRootPath = Jenkins.getInstanceOrNull().get().getRootDir().getAbsolutePath();
             String bomermanPath = new BomermanJarHandler(jarPath).copyBomermanToDir(jenkinsRootPath);
 
-            String sbom = new BomermanRunner(bomermanPath, archivePath).run();
+            String sbom = new BomermanRunner(bomermanPath, archivePath, "waltwilo").run(job);
 
             listener.getLogger().println("Sending SBOM to Inspector for validation");
             SdkRequests requests = new SdkRequests(awsRegion, iamRole);
