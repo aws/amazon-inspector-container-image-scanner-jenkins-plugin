@@ -10,32 +10,12 @@
                 <f:textbox placeholder="arn:aws:iam::{ACCOUNT_ID}:role/{ROLE_NAME}"/>
             </f:entry>
         </f:radioBlock>
-
-        <f:radioBlock checked="false" name="credentialMethod" value="temporary"
-                      title="Temporary Credentials" inline="true">
-            <f:entry field="accessKeyId" title="Access Key">
-                <f:select />
-            </f:entry>
-
-            <f:entry field="secretKeyId" title="Secret Key">
-                <f:select />
-            </f:entry>
-
-            <f:entry field="sessionTokenId" title="Session Token">
-                <f:select />
-            </f:entry>
-        </f:radioBlock>
     </f:block>
 
     <strong>AWS Region</strong>
     <f:entry field="awsRegion">
         <f:select />
     </f:entry>
-
-    <f:checkbox title="Output CSV at end of build." field="csvOutput"></f:checkbox>
-    <br/>
-    <f:checkbox title="Output SBOM json at end of build." field="jsonOutput"></f:checkbox>
-    <br/>
 
     <strong>Image Id</strong>
     <f:entry field="archivePath">
@@ -54,7 +34,7 @@
             }
         </style>
         <f:block>
-            <b>Maximum Vulnerabilities Allowed in Image:</b>
+            <b>Maximum Vulnerabilities Allowed:</b>
         </f:block>
         <div class="horizontal-textboxes">
             <div class="textbox">

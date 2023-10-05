@@ -11,11 +11,12 @@ import java.util.List;
 @Getter
 @Setter
 public class Sbom {
-    private String bomFormat;
-    private String specVersion;
-    private int version;
-    private String serialNumber;
-    private Metadata metadata;
+    // Currently unused to trim sbom size
+//    private String bomFormat;
+//    private String specVersion;
+//    private int version;
+//    private String serialNumber;
+//    private Metadata metadata;
     private List<Component> components;
     private List<Vulnerability> vulnerabilities;
 }

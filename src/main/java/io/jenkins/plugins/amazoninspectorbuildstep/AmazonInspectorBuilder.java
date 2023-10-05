@@ -17,6 +17,8 @@ import hudson.model.TaskListener;
 import hudson.tasks.Builder;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.util.ListBoxModel;
+import io.jenkins.plugins.amazoninspectorbuildstep.bomerman.BomermanJarHandler;
+import io.jenkins.plugins.amazoninspectorbuildstep.bomerman.BomermanRunner;
 import io.jenkins.plugins.amazoninspectorbuildstep.credentials.CredentialsHelper;
 import io.jenkins.plugins.amazoninspectorbuildstep.csvconversion.CsvConverter;
 import io.jenkins.plugins.amazoninspectorbuildstep.models.sbom.Sbom;
@@ -27,18 +29,14 @@ import io.jenkins.plugins.amazoninspectorbuildstep.sbomparsing.Results;
 import io.jenkins.plugins.amazoninspectorbuildstep.sbomparsing.SbomOutputParser;
 import io.jenkins.plugins.amazoninspectorbuildstep.sbomparsing.Severity;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -53,15 +51,12 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 
 import static io.jenkins.plugins.amazoninspectorbuildstep.utils.BomermanProcessing.processBomermanFile;
-import static io.jenkins.plugins.amazoninspectorbuildstep.utils.InspectorRegions.INSPECTOR_REGIONS;
+import static io.jenkins.plugins.amazoninspectorbuildstep.utils.InspectorRegions.BETA_REGIONS;
 
 
 public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     private final String archivePath;
     private final String iamRole;
-    private final String accessKeyId;
-    private final String secretKeyId;
-    private final String sessionTokenId;
     private final String awsRegion;
     private final int countCritical;
     private final int countHigh;
@@ -75,14 +70,10 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     private Job<?, ?> job;
 
     @DataBoundConstructor
-    public AmazonInspectorBuilder(String archivePath, String iamRole, String accessKeyId, String secretKeyId,
-                                  String sessionTokenId, String awsRegion, boolean csvOutput, boolean jsonOutput,
-                                  int countCritical, int countHigh, int countMedium, int countLow) {
+    public AmazonInspectorBuilder(String archivePath, String iamRole, String awsRegion, boolean csvOutput,
+                                  boolean jsonOutput, int countCritical, int countHigh, int countMedium, int countLow) {
         this.archivePath = archivePath;
         this.iamRole = iamRole;
-        this.accessKeyId = accessKeyId;
-        this.secretKeyId = secretKeyId;
-        this.sessionTokenId = sessionTokenId;
         this.awsRegion = awsRegion;
         this.csvOutput = csvOutput;
         this.jsonOutput = jsonOutput;
@@ -122,31 +113,18 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         PrintStream printStream =  new PrintStream(outFile, StandardCharsets.UTF_8);
 
         try {
-            ArgumentListBuilder args = new ArgumentListBuilder();
-
+            String jarPath = new File(AmazonInspectorBuilder.class.getProtectionDomain().getCodeSource().getLocation()
+                    .toURI()).getPath();
             String jenkinsRootPath = Jenkins.getInstanceOrNull().get().getRootDir().getAbsolutePath();
-            String bomermanPath = getBomermanPath(jenkinsRootPath);
+            String bomermanPath = new BomermanJarHandler(jarPath).copyBomermanToDir(jenkinsRootPath);
 
-            if (isJarPath(jenkinsRootPath)) {
-                bomermanPath = copyBomermanToDir(bomermanPath, jenkinsRootPath);
-            }
+            String sbom = new BomermanRunner(bomermanPath, archivePath).run();
 
-            args.add(bomermanPath, "container", "--image", archivePath);
-            String artifactName = String.format("%s-%s-bomerman_results-out.json", build.getParent().getDisplayName(),
-                    build.getDisplayName()).replaceAll("[ #]", "");
-            FilePath target = new FilePath(workspace, artifactName);
-            listener.getLogger().println(args);
-            startProcess(launcher, args, printStream);
-            FilePath outFilePath = new FilePath(outFile);
-            outFilePath.copyTo(target);
-
-            String sbom = processBomermanFile(listener.getLogger(), outFile);
+            listener.getLogger().println("Sending SBOM to Inspector for validation");
             SdkRequests requests = new SdkRequests(awsRegion, iamRole);
 
             listener.getLogger().println("Translating to SBOM data.");
             String responseData = requests.requestSbom(sbom).toString();
-            System.out.println(responseData);
-
 
             SbomData sbomData = SbomData.builder().sbom(new Gson().fromJson(responseData, Sbom.class)).build();
             String sbomFileName = String.format("%s-%s.json", build.getParent().getDisplayName(),
@@ -154,7 +132,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             String sbomPath = String.format("%s/%s", build.getRootDir().getAbsolutePath(), sbomFileName);
             writeSbomDataToFile(responseData, sbomPath);
 
-            CsvConverter converter = new CsvConverter(listener.getLogger(), sbomData);
+            CsvConverter converter = new CsvConverter(sbomData);
             String csvFileName = String.format("%s-%s.csv", build.getParent().getDisplayName(),
                     build.getDisplayName()).replaceAll("[ #]", "");;
             String csvPath = String.format("%s/%s", build.getRootDir().getAbsolutePath(), csvFileName);
@@ -163,13 +141,8 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             SbomOutputParser parser = new SbomOutputParser(sbomData);
             Results results = parser.parseSbom();
 
-            if (csvOutput) {
-                listener.getLogger().printf("CSV Output File: file://%s\n", csvPath.replace(" ", "%20"));
-            }
-
-            if (jsonOutput) {
-                listener.getLogger().printf("JSON Output File: file://%s\n", sbomPath.replace(" ", "%20"));
-            }
+            listener.getLogger().printf("CSV Output File: file://%s\n", csvPath.replace(" ", "%20"));
+            listener.getLogger().printf("JSON Output File: file://%s\n", sbomPath.replace(" ", "%20"));
 
             boolean doesBuildPass = !doesBuildFail(results.getCounts());
             listener.getLogger().printf("Results: %s\nDoes Build Pass: %s\n",
@@ -191,76 +164,6 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                 printStream.close();
             }
         }
-    }
-
-    private String getBomermanPath(String jenkinsRootPath) {
-        String bomermanSrcPath = String.format(BOMERMAN_SRC_PATH_FORMAT, jenkinsRootPath);
-        String bomermanJarPath = String.format(BOMERMAN_JAR_PATH_FORMAT, jenkinsRootPath);
-
-        if (new File(bomermanSrcPath).exists()) {
-            System.out.println("Using Src path");
-            return bomermanSrcPath;
-        }
-
-        return bomermanJarPath;
-    }
-
-    private boolean isJarPath(String jenkinsRootPath) {
-        String bomermanSrcPath = String.format(BOMERMAN_SRC_PATH_FORMAT, jenkinsRootPath);
-        String bomermanJarPath = String.format(BOMERMAN_JAR_PATH_FORMAT, jenkinsRootPath);
-
-        if (new File(bomermanSrcPath).exists()) {
-            return false;
-        }
-
-        if (new File(bomermanJarPath).exists()) {
-            return true;
-        }
-
-        throw new RuntimeException("Bomerman does not exist in either resources folder or top level of jar.");
-    }
-
-    public static String copyBomermanToDir(String srcPath, String destDirPath) throws IOException {
-        File tempFile = new File(destDirPath, "bomerman");
-
-        JarFile jarFile = new JarFile(srcPath);
-        JarEntry entry = jarFile.getJarEntry("bomerman");
-        try (InputStream inputStream = jarFile.getInputStream(entry);
-             FileOutputStream outputStream = new FileOutputStream(tempFile)) {
-            byte[] buffer = new byte[4096];
-            int bytesRead;
-            while ((bytesRead = inputStream.read(buffer)) != -1) {
-                outputStream.write(buffer, 0, bytesRead);
-            }
-        }
-
-        tempFile.setExecutable(true);
-
-        return tempFile.getAbsolutePath();
-    }
-
-
-
-    private Requests createRequestsHelper(PrintStream logger, Job<?,?> parent, String sbom) {
-        CredentialsHelper provider = new CredentialsHelper(logger, parent, "us-east-1");
-
-        AwsBasicCredentials basicCreds = null;
-        String sessionToken = null;
-
-        if (iamRole != null && iamRole.length() > 0) {
-            logger.printf("Using IAM Role %s\n", iamRole);
-            AWSSessionCredentials sessionCredentials = provider.getCredentialsFromRole(iamRole);
-            basicCreds = AwsBasicCredentials.create(sessionCredentials.getAWSAccessKeyId(),
-                    sessionCredentials.getAWSSecretKey());
-            sessionToken = sessionCredentials.getSessionToken();
-        } else {
-            logger.println("Using temporary credentials.");
-            basicCreds = AwsBasicCredentials.create(provider.getKeyFromStore(accessKeyId),
-                    provider.getKeyFromStore(secretKeyId));
-            sessionToken = provider.getKeyFromStore(this.sessionTokenId);
-        }
-
-        return new Requests(basicCreds, sessionToken, sbom, logger, awsRegion);
     }
 
     public static void writeSbomDataToFile(String sbomData, String outputFilePath) {
@@ -314,7 +217,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
             items.add("Select AWS Region", null);
 
-            for (String region : INSPECTOR_REGIONS) {
+            for (String region : BETA_REGIONS) {
                 items.add(region, region);
             }
 

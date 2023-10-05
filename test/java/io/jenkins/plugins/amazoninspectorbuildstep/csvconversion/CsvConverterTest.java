@@ -30,7 +30,7 @@ public class CsvConverterTest {
         sbomData = new Gson().fromJson(sbom, SbomData.class);
         vulnerability = sbomData.getSbom().getVulnerabilities().get(0);
         component = sbomData.getSbom().getComponents().get(0);
-        csvConverter = new CsvConverter(System.out, sbomData);
+        csvConverter = new CsvConverter(sbomData);
     }
 
     @Test
@@ -80,7 +80,7 @@ public class CsvConverterTest {
 
     @Test
     public void testBuildCsvDataLines() {
-       List<List<String>> lines = csvConverter.buildCsvDataLines();
+       List<String[]> lines = csvConverter.buildCsvDataLines();
        assertEquals(lines.get(0), List.of("CVE", "Severity", "Description", "Package Name",
                "Package Installed Version", "Package Fixed Version", "Exploit Available"));
        assertEquals(lines.get(1), List.of("CVE-2021-44228", "critical", "\"description\"",
