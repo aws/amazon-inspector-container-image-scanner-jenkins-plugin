@@ -24,7 +24,6 @@ public class UsernameCredentialsHelper {
     }
 
     public String getKeyFromStore(String username) {
-        logger.println(credentials.get(0).getPassword().getPlainText());
         return credentials.stream()
                 .filter(cred -> cred.getUsername().equals(username))
                 .findFirst()
