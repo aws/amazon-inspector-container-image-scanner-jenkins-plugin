@@ -15,13 +15,12 @@ import java.io.PrintStream;
 import java.util.Collections;
 import java.util.List;
 
-public class CredentialsHelper {
+import static io.jenkins.plugins.amazoninspectorbuildstep.AmazonInspectorBuilder.logger;
 
-    private PrintStream logger;
+public class StringCredentialsHelper {
     private String region;
     private List<StringCredentials>  credentials;
-    public CredentialsHelper(PrintStream logger, Job<?, ?> job, String region) {
-        this.logger = logger;
+    public StringCredentialsHelper(PrintStream logger, Job<?, ?> job, String region) {
         this.credentials = CredentialsProvider.lookupCredentials(
                 StringCredentials.class,
                 job.getParent(),
