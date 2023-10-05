@@ -5,6 +5,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
+// Currently unused to trim sbom size
 public class Tool {
     private String name;
     private String vendor;

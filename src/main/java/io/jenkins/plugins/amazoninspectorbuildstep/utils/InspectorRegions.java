@@ -30,4 +30,10 @@ public class InspectorRegions {
                 "us-iso-west-1",
                 "eu-central-2"
     );
+
+    public static final List<String> BETA_REGIONS = List.of(
+            "us-east-1",
+            "eu-west-1",
+            "us-west-2"
+    );
 }

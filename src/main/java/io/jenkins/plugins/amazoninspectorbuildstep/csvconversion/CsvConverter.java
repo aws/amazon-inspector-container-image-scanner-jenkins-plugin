@@ -1,6 +1,6 @@
 package io.jenkins.plugins.amazoninspectorbuildstep.csvconversion;
 
-import com.google.common.annotations.VisibleForTesting;
+import com.opencsv.CSVWriter;
 import io.jenkins.plugins.amazoninspectorbuildstep.models.sbom.Components.Affect;
 import io.jenkins.plugins.amazoninspectorbuildstep.models.sbom.Components.Component;
 import io.jenkins.plugins.amazoninspectorbuildstep.models.sbom.Components.Property;
@@ -8,10 +8,10 @@ import io.jenkins.plugins.amazoninspectorbuildstep.models.sbom.Components.Rating
 import io.jenkins.plugins.amazoninspectorbuildstep.models.sbom.Components.Vulnerability;
 import io.jenkins.plugins.amazoninspectorbuildstep.models.sbom.SbomData;
 
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -22,27 +22,26 @@ import java.util.regex.Pattern;
 public class CsvConverter {
     private SbomData sbomData;
     private Map<String, Component> componentMap;
-    private PrintStream logger;
 
-    public CsvConverter(PrintStream logger, SbomData sbomData) {
-        this.logger = logger;
+    public CsvConverter(SbomData sbomData) {
         this.sbomData = sbomData;
         this.componentMap = populateComponentMap(sbomData);
     }
 
-    public void convert(String outputFileName) {
-        List<List<String>> dataLineArray = buildCsvDataLines();
-        logger.println("Converting");
+    public void convert(String filePath) {
+        List<String[]> dataLineArray = buildCsvDataLines();
+        File file = new File(filePath);
 
-        try (PrintWriter writer = new PrintWriter(new FileWriter(outputFileName))) {
-            for (List<String> lineArray : dataLineArray) {
-                String line = String.join(",", lineArray);
-                writer.println(line);
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        try {
+            FileWriter outputfile = new FileWriter(file);
+            CSVWriter writer = new CSVWriter(outputfile);
+
+            writer.writeAll(dataLineArray);
+            writer.close();
         }
-        logger.println("Conversion done");
+        catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private Map<String, Component> populateComponentMap(SbomData sbomData) {
@@ -55,12 +54,10 @@ public class CsvConverter {
         return componentMap;
     }
 
-    @VisibleForTesting
-    protected List<List<String>> buildCsvDataLines() {
-        List<List<String>> dataLines = new ArrayList<>();
-        logger.println("Getting data lines");
-        List<String> headers = List.of("CVE", "Severity", "Description", "Package Name", "Package Installed Version",
-                "Package Fixed Version", "Exploit Available");
+    protected List<String []> buildCsvDataLines() {
+        List<String[]> dataLines = new ArrayList<>();
+        String[] headers = new String[] {"CVE", "Severity", "Description", "Package Name", "Package Installed Version",
+                "Package Fixed Version", "Exploit Available"};
         dataLines.add(headers);
 
         List<Vulnerability> vulnerabilities = sbomData.getSbom().getVulnerabilities();
@@ -73,11 +70,10 @@ public class CsvConverter {
             for (Affect componentRef : vulnerability.getAffects()) {
                 CsvData csvData = buildCsvData(vulnerability, componentMap.get(componentRef.getRef()));
 
-
-                List<String> dataLine = List.of(csvData.getCve(), csvData.getSeverity(),
+                String[] dataLine = new String[] {csvData.getCve(), csvData.getSeverity(),
                         csvData.getDescription(), csvData.getPackageName(),
                         csvData.getPackageInstalledVersion(), csvData.getPackageFixedVersion(),
-                        csvData.getExploitAvailable());
+                        csvData.getExploitAvailable()};
 
                 dataLines.add(dataLine);
             }
@@ -102,15 +98,17 @@ public class CsvConverter {
                 .build();
     }
 
-    @VisibleForTesting
     protected String getExploitAvailable(Vulnerability vulnerability) {
         final String exploitAvailableName = "amazon:inspector:sbom_scanner:exploit_available";
-        return vulnerability.getProperties().stream()
-                .filter(v -> v.getName().equals(exploitAvailableName))
-                .findFirst().orElse(Property.builder().name(exploitAvailableName).value("").build()).getValue();
+
+        for (Property property : vulnerability.getProperties()) {
+            if (property.getName().equals(exploitAvailableName)) {
+                return property.getValue();
+            }
+        }
+        return "";
     }
 
-    @VisibleForTesting
     protected String getFixedVersion(Vulnerability vulnerability, String componentKey) {
         final String fixedVersionName =
                 String.format("amazon:inspector:sbom_scanner:fixed_version:%s", componentKey);
@@ -125,7 +123,6 @@ public class CsvConverter {
                 vulnerability.getBomRef()));
     }
 
-    @VisibleForTesting
     protected String getInstalledVersion(Component component) {
         // Matches strings like 3.11.321.2...
         final String versionPattern = "@(?<version>[^?#]+)";
@@ -140,7 +137,6 @@ public class CsvConverter {
         throw new RuntimeException(String.format("No version found from component %s", component));
     }
 
-    @VisibleForTesting
     protected String getSeverity(Vulnerability vulnerability) {
         List<Rating> ratings = vulnerability.getRatings();
         final String nvd = "NVD";

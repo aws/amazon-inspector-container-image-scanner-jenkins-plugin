@@ -11,7 +11,7 @@ import lombok.Setter;
 public class Component {
     @SerializedName("bom-ref")
     private String bomRef;
-    private String type;
+//    private String type;
     private String name;
     private String purl;
 }
