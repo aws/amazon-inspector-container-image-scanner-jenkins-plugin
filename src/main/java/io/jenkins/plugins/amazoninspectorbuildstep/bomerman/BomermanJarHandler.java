@@ -16,11 +16,20 @@ public class BomermanJarHandler {
         this.jarPath = jarPath;
     }
 
-    public String copyBomermanToDir(String destDirPath) throws IOException {
+    public static String getOperatingSystem() {
+        return System.getProperty("os.name");
+    }
+
+    public static String getCpuArch() {
+        return System.getProperty("os.arch");
+    }
+
+    public String copyBomermanToDir(String destDirPath) throws IOException, BomermanNotFoundException {
         File tempFile = new File(destDirPath, BOMERMAN_NAME);
 
         JarFile jarFile = new JarFile(jarPath);
-        JarEntry entry = jarFile.getJarEntry(BOMERMAN_NAME);
+
+        JarEntry entry = jarFile.getJarEntry(BomermanVersionManager.getBomermanName(getOperatingSystem(), getCpuArch()));
         try (InputStream inputStream = jarFile.getInputStream(entry);
              FileOutputStream outputStream = new FileOutputStream(tempFile)) {
             byte[] buffer = new byte[4096];

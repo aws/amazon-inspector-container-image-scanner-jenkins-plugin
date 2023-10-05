@@ -2,7 +2,6 @@ package io.jenkins.plugins.amazoninspectorbuildstep.bomerman;
 
 import hudson.model.Job;
 import io.jenkins.plugins.amazoninspectorbuildstep.credentials.UsernameCredentialsHelper;
-import io.jenkins.plugins.amazoninspectorbuildstep.utils.SystemUtils;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -48,6 +47,11 @@ public class BomermanRunner {
         }
 
         String output = sb.toString();
-        return BomermanUtils.processBomermanOutput(output);
+        return processBomermanOutput(output);
+    }
+
+    private static String processBomermanOutput(String sbom) {
+        sbom.replaceAll("time=.+file=.+\"", "");
+        return sbom.substring(sbom.indexOf("{"), sbom.lastIndexOf("}") + 1);
     }
 }

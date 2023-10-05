@@ -203,8 +203,10 @@
                                 <resource>
                                     <directory>${project.basedir}/src/main/resources</directory>
                                     <includes>
-                                        <include>bomerman</include>
-                                        <include>bomerman_linux_amd64</include>
+                                        <include>inspector-sbomgen.linux.amd64</include>
+                                        <include>inspector-sbomgen.linux.arm64</include>
+                                        <include>inspector-sbomgen.macos.amd64</include>
+                                        <include>inspector-sbomgen.macos.arm64</include>
                                     </includes>
                                 </resource>
                             </resources>
