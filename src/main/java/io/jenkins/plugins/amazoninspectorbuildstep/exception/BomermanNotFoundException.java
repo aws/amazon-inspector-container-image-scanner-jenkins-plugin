@@ -1,4 +1,4 @@
-package io.jenkins.plugins.amazoninspectorbuildstep.bomerman;
+package io.jenkins.plugins.amazoninspectorbuildstep.exception;
 
 import io.jenkins.plugins.amazoninspectorbuildstep.AmazonInspectorBuilder;
 

@@ -1,5 +1,7 @@
 package io.jenkins.plugins.amazoninspectorbuildstep.bomerman;
 
+import io.jenkins.plugins.amazoninspectorbuildstep.exception.BomermanNotFoundException;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;

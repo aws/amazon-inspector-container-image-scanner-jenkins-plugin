@@ -12,6 +12,10 @@
         </f:radioBlock>
     </f:block>
 
+    <f:entry field="dockerUsername" title="Docker Credentials">
+        <f:select />
+    </f:entry>
+
     <strong>AWS Region</strong>
     <f:entry field="awsRegion">
         <f:select />
