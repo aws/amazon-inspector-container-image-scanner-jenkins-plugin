@@ -55,7 +55,7 @@ public class CsvConverter {
 
     protected List<String []> buildCsvDataLines() {
         List<String[]> dataLines = new ArrayList<>();
-        String[] headers = new String[] {"CVE", "Severity", "Published", "Modified", "Description",
+        String[] headers = new String[] {"Vulnerability ID", "Severity", "Published", "Modified", "Description",
                 "Package Installed Version",
 //                "Package Path",
                 "Package Fixed Version", "EPSS Score", "Exploit Available", "CWEs"};
