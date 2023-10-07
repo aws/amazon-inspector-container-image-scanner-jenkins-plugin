@@ -3,6 +3,7 @@ package io.jenkins.plugins.amazoninspectorbuildstep;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.UsernamePasswordCredentials;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -121,13 +122,16 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
             listener.getLogger().println("Translating to SBOM data.");
             String responseData = requests.requestSbom(sbom).toString();
-
-            SbomData sbomData = SbomData.builder().sbom(new Gson().fromJson(responseData, Sbom.class)).build();
+            responseData = responseData.replaceAll("\n", "");
+            System.out.println(responseData);
+            Gson gson = new GsonBuilder().setPrettyPrinting().create();
+            SbomData sbomData = SbomData.builder().sbom(gson.fromJson(responseData, Sbom.class)).build();
 
             String sbomFileName = String.format("%s-%s.json", build.getParent().getDisplayName(),
                     build.getDisplayName()).replaceAll("[ #]", "");
             String sbomPath = String.format("%s/%s", build.getRootDir().getAbsolutePath(), sbomFileName);
-            writeSbomDataToFile(responseData, sbomPath);
+
+            writeSbomDataToFile(gson.toJson(sbomData), sbomPath);
 
             CsvConverter converter = new CsvConverter(sbomData);
             String csvFileName = String.format("%s-%s.csv", build.getParent().getDisplayName(),
