@@ -24,7 +24,6 @@ public class SdkRequests {
     String roleArn;
 
     public Document requestSbom(String sbom) throws URISyntaxException {
-        System.out.println(sbom);
         SdkHttpClient client = ApacheHttpClient.builder().build();
         InspectorScanClient scanClient = InspectorScanClient.builder()
                 .region(Region.of(region))

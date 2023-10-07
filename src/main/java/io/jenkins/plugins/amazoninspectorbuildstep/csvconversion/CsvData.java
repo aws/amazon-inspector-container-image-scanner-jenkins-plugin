@@ -8,11 +8,15 @@ import lombok.Setter;
 @Setter
 @Builder
 public class CsvData {
-    private String cve;
+    private String vulnerabilityId;
     private String severity;
+    private String epssScore;
+    private String published;
+    private String modified;
     private String description;
-    private String packageName;
     private String packageInstalledVersion;
+    private String packagePath;
     private String packageFixedVersion;
+    private String cwes;
     private String exploitAvailable;
 }

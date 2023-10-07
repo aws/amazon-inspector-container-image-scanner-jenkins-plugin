@@ -37,7 +37,7 @@ public class CsvConverterTest {
     public void testBuildCsvData_Success() {
         CsvData csvData = csvConverter.buildCsvData(vulnerability, component);
 
-        assertEquals(csvData.getCve(), "CVE-2021-44228");
+        assertEquals(csvData.getVulnerabilityId(), "CVE-2021-44228");
         assertEquals(csvData.getDescription(), "\"description\"");
         assertEquals(csvData.getSeverity(), "critical");
         assertEquals(csvData.getExploitAvailable(), "\"true\"");
