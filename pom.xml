@@ -207,6 +207,8 @@
                                         <include>inspector-sbomgen.linux.arm64</include>
                                         <include>inspector-sbomgen.macos.amd64</include>
                                         <include>inspector-sbomgen.macos.arm64</include>
+                                        <include>index.html</include>
+                                        <include>inspector-classic.png</include>
                                     </includes>
                                 </resource>
                             </resources>

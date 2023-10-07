@@ -1,5 +1,7 @@
 package io.jenkins.plugins.amazoninspectorbuildstep.bomerman;
 
+import io.jenkins.plugins.amazoninspectorbuildstep.exception.BomermanNotFoundException;
+
 import java.util.Locale;
 
 import static io.jenkins.plugins.amazoninspectorbuildstep.AmazonInspectorBuilder.logger;

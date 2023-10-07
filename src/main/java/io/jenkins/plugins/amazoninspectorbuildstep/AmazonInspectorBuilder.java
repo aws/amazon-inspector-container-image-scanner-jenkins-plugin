@@ -1,7 +1,11 @@
 package io.jenkins.plugins.amazoninspectorbuildstep;
 
 import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.common.UsernamePasswordCredentials;
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
@@ -18,6 +22,11 @@ import hudson.util.ListBoxModel;
 import io.jenkins.plugins.amazoninspectorbuildstep.bomerman.BomermanJarHandler;
 import io.jenkins.plugins.amazoninspectorbuildstep.bomerman.BomermanRunner;
 import io.jenkins.plugins.amazoninspectorbuildstep.csvconversion.CsvConverter;
+import io.jenkins.plugins.amazoninspectorbuildstep.html.HtmlGenerator;
+import io.jenkins.plugins.amazoninspectorbuildstep.html.HtmlJarHandler;
+import io.jenkins.plugins.amazoninspectorbuildstep.models.html.HtmlData;
+import io.jenkins.plugins.amazoninspectorbuildstep.models.html.components.ImageMetadata;
+import io.jenkins.plugins.amazoninspectorbuildstep.models.html.components.SeverityValues;
 import io.jenkins.plugins.amazoninspectorbuildstep.models.sbom.Sbom;
 import io.jenkins.plugins.amazoninspectorbuildstep.models.sbom.SbomData;
 import io.jenkins.plugins.amazoninspectorbuildstep.requests.SdkRequests;
@@ -35,6 +44,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import io.jenkins.plugins.amazoninspectorbuildstep.utils.HtmlConversionUtils;
 import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildStep;
 import org.jenkinsci.Symbol;
@@ -49,25 +59,20 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     private final String archivePath;
     private final String iamRole;
     private final String awsRegion;
+    private final String dockerUsername;
     private final int countCritical;
     private final int countHigh;
     private final int countMedium;
     private final int countLow;
-    private final boolean csvOutput;
-    private final boolean jsonOutput;
-    private final static String BOMERMAN_JAR_PATH_FORMAT =
-            "%s/plugins/amazon-inspector-scanner/WEB-INF/lib/amazon-inspector-scanner.jar";
-    private final static String BOMERMAN_SRC_PATH_FORMAT = "%s/../src/main/resources/bomerman";
     private Job<?, ?> job;
 
     @DataBoundConstructor
-    public AmazonInspectorBuilder(String archivePath, String iamRole, String awsRegion, boolean csvOutput,
-                                  boolean jsonOutput, int countCritical, int countHigh, int countMedium, int countLow) {
+    public AmazonInspectorBuilder(String archivePath, String iamRole, String awsRegion, String dockerUsername,
+                                  int countCritical, int countHigh, int countMedium, int countLow) {
         this.archivePath = archivePath;
+        this.dockerUsername = dockerUsername;
         this.iamRole = iamRole;
         this.awsRegion = awsRegion;
-        this.csvOutput = csvOutput;
-        this.jsonOutput = jsonOutput;
         this.countCritical = countCritical;
         this.countHigh = countHigh;
         this.countMedium = countMedium;
@@ -99,7 +104,17 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             String jenkinsRootPath = Jenkins.getInstanceOrNull().get().getRootDir().getAbsolutePath();
             String bomermanPath = new BomermanJarHandler(jarPath).copyBomermanToDir(jenkinsRootPath);
 
-            String sbom = new BomermanRunner(bomermanPath, archivePath, "waltwilo").run(job);
+            String sbom = new BomermanRunner(bomermanPath, archivePath, dockerUsername).run(job);
+
+            JsonObject component = JsonParser.parseString(sbom).getAsJsonObject().get("metadata").getAsJsonObject()
+                    .get("component").getAsJsonObject();
+
+            String imageSha = "No Sha Found";
+            for (JsonElement element : component.get("properties").getAsJsonArray()) {
+                if (element.getAsJsonObject().get("name").equals("amazon:inspector:sbom_collector:image_id")) {
+                    imageSha = element.getAsJsonObject().get("value").getAsString();
+                }
+            }
 
             listener.getLogger().println("Sending SBOM to Inspector for validation");
             SdkRequests requests = new SdkRequests(awsRegion, iamRole);
@@ -108,6 +123,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             String responseData = requests.requestSbom(sbom).toString();
 
             SbomData sbomData = SbomData.builder().sbom(new Gson().fromJson(responseData, Sbom.class)).build();
+
             String sbomFileName = String.format("%s-%s.json", build.getParent().getDisplayName(),
                     build.getDisplayName()).replaceAll("[ #]", "");
             String sbomPath = String.format("%s/%s", build.getRootDir().getAbsolutePath(), sbomFileName);
@@ -122,9 +138,41 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             SbomOutputParser parser = new SbomOutputParser(sbomData);
             Results results = parser.parseSbom();
 
-            listener.getLogger().printf("CSV Output File: file://%s\n", csvPath.replace(" ", "%20"));
-            listener.getLogger().printf("JSON Output File: file://%s\n", sbomPath.replace(" ", "%20"));
+            String[] splitName = component.get("name").getAsString().split(":");
+            String tag = "None";
+            if (splitName.length > 1) {
+                tag = splitName[1];
+            }
 
+            HtmlData htmlData = HtmlData.builder()
+                    .jsonFilePath(sbomPath)
+                    .csvFilePath(csvPath)
+                    .imageMetadata(ImageMetadata.builder()
+                            .id(splitName[0])
+                            .tags(tag)
+                            .sha(imageSha)
+                            .build())
+                    .severityValues(SeverityValues.builder()
+                            .critical(results.getCounts().get(Severity.CRITICAL))
+                            .high(results.getCounts().get(Severity.HIGH))
+                            .medium(results.getCounts().get(Severity.MEDIUM))
+                            .low(results.getCounts().get(Severity.LOW))
+                            .build())
+                    .vulnerabilities(HtmlConversionUtils.convertVulnerabilities(sbomData.getSbom().getVulnerabilities(),
+                            sbomData.getSbom().getComponents()))
+                    .build();
+
+            HtmlJarHandler htmlJarHandler = new HtmlJarHandler(jarPath);
+            String htmlPath = htmlJarHandler.copyHtmlToDir(build.getRootDir().getAbsolutePath());
+
+            String html = new Gson().toJson(htmlData);
+            new HtmlGenerator(htmlPath).generateNewHtml(html);
+
+            sbomPath = sbomPath.replace(" ", "%20");
+            csvPath = csvPath.replace(" ", "%20");
+            listener.getLogger().printf("CSV Output File: file://%s\n", csvPath);
+            listener.getLogger().printf("SBOM Output File: file://%s\n", sbomPath);
+            listener.getLogger().printf("HTML Report File: file://%s\n", htmlPath);
             boolean doesBuildPass = !doesBuildFail(results.getCounts());
             listener.getLogger().printf("Results: %s\nDoes Build Pass: %s\n",
                     results, doesBuildPass);
@@ -164,7 +212,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             load();
         }
 
-        private ListBoxModel getCredentialModels() {
+        private ListBoxModel getStringCredentialModels() {
             ListBoxModel items = new ListBoxModel();
             List<StringCredentials> credentials = CredentialsProvider.lookupCredentials(
                     StringCredentials.class,
@@ -181,16 +229,37 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             return items;
         }
 
+        private ListBoxModel getUsernameCredentialModels() {
+            ListBoxModel items = new ListBoxModel();
+            List<UsernamePasswordCredentials> credentials = CredentialsProvider.lookupCredentials(
+                    UsernamePasswordCredentials.class,
+                    Jenkins.getInstance(),
+                    ACL.SYSTEM,
+                    Collections.emptyList()
+            );
+
+            items.add("Select Docker Username", null);
+            for (UsernamePasswordCredentials credential : credentials) {
+                items.add(credential.getUsername(), credential.getUsername());
+            }
+
+            return items;
+        }
+
         public ListBoxModel doFillAccessKeyIdItems() {
-            return getCredentialModels();
+            return getStringCredentialModels();
         }
 
         public ListBoxModel doFillSecretKeyIdItems() {
-            return getCredentialModels();
+            return getStringCredentialModels();
         }
 
         public ListBoxModel doFillSessionTokenIdItems() {
-            return getCredentialModels();
+            return getStringCredentialModels();
+        }
+
+        public ListBoxModel doFillDockerUsernameItems() {
+            return getUsernameCredentialModels();
         }
 
         public ListBoxModel doFillAwsRegionItems() {
@@ -212,7 +281,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
         @Override
         public String getDisplayName() {
-            return "Amazon Inspector Scan";
+            return "Amazon Inspector Scan - Beta";
         }
     }
 }
