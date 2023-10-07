@@ -111,7 +111,7 @@ public class CsvConverter {
             return "N/A";
         }
 
-        vulnerability.getModified();
+        return vulnerability.getModified();
     }
 
     protected String getCwesAsString(Vulnerability vulnerability) {
