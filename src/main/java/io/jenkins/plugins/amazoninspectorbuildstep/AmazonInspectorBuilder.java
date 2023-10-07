@@ -112,7 +112,8 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
             String imageSha = "No Sha Found";
             for (JsonElement element : component.get("properties").getAsJsonArray()) {
-                if (element.getAsJsonObject().get("name").equals("amazon:inspector:sbom_collector:image_id")) {
+                String elementName = element.getAsJsonObject().get("name").getAsString();
+                if (elementName.equals("amazon:inspector:sbom_collector:image_id")) {
                     imageSha = element.getAsJsonObject().get("value").getAsString();
                 }
             }
@@ -123,7 +124,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             listener.getLogger().println("Translating to SBOM data.");
             String responseData = requests.requestSbom(sbom).toString();
             responseData = responseData.replaceAll("\n", "");
-            System.out.println(responseData);
+
             Gson gson = new GsonBuilder().setPrettyPrinting().create();
             SbomData sbomData = SbomData.builder().sbom(gson.fromJson(responseData, Sbom.class)).build();
 
