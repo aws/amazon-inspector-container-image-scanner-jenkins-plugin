@@ -130,6 +130,13 @@
             <artifactId>opencsv</artifactId>
             <version>5.8</version>
         </dependency>
+
+        <!-- https://mvnrepository.com/artifact/org.codehaus.mojo/license-maven-plugin -->
+        <dependency>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>license-maven-plugin</artifactId>
+            <version>2.2.0</version>
+        </dependency>
     </dependencies>
 
     <parent>
@@ -219,32 +226,10 @@
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-install-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>install-external-non-maven-jar-MWS-Client-into-local-maven-repo</id>
-                        <phase>package</phase>
-                        <configuration>
-                            <groupId>com.amazonaws</groupId>
-                            <artifactId>inspectorscan</artifactId>
-                            <version>2.0</version>
-                            <file>${project.basedir}/src/main/resources/AwsJavaSdk-InspectorScan-2.0.jar</file>
-                            <packaging>jar</packaging>
-                            <generatePom>true</generatePom>
-                        </configuration>
-                        <goals>
-                            <goal>install-file</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
+                    <source>11</source>
+                    <target>11</target>
                 </configuration>
             </plugin>
         </plugins>

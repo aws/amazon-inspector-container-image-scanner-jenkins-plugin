@@ -81,9 +81,9 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
     private boolean doesBuildFail(Map<Severity, Integer> counts) {
         boolean criticalExceedsLimit = counts.get(Severity.CRITICAL) > countCritical;
-        boolean highExceedsLimit = counts.get(Severity.HIGH) > countCritical;
-        boolean mediumExceedsLimit = counts.get(Severity.MEDIUM) > countCritical;
-        boolean lowExceedsLimit = counts.get(Severity.LOW) > countCritical;
+        boolean highExceedsLimit = counts.get(Severity.HIGH) > countHigh;
+        boolean mediumExceedsLimit = counts.get(Severity.MEDIUM) > countMedium;
+        boolean lowExceedsLimit = counts.get(Severity.LOW) > countLow;
         
         return criticalExceedsLimit || highExceedsLimit || mediumExceedsLimit || lowExceedsLimit;
     }
