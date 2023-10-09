@@ -38,6 +38,10 @@ public class SbomOutputParser {
     protected Severity getHighestRatingFromList(List<Rating> ratings) {
         Severity highestSeverity = null;
 
+        if (ratings == null || ratings.size() == 0) {
+            return Severity.NONE;
+        }
+
         for (Rating rating : ratings) {
             Severity severity = Severity.getSeverityFromString(rating.getSeverity());
 

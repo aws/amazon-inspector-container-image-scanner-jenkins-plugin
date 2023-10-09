@@ -144,7 +144,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             Results results = parser.parseSbom();
 
             String[] splitName = component.get("name").getAsString().split(":");
-            String tag = "None";
+            String tag = null;
             if (splitName.length > 1) {
                 tag = splitName[1];
             }

@@ -2,12 +2,15 @@ package io.jenkins.plugins.amazoninspectorbuildstep.sbomparsing;
 
 import lombok.AllArgsConstructor;
 
+import java.util.Locale;
+
 @AllArgsConstructor
 public enum Severity {
     CRITICAL("critical", 4),
     HIGH("high", 3),
     MEDIUM("medium", 2),
     LOW("low", 1),
+    INFO("informational", 0),
     NONE("none", 0);
 
     private String severityName;
@@ -21,7 +24,7 @@ public enum Severity {
     }
 
     public static Severity getSeverityFromString(String severityName) {
-        switch (severityName) {
+        switch (severityName.toLowerCase(Locale.ROOT)) {
             case "critical":
                 return CRITICAL;
             case "high":
@@ -30,10 +33,12 @@ public enum Severity {
                 return MEDIUM;
             case "low":
                 return LOW;
+            case "informational":
+                return INFO;
             case "none":
                 return NONE;
             default:
-                throw new RuntimeException("Severity value doesn't exist!");
+                throw new RuntimeException(String.format("Severity value doesn't exist: %s", severityName));
         }
     }
 }
