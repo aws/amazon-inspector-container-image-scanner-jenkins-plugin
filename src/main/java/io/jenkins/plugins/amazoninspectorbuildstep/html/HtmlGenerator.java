@@ -1,6 +1,7 @@
 package io.jenkins.plugins.amazoninspectorbuildstep.html;
 
 import lombok.AllArgsConstructor;
+import org.apache.commons.lang.StringEscapeUtils;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -10,6 +11,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
+import static io.jenkins.plugins.amazoninspectorbuildstep.AmazonInspectorBuilder.logger;
+
 @AllArgsConstructor
 public class HtmlGenerator {
     private String htmlPath;
@@ -18,10 +21,12 @@ public class HtmlGenerator {
         String htmlContent = getHtmlAsString();
 
         String scriptStart = "<script type=\"text/javascript\">";
-        String trimmedJson = json.replace("\n", "").replace("\t", "");
+        String trimmedJson = StringEscapeUtils.unescapeJava(json).replace("\n", "")
+                .replace("\t", "");
         htmlContent = htmlContent.replaceAll(scriptStart,
                 scriptStart + "\n\t\t\tconst txt = '" + trimmedJson + "'");
 
+        logger.println(htmlContent);
         createFile(htmlContent);
     }
 

@@ -48,6 +48,7 @@ import java.util.Map;
 import io.jenkins.plugins.amazoninspectorbuildstep.utils.HtmlConversionUtils;
 import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildStep;
+import org.apache.commons.lang.StringEscapeUtils;
 import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.plaincredentials.StringCredentials;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -203,7 +204,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     public static void writeSbomDataToFile(String sbomData, String outputFilePath) {
         try (PrintWriter writer = new PrintWriter(new FileWriter(outputFilePath))) {
             for (String line : sbomData.split("\n")) {
-                writer.println(line);
+                writer.println(StringEscapeUtils.unescapeJava(line));
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
