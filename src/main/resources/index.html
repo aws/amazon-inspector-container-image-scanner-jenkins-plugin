@@ -6892,7 +6892,7 @@ table and the footer
                   <p
                     class="awsui_description_2qdw9_1s1m0_223 awsui_description-variant-h1_2qdw9_1s1m0_228 awsui_refresh_2qdw9_1s1m0_110"
                   >
-                    Updated at 10-04-2023 04:07:55
+<!--                    Updated at 10-04-2023 04:07:55-->
                   </p>
                 </div>
               </div>
@@ -7412,7 +7412,7 @@ table and the footer
       );
   
       baseInfo[1].innerText = result.imageMetadata.id;
-      if (result.imageMetadata.tags) {
+      if (result.imageMetadata.tags != null) {
         baseInfo[1] += ":" + result.imageMetadata.tags;
       }
 

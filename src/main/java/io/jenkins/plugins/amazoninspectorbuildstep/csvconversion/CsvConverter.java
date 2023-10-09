@@ -107,7 +107,7 @@ public class CsvConverter {
     }
 
     private String getModified(Vulnerability vulnerability) {
-        if (vulnerability.getModified() == null) {
+        if (vulnerability == null || vulnerability.getModified() == null) {
             return "N/A";
         }
 
@@ -117,6 +117,10 @@ public class CsvConverter {
     protected String getCwesAsString(Vulnerability vulnerability) {
         List<String> cwes = new ArrayList<>();
 
+        if (vulnerability == null || vulnerability.getCwes() == null) {
+            return "";
+        }
+
         for (Integer cwe : vulnerability.getCwes()) {
             cwes.add(String.format("CWE-%s", cwe.toString()));
         }
@@ -125,6 +129,10 @@ public class CsvConverter {
     }
 
     protected String getEpssScore(Vulnerability vulnerability) {
+        if (vulnerability == null || vulnerability.getRatings() == null) {
+            return "N/A";
+        }
+
         for (Rating rating : vulnerability.getRatings()) {
             if (rating.getSource().getName().equals("EPSS")) {
                 return Double.toString(rating.getScore());
@@ -142,6 +150,7 @@ public class CsvConverter {
                 return property.getValue();
             }
         }
+
         return "N/A";
     }
 
@@ -174,6 +183,10 @@ public class CsvConverter {
     }
 
     protected String getSeverity(Vulnerability vulnerability) {
+        if (vulnerability == null || vulnerability.getRatings() == null) {
+            return "";
+        }
+
         List<Rating> ratings = vulnerability.getRatings();
         final String nvd = "NVD";
         final String cvss = "CVSSv3";
