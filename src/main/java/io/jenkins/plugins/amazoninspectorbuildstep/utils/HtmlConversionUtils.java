@@ -6,10 +6,13 @@ import io.jenkins.plugins.amazoninspectorbuildstep.models.sbom.Components.Compon
 import io.jenkins.plugins.amazoninspectorbuildstep.models.sbom.Components.Rating;
 import io.jenkins.plugins.amazoninspectorbuildstep.models.sbom.Components.Vulnerability;
 import io.jenkins.plugins.amazoninspectorbuildstep.sbomparsing.Severity;
+import org.apache.commons.lang.StringEscapeUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import static io.jenkins.plugins.amazoninspectorbuildstep.AmazonInspectorBuilder.logger;
 
 public class HtmlConversionUtils {
 
@@ -28,10 +31,11 @@ public class HtmlConversionUtils {
             }
 
             for (Affect affect : vulnerability.getAffects()) {
+                String component = StringEscapeUtils.unescapeJava(getComponent(components, affect.getRef()));
                 HtmlVulnerability htmlVulnerability = HtmlVulnerability.builder()
                         .title(vulnerability.getId())
                         .severity(severity)
-                        .component(getComponent(components, affect.getRef()))
+                        .component(component)
                         .build();
                 htmlVulnerabilities.add(htmlVulnerability);
             }
