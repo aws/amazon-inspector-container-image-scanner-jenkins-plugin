@@ -174,11 +174,9 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             String html = new Gson().toJson(htmlData);
             new HtmlGenerator(htmlPath).generateNewHtml(html);
 
-            sbomPath = sbomPath.replace(" ", "%20");
-            csvPath = csvPath.replace(" ", "%20");
-            listener.getLogger().printf("CSV Output File: file://%s\n", csvPath);
-            listener.getLogger().printf("SBOM Output File: file://%s\n", sbomPath);
-            listener.getLogger().printf("HTML Report File: file://%s\n", htmlPath);
+            listener.getLogger().printf("CSV Output File: file://%s\n", csvPath.replace(" ", "%20"));
+            listener.getLogger().printf("SBOM Output File: file://%s\n", sbomPath.replace(" ", "%20"));
+            listener.getLogger().printf("HTML Report File: file://%s\n", htmlPath.replace(" ", "%20"));
             boolean doesBuildPass = !doesBuildFail(results.getCounts());
             listener.getLogger().printf("Results: %s\nDoes Build Pass: %s\n",
                     results, doesBuildPass);
