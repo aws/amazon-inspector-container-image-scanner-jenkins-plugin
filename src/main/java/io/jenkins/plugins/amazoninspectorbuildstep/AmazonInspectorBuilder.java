@@ -133,7 +133,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                     build.getDisplayName()).replaceAll("[ #]", "");
             String sbomPath = String.format("%s/%s", build.getRootDir().getAbsolutePath(), sbomFileName);
 
-            writeSbomDataToFile(gson.toJson(sbomData), sbomPath);
+            writeSbomDataToFile(gson.toJson(sbomData.getSbom()), sbomPath);
 
             CsvConverter converter = new CsvConverter(sbomData);
             String csvFileName = String.format("%s-%s.csv", build.getParent().getDisplayName(),
