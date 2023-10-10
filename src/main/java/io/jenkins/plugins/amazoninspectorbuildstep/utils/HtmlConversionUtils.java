@@ -19,6 +19,7 @@ public class HtmlConversionUtils {
 
     public static List<HtmlVulnerability> convertVulnerabilities(List<Vulnerability> vulnerabilities,
                                                                  List<Component> components) {
+        logger.println("Generating HTML report");
         List<HtmlVulnerability> htmlVulnerabilities = new ArrayList<>();
 
         if (vulnerabilities == null) {

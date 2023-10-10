@@ -37,6 +37,7 @@ public class HtmlGenerator {
     }
 
     private void createFile(String htmlContent) {
+        logger.println("Creating HTML file");
         try {
             File file = new File(htmlPath);
             file.createNewFile();
