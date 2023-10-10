@@ -95,7 +95,7 @@ public class CsvConverter {
                 .vulnerabilityId(vulnerability.getId())
                 .severity(getSeverity(vulnerability))
                 .published(vulnerability.getCreated())
-                .modified(getModified(vulnerability))
+                .modified(getUpdated(vulnerability))
                 .epssScore(getEpssScore(vulnerability))
                 .description(vulnerability.getDescription())
                 .packageInstalledVersion(installedVersion)
@@ -106,12 +106,12 @@ public class CsvConverter {
                 .build();
     }
 
-    private String getModified(Vulnerability vulnerability) {
-        if (vulnerability == null || vulnerability.getModified() == null) {
+    private String getUpdated(Vulnerability vulnerability) {
+        if (vulnerability == null || vulnerability.getUpdated() == null) {
             return "N/A";
         }
 
-        return vulnerability.getModified();
+        return vulnerability.getUpdated();
     }
 
     protected String getCwesAsString(Vulnerability vulnerability) {
