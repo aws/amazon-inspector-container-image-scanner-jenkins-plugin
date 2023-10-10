@@ -75,7 +75,6 @@ public class CsvConverter {
                         csvData.getPublished(), csvData.getModified(),
                         csvData.getDescription(),
                         csvData.getPackageInstalledVersion(),
-//                        csvData.getPackagePath(),
                         csvData.getPackageFixedVersion(), csvData.getEpssScore(),
                         csvData.getExploitAvailable(), csvData.getCwes()};
 
