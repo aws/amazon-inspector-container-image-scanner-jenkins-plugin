@@ -26,7 +26,6 @@ public class HtmlGenerator {
         htmlContent = htmlContent.replaceAll(scriptStart,
                 scriptStart + "\n\t\t\tconst txt = '" + trimmedJson + "'");
 
-        logger.println(htmlContent);
         createFile(htmlContent);
     }
 

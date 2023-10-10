@@ -6890,9 +6890,10 @@ table and the footer
                     </div>
                   </div>
                   <p
+                    id="report_updated_at"
                     class="awsui_description_2qdw9_1s1m0_223 awsui_description-variant-h1_2qdw9_1s1m0_228 awsui_refresh_2qdw9_1s1m0_110"
                   >
-<!--                    Updated at 10-04-2023 04:07:55-->
+                    Updated at
                   </p>
                 </div>
               </div>
@@ -7399,6 +7400,7 @@ table and the footer
     </div>
 
     <script type="text/javascript">
+      document.getElementById("report_updated_at").innerText = `Updated at ${new Date().toLocaleString()}`
       const result = JSON.parse(txt);
 
       document.querySelector("#all-vulnerabilities-number").innerText =
@@ -7410,10 +7412,10 @@ table and the footer
       const baseInfo = document.querySelectorAll(
         "p.awsui_description_2qdw9_1s1m0_223.awsui_refresh_2qdw9_1s1m0_110"
       );
-  
+
       baseInfo[1].innerText = result.imageMetadata.id;
-      if (result.imageMetadata.tags != null) {
-        baseInfo[1] += ":" + result.imageMetadata.tags;
+      if (result.imageMetadata.tags) {
+        baseInfo[1].innerText += ":" + result.imageMetadata.tags;
       }
 
       baseInfo[2].innerText = result.imageMetadata.sha;
