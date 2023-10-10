@@ -7,6 +7,7 @@ import io.jenkins.plugins.amazoninspectorbuildstep.models.sbom.Components.Rating
 import io.jenkins.plugins.amazoninspectorbuildstep.models.sbom.Components.Vulnerability;
 import io.jenkins.plugins.amazoninspectorbuildstep.sbomparsing.Severity;
 import org.apache.commons.lang.StringEscapeUtils;
+import org.apache.commons.lang.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -34,7 +35,7 @@ public class HtmlConversionUtils {
                 String component = StringEscapeUtils.unescapeJava(getComponent(components, affect.getRef()));
                 HtmlVulnerability htmlVulnerability = HtmlVulnerability.builder()
                         .title(vulnerability.getId())
-                        .severity(severity)
+                        .severity(StringUtils.capitalize(severity))
                         .component(component)
                         .build();
                 htmlVulnerabilities.add(htmlVulnerability);
