@@ -19,4 +19,5 @@ public class CsvData {
     private String packageFixedVersion;
     private String cwes;
     private String exploitAvailable;
+    private String exploitLastSeen;
 }
