@@ -126,7 +126,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             String responseData = requests.requestSbom(sbom).toString();
             responseData = responseData.replaceAll("\n", "");
 
-            Gson gson = new GsonBuilder().setPrettyPrinting().create();
+            Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
             SbomData sbomData = SbomData.builder().sbom(gson.fromJson(responseData, Sbom.class)).build();
 
             String sbomFileName = String.format("%s-%s.json", build.getParent().getDisplayName(),
