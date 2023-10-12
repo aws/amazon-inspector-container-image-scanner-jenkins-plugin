@@ -57,7 +57,7 @@ public class CsvConverter {
     protected List<String []> buildCsvDataLines() {
         List<String[]> dataLines = new ArrayList<>();
         String[] headers = new String[] {"Vulnerability ID", "Severity", "Published", "Modified", "Description",
-                "Package Installed Version", "Package Fixed Version", "EPSS Score", "Exploit Available",
+                "Package Installed Version", "Package Fixed Version", "Package Path", "EPSS Score", "Exploit Available",
                 "Exploit Last Seen", "CWEs"};
         dataLines.add(headers);
 
@@ -74,7 +74,7 @@ public class CsvConverter {
                 String[] dataLine = new String[] {csvData.getVulnerabilityId(),
                         StringUtil.capitalize(csvData.getSeverity()), csvData.getPublished(), csvData.getModified(),
                         csvData.getDescription(), csvData.getPackageInstalledVersion(),
-                        csvData.getPackageFixedVersion(), csvData.getEpssScore(),
+                        csvData.getPackageFixedVersion(), csvData.getPackagePath(), csvData.getEpssScore(),
                         csvData.getExploitAvailable(), csvData.getExploitLastSeen(), csvData.getCwes()};
 
                 dataLines.add(dataLine);
@@ -85,13 +85,14 @@ public class CsvConverter {
     }
 
     public CsvData buildCsvData(Vulnerability vulnerability, Component component) {
-        String installedVersion = getInstalledVersion(component);
         String fixedVersion = getPropertyValueFromKey(vulnerability,
                 String.format("amazon:inspector:sbom_scanner:fixed_version:%s",  component.getBomRef()));
         String exploitAvailable = getPropertyValueFromKey(vulnerability,
                 "amazon:inspector:sbom_scanner:exploit_available");
         String exploitLastSeen = getPropertyValueFromKey(vulnerability,
                 "amazon:inspector:sbom_scanner:exploit_last_seen_in_public");
+        String path = getPropertyValueFromKey(component,
+                "amazon:inspector:sbom_scanner:path");
 
         return CsvData.builder()
                 .vulnerabilityId(vulnerability.getId())
@@ -100,9 +101,9 @@ public class CsvConverter {
                 .modified(getUpdated(vulnerability))
                 .epssScore(getEpssScore(vulnerability))
                 .description(vulnerability.getDescription())
-                .packageInstalledVersion(installedVersion)
+                .packageInstalledVersion(component.getPurl())
                 .packageFixedVersion(fixedVersion)
-                .packagePath("N/A")
+                .packagePath(path)
                 .cwes(getCwesAsString(vulnerability))
                 .exploitAvailable(exploitAvailable)
                 .exploitLastSeen(exploitLastSeen)
@@ -159,18 +160,20 @@ public class CsvConverter {
         return "N/A";
     }
 
-    protected String getInstalledVersion(Component component) {
-        // Matches strings like 3.11.321.2...
-        final String versionPattern = "@(?<version>[^?#]+)";
-
-        Pattern pattern = Pattern.compile(versionPattern);
-        Matcher matcher = pattern.matcher(component.getPurl());
-
-        if (matcher.find()) {
-            return matcher.group(0).replace("@", "");
+    protected String getPropertyValueFromKey(Component component, String key) {
+        if (component == null || component.getProperties() == null) {
+            return "N/A";
         }
 
-        throw new RuntimeException(String.format("No version found from component %s", component));
+        System.out.println(component.getProperties());
+
+        for (Property property : component.getProperties()) {
+            if (property.getName().equals(key)) {
+                return property.getValue();
+            }
+        }
+
+        return "N/A";
     }
 
     protected String getSeverity(Vulnerability vulnerability) {
