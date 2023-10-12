@@ -6,7 +6,7 @@
 /target/
 /build/
 /lib/
-
+.DS_Store
 .crux_dry_run_build
 
 
