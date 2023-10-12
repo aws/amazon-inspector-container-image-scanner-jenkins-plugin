@@ -7,7 +7,6 @@ import java.util.List;
 
 @Getter
 @Setter
-// Currently unused to trim sbom size
 public class Metadata {
     private List<Property> properties;
     private List<Tool> tools;

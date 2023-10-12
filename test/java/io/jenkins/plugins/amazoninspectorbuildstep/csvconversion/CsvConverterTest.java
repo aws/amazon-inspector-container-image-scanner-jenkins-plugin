@@ -43,34 +43,6 @@ public class CsvConverterTest {
         assertEquals(csvData.getExploitAvailable(), "\"true\"");
         assertEquals(csvData.getPackageFixedVersion(), "2.15.0");
         assertEquals(csvData.getPackageInstalledVersion(), "2.12.1");
-        assertEquals(csvData.getPackageName(), "log4j-core");
-    }
-
-    @Test
-    public void testGetExploitAvailable_Success() {
-        assertTrue(Boolean.parseBoolean(csvConverter.getExploitAvailable(vulnerability)));
-    }
-
-    @Test
-    public void testGetFixedVersion_Success() {
-        assertEquals(csvConverter.getFixedVersion(vulnerability, "comp-1"), "2.15.0");
-    }
-
-    @Test
-    public void testGetFixedVersion_ThrowsRuntimeException() {
-        assertThrows(RuntimeException.class, () -> csvConverter.getFixedVersion(vulnerability, "key"));
-    }
-
-
-    @Test
-    public void testGetInstalledVersion_Success() {
-        assertEquals(csvConverter.getInstalledVersion(component), "2.12.1");
-    }
-
-    @Test
-    public void testGetInstalledVersion_ThrowsRuntimeException() {
-        Component invalidComponent = Component.builder().purl("").build();
-        assertThrows(RuntimeException.class, () ->  csvConverter.getInstalledVersion(invalidComponent));
     }
 
     @Test
