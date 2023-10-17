@@ -29,36 +29,45 @@
     <f:entry>
         <!-- Add CSS to align the textboxes horizontally -->
         <style>
-            .horizontal-textboxes {
-            display: flex;
-            align-items: center;
+            .resizedTextbox {
+                width: 10%;
             }
-            .horizontal-textboxes .textbox {
-            margin-right: 5%;
+            .vulnWrapper {
+                display: flex;
+                flex-direction: row;
+                justify-content: left;
+                align-items: center;
+            }
+            .vulnLabel {
+                width: 20%;
             }
         </style>
         <f:block>
-            <b>Maximum Vulnerabilities Allowed:</b>
+            <b>Vulnerability Thresholds:</b>
         </f:block>
-        <div class="horizontal-textboxes">
-            <div class="textbox">
-                <strong>Maximum Critical</strong>
-                <br></br>
-                <f:textbox default="0" field="countCritical" />
+        <div class="vulnWrapper">
+            <label class="vulnLabel" for="countCritical">Critical:</label>
+            <div class="resizedTextbox">
+                <f:textbox default="0" name="countCritical" field="countCritical" />
             </div>
-            <div class="textbox">
-                <strong>Maximum High</strong>
-                <f:textbox default="0" field="countHigh" />
+        </div>
+        <div class="vulnWrapper">
+            <label class="vulnLabel" for="countHigh">High:</label>
+            <div class="resizedTextbox">
+                <f:textbox default="0" name="countHigh" field="countHigh" />
             </div>
-            <div class="textbox">
-                <strong>Maximum Medium</strong>
-                <f:textbox default="5" field="countMedium" />
+        </div>
+        <div class="vulnWrapper">
+            <label class="vulnLabel" for="countMedium">Medium:</label>
+            <div class="resizedTextbox">
+                <f:textbox default="5" name="countMedium" field="countMedium" />
             </div>
-            <div class="textbox">
-                <strong>Maximum Low</strong>
-                <f:textbox default="10" field="countLow" />
+        </div>
+        <div class="vulnWrapper">
+            <label class="vulnLabel" for="countLow">Low:</label>
+            <div class="resizedTextbox">
+                <f:textbox default="10" name="countLow" field="countLow" />
             </div>
-            <!-- Add more textboxes as needed -->
         </div>
     </f:entry>
 </j:jelly>
