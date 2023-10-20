@@ -24,9 +24,15 @@ public class UsernameCredentialsHelper {
     }
 
     public String getKeyFromStore(String username) {
-        return credentials.stream()
+        UsernamePasswordCredentials credential = credentials.stream()
                 .filter(cred -> cred.getUsername().equals(username))
                 .findFirst()
-                .orElse(null).getPassword().getPlainText();
+                .orElse(null);
+
+        if (credential == null) {
+            return null;
+        }
+
+        return credential.getPassword().getPlainText();
     }
 }
