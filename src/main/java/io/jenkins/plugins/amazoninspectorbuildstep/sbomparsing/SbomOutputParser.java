@@ -16,22 +16,22 @@ public class SbomOutputParser {
         this.sbom = sbomData;
     }
 
-    public Results parseSbom() {
-        Results results = new Results();
+    public SeverityCounts parseSbom() {
+        SeverityCounts severityCounts = new SeverityCounts();
         List<Vulnerability> vulnerabilities = sbom.getSbom().getVulnerabilities();
 
         if (vulnerabilities == null) {
-            return results;
+            return severityCounts;
         }
 
         for (Vulnerability vulnerability : vulnerabilities) {
             List<Rating> ratings = vulnerability.getRatings();
 
             Severity severity = getHighestRatingFromList(ratings);
-            results.increment(severity);
+            severityCounts.increment(severity);
         }
 
-        return results;
+        return severityCounts;
     }
 
     @VisibleForTesting

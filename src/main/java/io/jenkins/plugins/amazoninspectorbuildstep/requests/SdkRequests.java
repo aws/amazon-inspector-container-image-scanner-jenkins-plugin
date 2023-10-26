@@ -1,7 +1,6 @@
 package io.jenkins.plugins.amazoninspectorbuildstep.requests;
 
 import lombok.AllArgsConstructor;
-import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import software.amazon.awssdk.http.SdkHttpClient;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.protocols.json.internal.unmarshall.document.DocumentUnmarshaller;
@@ -49,6 +48,6 @@ public class SdkRequests {
 
         return StsAssumeRoleCredentialsProvider.builder().stsClient(stsClient).refreshRequest(AssumeRoleRequest.builder()
                 .roleArn(roleArn)
-                .roleSessionName("inspectorscan").build()).build();
+                .roleSessionName("inspectorJenkinsPlugin").build()).build();
     }
 }
