@@ -12,12 +12,12 @@ import static io.jenkins.plugins.amazoninspectorbuildstep.sbomparsing.Severity.L
 import static io.jenkins.plugins.amazoninspectorbuildstep.sbomparsing.Severity.MEDIUM;
 import static io.jenkins.plugins.amazoninspectorbuildstep.sbomparsing.Severity.NONE;
 
-public class Results {
+public class SeverityCounts {
 
     @Getter
     private Map<Severity, Integer> counts = new HashMap<>();
 
-    public Results() {
+    public SeverityCounts() {
         counts.put(CRITICAL, 0);
         counts.put(HIGH, 0);
         counts.put(MEDIUM, 0);

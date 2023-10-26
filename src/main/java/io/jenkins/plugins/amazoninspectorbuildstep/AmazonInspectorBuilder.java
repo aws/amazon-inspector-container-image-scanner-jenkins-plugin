@@ -31,7 +31,7 @@ import io.jenkins.plugins.amazoninspectorbuildstep.models.html.components.Severi
 import io.jenkins.plugins.amazoninspectorbuildstep.models.sbom.Sbom;
 import io.jenkins.plugins.amazoninspectorbuildstep.models.sbom.SbomData;
 import io.jenkins.plugins.amazoninspectorbuildstep.requests.SdkRequests;
-import io.jenkins.plugins.amazoninspectorbuildstep.sbomparsing.Results;
+import io.jenkins.plugins.amazoninspectorbuildstep.sbomparsing.SeverityCounts;
 import io.jenkins.plugins.amazoninspectorbuildstep.sbomparsing.SbomOutputParser;
 import io.jenkins.plugins.amazoninspectorbuildstep.sbomparsing.Severity;
 
@@ -98,11 +98,16 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         File outFile = new File(build.getRootDir(), "out");
         this.job = build.getParent();
 
-        PrintStream printStream =  new PrintStream(outFile, StandardCharsets.UTF_8);
+        PrintStream printStream = new PrintStream(outFile, StandardCharsets.UTF_8);
 
         try {
             String jarPath = new File(AmazonInspectorBuilder.class.getProtectionDomain().getCodeSource().getLocation()
                     .toURI()).getPath();
+
+            if (Jenkins.getInstanceOrNull() == null) {
+                throw new RuntimeException("No Jenkins instance found");
+            }
+
             String jenkinsRootPath = Jenkins.getInstanceOrNull().get().getRootDir().getAbsolutePath();
             String bomermanPath = new BomermanJarHandler(jarPath).copyBomermanToDir(jenkinsRootPath);
 
@@ -129,7 +134,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
             SbomData sbomData = SbomData.builder().sbom(gson.fromJson(responseData, Sbom.class)).build();
 
-            String sbomFileName = String.format("%s-%s.json", build.getParent().getDisplayName(),
+            String sbomFileName = String.format("%s-%s-sbom.json", build.getParent().getDisplayName(),
                     build.getDisplayName()).replaceAll("[ #]", "");
             String sbomPath = String.format("%s/%s", build.getRootDir().getAbsolutePath(), sbomFileName);
 
@@ -142,7 +147,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             converter.convert(csvPath);
 
             SbomOutputParser parser = new SbomOutputParser(sbomData);
-            Results results = parser.parseSbom();
+            SeverityCounts severityCounts = parser.parseSbom();
 
             String[] splitName = component.get("name").getAsString().split(":");
             String tag = null;
@@ -159,10 +164,10 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                             .sha(imageSha)
                             .build())
                     .severityValues(SeverityValues.builder()
-                            .critical(results.getCounts().get(Severity.CRITICAL))
-                            .high(results.getCounts().get(Severity.HIGH))
-                            .medium(results.getCounts().get(Severity.MEDIUM))
-                            .low(results.getCounts().get(Severity.LOW))
+                            .critical(severityCounts.getCounts().get(Severity.CRITICAL))
+                            .high(severityCounts.getCounts().get(Severity.HIGH))
+                            .medium(severityCounts.getCounts().get(Severity.MEDIUM))
+                            .low(severityCounts.getCounts().get(Severity.LOW))
                             .build())
                     .vulnerabilities(HtmlConversionUtils.convertVulnerabilities(sbomData.getSbom().getVulnerabilities(),
                             sbomData.getSbom().getComponents()))
@@ -177,9 +182,9 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             listener.getLogger().printf("CSV Output File: file://%s\n", csvPath.replace(" ", "%20"));
             listener.getLogger().printf("SBOM Output File: file://%s\n", sbomPath.replace(" ", "%20"));
             listener.getLogger().printf("HTML Report File: file://%s\n", htmlPath.replace(" ", "%20"));
-            boolean doesBuildPass = !doesBuildFail(results.getCounts());
-            listener.getLogger().printf("Results: %s\nDoes Build Pass: %s\n",
-                    results, doesBuildPass);
+            boolean doesBuildPass = !doesBuildFail(severityCounts.getCounts());
+            listener.getLogger().printf("SeverityCounts: %s\nDoes Build Pass: %s\n",
+                    severityCounts, doesBuildPass);
 
             if (doesBuildPass) {
                 build.setResult(Result.SUCCESS);
@@ -193,9 +198,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             listener.getLogger().println("Exception:" + e);
             e.printStackTrace(listener.getLogger());
         } finally {
-            if (printStream != null) {
-                printStream.close();
-            }
+            printStream.close();
         }
     }
 
@@ -270,7 +273,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             ListBoxModel items = new ListBoxModel();
 
             items.add("Select AWS Region", null);
-
+            Collections.sort(BETA_REGIONS);
             for (String region : BETA_REGIONS) {
                 items.add(region, region);
             }

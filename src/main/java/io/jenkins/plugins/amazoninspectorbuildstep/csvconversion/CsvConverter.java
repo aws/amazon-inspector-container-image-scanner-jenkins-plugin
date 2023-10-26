@@ -165,8 +165,6 @@ public class CsvConverter {
             return "N/A";
         }
 
-        System.out.println(component.getProperties());
-
         for (Property property : component.getProperties()) {
             if (property.getName().equals(key)) {
                 return property.getValue();
