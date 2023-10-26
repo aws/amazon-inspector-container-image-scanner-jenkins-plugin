@@ -54,6 +54,8 @@ import org.jenkinsci.plugins.plaincredentials.StringCredentials;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import static io.jenkins.plugins.amazoninspectorbuildstep.utils.InspectorRegions.BETA_REGIONS;
+import static io.jenkins.plugins.amazoninspectorbuildstep.utils.Sanitizer.sanitizeNonUrl;
+import static io.jenkins.plugins.amazoninspectorbuildstep.utils.Sanitizer.sanitizeUrl;
 
 
 public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
@@ -149,15 +151,19 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             SbomOutputParser parser = new SbomOutputParser(sbomData);
             SeverityCounts severityCounts = parser.parseSbom();
 
-            String[] splitName = component.get("name").getAsString().split(":");
+            String sanitizedSbomPath = sanitizeUrl("file://" + sbomPath);
+            String sanitizedCsvPath = sanitizeUrl("file://" + csvPath);
+            String sanitizedImageId = sanitizeNonUrl(component.get("name").getAsString());
+
+            String[] splitName = sanitizedImageId.split(":");
             String tag = null;
             if (splitName.length > 1) {
                 tag = splitName[1];
             }
 
             HtmlData htmlData = HtmlData.builder()
-                    .jsonFilePath(sbomPath)
-                    .csvFilePath(csvPath)
+                    .jsonFilePath(sanitizedSbomPath)
+                    .csvFilePath(sanitizedCsvPath)
                     .imageMetadata(ImageMetadata.builder()
                             .id(splitName[0])
                             .tags(tag)
@@ -179,9 +185,9 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             String html = new Gson().toJson(htmlData);
             new HtmlGenerator(htmlPath).generateNewHtml(html);
 
-            listener.getLogger().printf("CSV Output File: file://%s\n", csvPath.replace(" ", "%20"));
-            listener.getLogger().printf("SBOM Output File: file://%s\n", sbomPath.replace(" ", "%20"));
-            listener.getLogger().printf("HTML Report File: file://%s\n", htmlPath.replace(" ", "%20"));
+            listener.getLogger().println("CSV Output File: " + sanitizedCsvPath);
+            listener.getLogger().println("SBOM Output File: " + sanitizedSbomPath);
+            listener.getLogger().println("HTML Report File:" + sanitizeUrl("file://" + htmlPath));
             boolean doesBuildPass = !doesBuildFail(severityCounts.getCounts());
             listener.getLogger().printf("SeverityCounts: %s\nDoes Build Pass: %s\n",
                     severityCounts, doesBuildPass);
@@ -273,7 +279,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             ListBoxModel items = new ListBoxModel();
 
             items.add("Select AWS Region", null);
-            Collections.sort(BETA_REGIONS);
+
             for (String region : BETA_REGIONS) {
                 items.add(region, region);
             }

@@ -2,13 +2,12 @@ package io.jenkins.plugins.amazoninspectorbuildstep.bomerman;
 
 import hudson.model.Job;
 import io.jenkins.plugins.amazoninspectorbuildstep.credentials.UsernameCredentialsHelper;
+import io.jenkins.plugins.amazoninspectorbuildstep.exception.MalformedScanOutputException;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Map;
-
-import static io.jenkins.plugins.amazoninspectorbuildstep.AmazonInspectorBuilder.logger;
 
 public class BomermanRunner {
     private String dockerUsername;
@@ -21,11 +20,11 @@ public class BomermanRunner {
         this.dockerUsername = dockerUsername;
     }
 
-    public String run(Job<?, ?> job) throws IOException {
+    public String run(Job<?, ?> job) throws IOException, MalformedScanOutputException {
         return runBomerman(job, bomermanPath, archivePath);
     }
 
-    private String runBomerman(Job<?, ?> job, String bomermanPath, String archivePath) throws IOException {
+    private String runBomerman(Job<?, ?> job, String bomermanPath, String archivePath) throws IOException, MalformedScanOutputException {
         String[] command = new String[] {
                 bomermanPath, "container", "--image", archivePath
         };
@@ -53,8 +52,15 @@ public class BomermanRunner {
         return processBomermanOutput(output);
     }
 
-    private static String processBomermanOutput(String sbom) {
+    private static String processBomermanOutput(String sbom) throws MalformedScanOutputException {
         sbom.replaceAll("time=.+file=.+\"", "");
-        return sbom.substring(sbom.indexOf("{"), sbom.lastIndexOf("}") + 1);
+        int startIndex = sbom.indexOf("{");
+        int endIndex = sbom.lastIndexOf("}");
+
+        if (startIndex == -1 || endIndex == -1 || startIndex > endIndex) {
+            throw new MalformedScanOutputException("Sbom scanning output formatted incorrectly.");
+        }
+
+        return sbom.substring(startIndex, endIndex + 1);
     }
 }
