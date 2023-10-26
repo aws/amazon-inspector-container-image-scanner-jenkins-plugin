@@ -13,8 +13,6 @@ import java.util.List;
 
 import static io.jenkins.plugins.amazoninspectorbuildstep.sbomparsing.SbomOutputParserTest.readStringFromFile;
 import static org.junit.Assert.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CsvConverterTest {
     SbomData sbomData;
