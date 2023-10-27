@@ -153,7 +153,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
             String sanitizedSbomPath = sanitizeUrl("file://" + sbomPath);
             String sanitizedCsvPath = sanitizeUrl("file://" + csvPath);
-            String sanitizedImageId = sanitizeNonUrl(component.get("name").getAsString());
+            String sanitizedImageId = sanitizeUrl(component.get("name").getAsString());
 
             String[] splitName = sanitizedImageId.split(":");
             String tag = null;
