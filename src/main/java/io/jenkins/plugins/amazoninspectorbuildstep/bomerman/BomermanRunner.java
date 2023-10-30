@@ -1,5 +1,10 @@
 package io.jenkins.plugins.amazoninspectorbuildstep.bomerman;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import hudson.model.Job;
 import io.jenkins.plugins.amazoninspectorbuildstep.credentials.UsernameCredentialsHelper;
 import io.jenkins.plugins.amazoninspectorbuildstep.exception.MalformedScanOutputException;
@@ -49,7 +54,7 @@ public class BomermanRunner {
         }
 
         String output = sb.toString();
-        return processBomermanOutput(output);
+        return stripProperties(processBomermanOutput(output));
     }
 
     private static String processBomermanOutput(String sbom) throws MalformedScanOutputException {
@@ -62,5 +67,17 @@ public class BomermanRunner {
         }
 
         return sbom.substring(startIndex, endIndex + 1);
+    }
+
+    @VisibleForTesting
+    public static String stripProperties(String sbom) {
+        JsonObject json = JsonParser.parseString(sbom).getAsJsonObject();
+        JsonArray components = json.getAsJsonObject().get("components").getAsJsonArray();
+
+        for (JsonElement component : components) {
+            component.getAsJsonObject().remove("properties");
+        }
+
+        return json.toString();
     }
 }
