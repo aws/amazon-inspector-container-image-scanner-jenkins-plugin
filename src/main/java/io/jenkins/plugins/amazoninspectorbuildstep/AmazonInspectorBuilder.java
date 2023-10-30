@@ -20,7 +20,6 @@ import hudson.model.TaskListener;
 import hudson.tasks.Builder;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.util.ListBoxModel;
-import io.jenkins.plugins.amazoninspectorbuildstep.bomerman.BomermanJarHandler;
 import io.jenkins.plugins.amazoninspectorbuildstep.bomerman.BomermanRunner;
 import io.jenkins.plugins.amazoninspectorbuildstep.csvconversion.CsvConverter;
 import io.jenkins.plugins.amazoninspectorbuildstep.html.HtmlGenerator;
@@ -64,6 +63,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     private final String iamRole;
     private final String awsRegion;
     private final String dockerUsername;
+    private final String bomermanPath;
     private final int countCritical;
     private final int countHigh;
     private final int countMedium;
@@ -72,11 +72,12 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
     @DataBoundConstructor
     public AmazonInspectorBuilder(String archivePath, String iamRole, String awsRegion, String dockerUsername,
-                                  int countCritical, int countHigh, int countMedium, int countLow) {
+                                  String bomermanPath, int countCritical, int countHigh, int countMedium, int countLow) {
         this.archivePath = archivePath;
         this.dockerUsername = dockerUsername;
         this.iamRole = iamRole;
         this.awsRegion = awsRegion;
+        this.bomermanPath = bomermanPath;
         this.countCritical = countCritical;
         this.countHigh = countHigh;
         this.countMedium = countMedium;
@@ -109,9 +110,6 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             if (Jenkins.getInstanceOrNull() == null) {
                 throw new RuntimeException("No Jenkins instance found");
             }
-
-            String jenkinsRootPath = Jenkins.getInstanceOrNull().get().getRootDir().getAbsolutePath();
-            String bomermanPath = new BomermanJarHandler(jarPath).copyBomermanToDir(jenkinsRootPath);
 
             String sbom = new BomermanRunner(bomermanPath, archivePath, dockerUsername).run(job);
 
@@ -184,6 +182,10 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
             String html = new Gson().toJson(htmlData);
             new HtmlGenerator(htmlPath).generateNewHtml(html);
+
+            listener.getLogger().println("CSV Output File: " + sanitizedCsvPath);
+            listener.getLogger().println("SBOM Output File: " + sanitizedSbomPath);
+            listener.getLogger().println("HTML Report File:" + sanitizeUrl("file://" + htmlPath));
 
             boolean doesBuildPass = !doesBuildFail(severityCounts.getCounts());
             listener.getLogger().printf("SeverityCounts: %s\nDoes Build Pass: %s\n",
