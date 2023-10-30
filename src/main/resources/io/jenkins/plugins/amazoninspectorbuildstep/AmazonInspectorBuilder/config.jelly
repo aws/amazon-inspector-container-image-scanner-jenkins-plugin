@@ -12,13 +12,19 @@
         </f:radioBlock>
     </f:block>
 
-    <f:entry field="dockerUsername" title="Docker Credentials">
+    <strong>Docker Credentials</strong>
+    <f:entry field="dockerUsername">
         <f:select />
     </f:entry>
 
     <strong>AWS Region</strong>
     <f:entry field="awsRegion">
         <f:select />
+    </f:entry>
+
+    <strong>Path to SBOM Generator Binary</strong>
+    <f:entry field="bomermanPath">
+        <f:textbox placeholder="/Users/user/Downloads/inspector-sbomgen.macos.amd64" />
     </f:entry>
 
     <strong>Image Id</strong>
