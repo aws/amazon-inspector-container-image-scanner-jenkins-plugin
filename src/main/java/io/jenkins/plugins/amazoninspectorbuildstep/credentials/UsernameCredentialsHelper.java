@@ -5,7 +5,6 @@ import com.cloudbees.plugins.credentials.common.UsernamePasswordCredentials;
 import hudson.model.Job;
 import hudson.security.ACL;
 
-import java.io.PrintStream;
 import java.util.Collections;
 import java.util.List;
 
@@ -22,7 +21,7 @@ public class UsernameCredentialsHelper {
         );
     }
 
-    public String getKeyFromStore(String username) {
+    public String getPassword(String username) {
         UsernamePasswordCredentials credential = credentials.stream()
                 .filter(cred -> cred.getUsername().equals(username))
                 .findFirst()
