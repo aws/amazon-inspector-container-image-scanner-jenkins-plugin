@@ -15,8 +15,6 @@ import java.io.PrintStream;
 import java.util.Collections;
 import java.util.List;
 
-import static io.jenkins.plugins.amazoninspectorbuildstep.AmazonInspectorBuilder.logger;
-
 public class StringCredentialsHelper {
     private String region;
     private List<StringCredentials>  credentials;
@@ -39,7 +37,6 @@ public class StringCredentialsHelper {
     }
 
     public AWSSessionCredentials getCredentialsFromRole(String roleArn) {
-        logger.printf("Getting credentials from role %s", roleArn);
         String stsEndpoint = String.format("sts.%s.amazonaws.com",
                 region);
 

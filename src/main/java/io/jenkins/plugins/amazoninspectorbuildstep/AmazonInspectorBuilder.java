@@ -1,5 +1,19 @@
 package io.jenkins.plugins.amazoninspectorbuildstep;
 
+import com.amazon.inspector.plugins.bomerman.BomermanRunner;
+import com.amazon.inspector.plugins.csvconversion.CsvConverter;
+import com.amazon.inspector.plugins.html.HtmlGenerator;
+import com.amazon.inspector.plugins.html.HtmlJarHandler;
+import com.amazon.inspector.plugins.models.html.HtmlData;
+import com.amazon.inspector.plugins.models.html.components.ImageMetadata;
+import com.amazon.inspector.plugins.models.html.components.SeverityValues;
+import com.amazon.inspector.plugins.models.sbom.Sbom;
+import com.amazon.inspector.plugins.models.sbom.SbomData;
+import com.amazon.inspector.plugins.requests.SdkRequests;
+import com.amazon.inspector.plugins.sbomparsing.SbomOutputParser;
+import com.amazon.inspector.plugins.sbomparsing.Severity;
+import com.amazon.inspector.plugins.sbomparsing.SeverityCounts;
+import com.amazon.inspector.plugins.utils.HtmlConversionUtils;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.UsernamePasswordCredentials;
 import com.google.gson.Gson;
@@ -20,19 +34,6 @@ import hudson.model.TaskListener;
 import hudson.tasks.Builder;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.util.ListBoxModel;
-import io.jenkins.plugins.amazoninspectorbuildstep.bomerman.BomermanRunner;
-import io.jenkins.plugins.amazoninspectorbuildstep.csvconversion.CsvConverter;
-import io.jenkins.plugins.amazoninspectorbuildstep.html.HtmlGenerator;
-import io.jenkins.plugins.amazoninspectorbuildstep.html.HtmlJarHandler;
-import io.jenkins.plugins.amazoninspectorbuildstep.models.html.HtmlData;
-import io.jenkins.plugins.amazoninspectorbuildstep.models.html.components.ImageMetadata;
-import io.jenkins.plugins.amazoninspectorbuildstep.models.html.components.SeverityValues;
-import io.jenkins.plugins.amazoninspectorbuildstep.models.sbom.Sbom;
-import io.jenkins.plugins.amazoninspectorbuildstep.models.sbom.SbomData;
-import io.jenkins.plugins.amazoninspectorbuildstep.requests.SdkRequests;
-import io.jenkins.plugins.amazoninspectorbuildstep.sbomparsing.SeverityCounts;
-import io.jenkins.plugins.amazoninspectorbuildstep.sbomparsing.SbomOutputParser;
-import io.jenkins.plugins.amazoninspectorbuildstep.sbomparsing.Severity;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -44,7 +45,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import io.jenkins.plugins.amazoninspectorbuildstep.utils.HtmlConversionUtils;
 import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildStep;
 import org.apache.commons.lang.StringEscapeUtils;
@@ -52,9 +52,9 @@ import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.plaincredentials.StringCredentials;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-import static io.jenkins.plugins.amazoninspectorbuildstep.utils.InspectorRegions.BETA_REGIONS;
-import static io.jenkins.plugins.amazoninspectorbuildstep.utils.Sanitizer.sanitizeNonUrl;
-import static io.jenkins.plugins.amazoninspectorbuildstep.utils.Sanitizer.sanitizeUrl;
+import static com.amazon.inspector.plugins.utils.InspectorRegions.BETA_REGIONS;
+import static com.amazon.inspector.plugins.utils.Sanitizer.sanitizeFilePath;
+import static com.amazon.inspector.plugins.utils.Sanitizer.sanitizeText;
 
 
 public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
@@ -104,14 +104,12 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         PrintStream printStream = new PrintStream(outFile, StandardCharsets.UTF_8);
 
         try {
-            String jarPath = new File(AmazonInspectorBuilder.class.getProtectionDomain().getCodeSource().getLocation()
-                    .toURI()).getPath();
 
             if (Jenkins.getInstanceOrNull() == null) {
                 throw new RuntimeException("No Jenkins instance found");
             }
 
-            String sbom = new BomermanRunner(bomermanPath, archivePath, dockerUsername).run(job);
+            String sbom = new BomermanRunner(bomermanPath, archivePath, dockerUsername).run();
 
             JsonObject component = JsonParser.parseString(sbom).getAsJsonObject().get("metadata").getAsJsonObject()
                     .get("component").getAsJsonObject();
@@ -128,7 +126,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             SdkRequests requests = new SdkRequests(awsRegion, iamRole);
 
             listener.getLogger().println("Translating to SBOM data.");
-            String responseData = requests.requestSbom(sbom).toString();
+            String responseData = requests.requestSbom(sbom);
             responseData = responseData.replaceAll("\n", "");
 
             Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
@@ -149,9 +147,9 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             SbomOutputParser parser = new SbomOutputParser(sbomData);
             SeverityCounts severityCounts = parser.parseSbom();
 
-            String sanitizedSbomPath = sanitizeUrl("file://" + sbomPath);
-            String sanitizedCsvPath = sanitizeUrl("file://" + csvPath);
-            String sanitizedImageId = sanitizeUrl(component.get("name").getAsString());
+            String sanitizedSbomPath = sanitizeFilePath("file://" + sbomPath);
+            String sanitizedCsvPath = sanitizeFilePath("file://" + csvPath);
+            String sanitizedImageId = sanitizeText(component.get("name").getAsString());
 
             String[] splitName = sanitizedImageId.split(":");
             String tag = null;
@@ -177,7 +175,9 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                             sbomData.getSbom().getComponents()))
                     .build();
 
-            HtmlJarHandler htmlJarHandler = new HtmlJarHandler(jarPath);
+            String coreJarPath = new File(HtmlJarHandler.class.getProtectionDomain().getCodeSource().getLocation()
+                    .toURI()).getPath();
+            HtmlJarHandler htmlJarHandler = new HtmlJarHandler(coreJarPath);
             String htmlPath = htmlJarHandler.copyHtmlToDir(build.getRootDir().getAbsolutePath());
 
             String html = new Gson().toJson(htmlData);
@@ -185,7 +185,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
             listener.getLogger().println("CSV Output File: " + sanitizedCsvPath);
             listener.getLogger().println("SBOM Output File: " + sanitizedSbomPath);
-            listener.getLogger().println("HTML Report File:" + sanitizeUrl("file://" + htmlPath));
+            listener.getLogger().println("HTML Report File:" + sanitizeFilePath("file://" + htmlPath));
 
             boolean doesBuildPass = !doesBuildFail(severityCounts.getCounts());
             listener.getLogger().printf("SeverityCounts: %s\nDoes Build Pass: %s\n",
@@ -216,6 +216,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             throw new RuntimeException(e);
         }
     }
+
 
     @Symbol("Amazon Inspector")
     @Extension

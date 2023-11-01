@@ -9,7 +9,6 @@ import java.io.PrintStream;
 import java.util.Collections;
 import java.util.List;
 
-import static io.jenkins.plugins.amazoninspectorbuildstep.AmazonInspectorBuilder.logger;
 
 public class UsernameCredentialsHelper {
     private List<UsernamePasswordCredentials>  credentials;
