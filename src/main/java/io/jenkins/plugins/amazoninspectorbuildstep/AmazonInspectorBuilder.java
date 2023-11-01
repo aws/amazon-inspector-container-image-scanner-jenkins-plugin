@@ -45,6 +45,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import io.jenkins.plugins.amazoninspectorbuildstep.credentials.UsernameCredentialsHelper;
 import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildStep;
 import org.apache.commons.lang.StringEscapeUtils;
@@ -109,7 +110,9 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                 throw new RuntimeException("No Jenkins instance found");
             }
 
-            String sbom = new BomermanRunner(bomermanPath, archivePath, dockerUsername).run();
+            UsernameCredentialsHelper usernameCredentialsHelper = new UsernameCredentialsHelper(job);
+            String dockerPassword = usernameCredentialsHelper.getPassword(dockerUsername);
+            String sbom = new BomermanRunner(bomermanPath, archivePath, dockerUsername, dockerPassword).run();
 
             JsonObject component = JsonParser.parseString(sbom).getAsJsonObject().get("metadata").getAsJsonObject()
                     .get("component").getAsJsonObject();
@@ -188,7 +191,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             listener.getLogger().println("HTML Report File:" + sanitizeFilePath("file://" + htmlPath));
 
             boolean doesBuildPass = !doesBuildFail(severityCounts.getCounts());
-            listener.getLogger().printf("SeverityCounts: %s\nDoes Build Pass: %s\n",
+            listener.getLogger().printf("Results: %s\nDoes Build Pass: %s\n",
                     severityCounts, doesBuildPass);
 
             if (doesBuildPass) {
