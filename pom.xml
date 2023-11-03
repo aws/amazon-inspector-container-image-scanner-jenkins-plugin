@@ -58,20 +58,6 @@
             <artifactId>cicd-core</artifactId>
             <version>1.0</version>
         </dependency>
-
-        <!-- https://mvnrepository.com/artifact/com.amazonaws/aws-java-sdk-sts -->
-        <dependency>
-            <groupId>com.amazonaws</groupId>
-            <artifactId>aws-java-sdk-sts</artifactId>
-            <version>1.12.556</version>
-        </dependency>
-
-        <!-- https://mvnrepository.com/artifact/software.amazon.awssdk/auth -->
-        <dependency>
-            <groupId>software.amazon.awssdk</groupId>
-            <artifactId>auth</artifactId>
-            <version>2.20.153</version>
-        </dependency>
     </dependencies>
 
     <parent>
