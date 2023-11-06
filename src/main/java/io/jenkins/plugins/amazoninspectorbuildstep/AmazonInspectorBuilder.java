@@ -1,19 +1,5 @@
 package io.jenkins.plugins.amazoninspectorbuildstep;
 
-import com.amazon.inspector.plugins.bomerman.BomermanRunner;
-import com.amazon.inspector.plugins.csvconversion.CsvConverter;
-import com.amazon.inspector.plugins.html.HtmlGenerator;
-import com.amazon.inspector.plugins.html.HtmlJarHandler;
-import com.amazon.inspector.plugins.models.html.HtmlData;
-import com.amazon.inspector.plugins.models.html.components.ImageMetadata;
-import com.amazon.inspector.plugins.models.html.components.SeverityValues;
-import com.amazon.inspector.plugins.models.sbom.Sbom;
-import com.amazon.inspector.plugins.models.sbom.SbomData;
-import com.amazon.inspector.plugins.requests.SdkRequests;
-import com.amazon.inspector.plugins.sbomparsing.SbomOutputParser;
-import com.amazon.inspector.plugins.sbomparsing.Severity;
-import com.amazon.inspector.plugins.sbomparsing.SeverityCounts;
-import com.amazon.inspector.plugins.utils.HtmlConversionUtils;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.UsernamePasswordCredentials;
 import com.google.gson.Gson;
@@ -45,7 +31,21 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import io.jenkins.plugins.amazoninspectorbuildstep.bomerman.BomermanRunner;
 import io.jenkins.plugins.amazoninspectorbuildstep.credentials.UsernameCredentialsHelper;
+import io.jenkins.plugins.amazoninspectorbuildstep.csvconversion.CsvConverter;
+import io.jenkins.plugins.amazoninspectorbuildstep.html.HtmlGenerator;
+import io.jenkins.plugins.amazoninspectorbuildstep.html.HtmlJarHandler;
+import io.jenkins.plugins.amazoninspectorbuildstep.models.html.HtmlData;
+import io.jenkins.plugins.amazoninspectorbuildstep.models.html.components.ImageMetadata;
+import io.jenkins.plugins.amazoninspectorbuildstep.models.html.components.SeverityValues;
+import io.jenkins.plugins.amazoninspectorbuildstep.models.sbom.Sbom;
+import io.jenkins.plugins.amazoninspectorbuildstep.models.sbom.SbomData;
+import io.jenkins.plugins.amazoninspectorbuildstep.requests.SdkRequests;
+import io.jenkins.plugins.amazoninspectorbuildstep.sbomparsing.SbomOutputParser;
+import io.jenkins.plugins.amazoninspectorbuildstep.sbomparsing.Severity;
+import io.jenkins.plugins.amazoninspectorbuildstep.sbomparsing.SeverityCounts;
+import io.jenkins.plugins.amazoninspectorbuildstep.utils.HtmlConversionUtils;
 import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildStep;
 import org.apache.commons.lang.StringEscapeUtils;
@@ -53,10 +53,9 @@ import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.plaincredentials.StringCredentials;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-import static com.amazon.inspector.plugins.utils.InspectorRegions.BETA_REGIONS;
-import static com.amazon.inspector.plugins.utils.Sanitizer.sanitizeFilePath;
-import static com.amazon.inspector.plugins.utils.Sanitizer.sanitizeText;
-
+import static io.jenkins.plugins.amazoninspectorbuildstep.utils.InspectorRegions.BETA_REGIONS;
+import static io.jenkins.plugins.amazoninspectorbuildstep.utils.Sanitizer.sanitizeFilePath;
+import static io.jenkins.plugins.amazoninspectorbuildstep.utils.Sanitizer.sanitizeText;
 
 public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     public static PrintStream logger;
@@ -152,7 +151,14 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
             String sanitizedSbomPath = sanitizeFilePath("file://" + sbomPath);
             String sanitizedCsvPath = sanitizeFilePath("file://" + csvPath);
-            String sanitizedImageId = sanitizeText(component.get("name").getAsString());
+            String sanitizedImageId = null;
+            String componentName = component.get("name").getAsString();
+
+            if (componentName.endsWith(".tar")) {
+                sanitizedImageId = sanitizeFilePath("file://" + componentName);
+            } else {
+                sanitizedImageId = sanitizeText(componentName);
+            }
 
             String[] splitName = sanitizedImageId.split(":");
             String tag = null;
