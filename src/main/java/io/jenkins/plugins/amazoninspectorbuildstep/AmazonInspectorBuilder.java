@@ -125,11 +125,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             }
 
             listener.getLogger().println("Sending SBOM to Inspector for validation");
-            SdkRequests requests = new SdkRequests(awsRegion, iamRole);
-
-            listener.getLogger().println("Translating to SBOM data.");
-            String responseData = requests.requestSbom(sbom);
-            responseData = responseData.replaceAll("\n", "");
+            String responseData = new SdkRequests(awsRegion, iamRole).requestSbom(sbom);
 
             Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
             SbomData sbomData = SbomData.builder().sbom(gson.fromJson(responseData, Sbom.class)).build();
@@ -142,8 +138,10 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
             CsvConverter converter = new CsvConverter(sbomData);
             String csvFileName = String.format("%s-%s.csv", build.getParent().getDisplayName(),
-                    build.getDisplayName()).replaceAll("[ #]", "");;
+                    build.getDisplayName()).replaceAll("[ #]", "");
             String csvPath = String.format("%s/%s", build.getRootDir().getAbsolutePath(), csvFileName);
+
+            logger.println("Converting SBOM Results to CSV.");
             converter.convert(csvPath);
 
             SbomOutputParser parser = new SbomOutputParser(sbomData);
@@ -184,9 +182,9 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                             sbomData.getSbom().getComponents()))
                     .build();
 
-            String coreJarPath = new File(HtmlJarHandler.class.getProtectionDomain().getCodeSource().getLocation()
+            String htmlJarPath = new File(HtmlJarHandler.class.getProtectionDomain().getCodeSource().getLocation()
                     .toURI()).getPath();
-            HtmlJarHandler htmlJarHandler = new HtmlJarHandler(coreJarPath);
+            HtmlJarHandler htmlJarHandler = new HtmlJarHandler(htmlJarPath);
             String htmlPath = htmlJarHandler.copyHtmlToDir(build.getRootDir().getAbsolutePath());
 
             String html = new Gson().toJson(htmlData);
@@ -195,7 +193,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             listener.getLogger().println("CSV Output File: " + sanitizedCsvPath);
             listener.getLogger().println("SBOM Output File: " + sanitizedSbomPath);
             listener.getLogger().println("HTML Report File:" + sanitizeFilePath("file://" + htmlPath));
-
+            listener.getLogger().println("\n");
             boolean doesBuildPass = !doesBuildFail(severityCounts.getCounts());
             listener.getLogger().printf("Results: %s\nDoes Build Pass: %s\n",
                     severityCounts, doesBuildPass);
@@ -303,7 +301,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
         @Override
         public String getDisplayName() {
-            return "Amazon Inspector Scan - Beta";
+            return "Amazon Inspector Scan";
         }
     }
 }
