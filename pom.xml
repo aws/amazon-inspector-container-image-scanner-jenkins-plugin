@@ -60,7 +60,7 @@
         </dependency>
 
         <dependency>
-            <groupId>com.amazonaws</groupId>
+            <groupId>software.amazon.awssdk</groupId>
             <artifactId>inspectorscan</artifactId>
             <version>2.0</version>
         </dependency>
@@ -183,7 +183,7 @@
                         <id>install-external-non-maven-jar-MWS-Client-into-local-maven-repo</id>
                         <phase>package</phase>
                         <configuration>
-                            <groupId>com.amazonaws</groupId>
+                            <groupId>software.amazon.awssdk</groupId>
                             <artifactId>inspectorscan</artifactId>
                             <version>2.0</version>
                             <file>${pom.basedir}/src/main/resources/AwsJavaSdk-InspectorScan-2.0.jar</file>
