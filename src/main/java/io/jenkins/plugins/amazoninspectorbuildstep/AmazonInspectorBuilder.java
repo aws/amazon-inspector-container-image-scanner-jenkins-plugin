@@ -31,7 +31,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import io.jenkins.plugins.amazoninspectorbuildstep.bomerman.BomermanRunner;
+import io.jenkins.plugins.amazoninspectorbuildstep.sbomgen.SbomgenRunner;
 import io.jenkins.plugins.amazoninspectorbuildstep.credentials.UsernameCredentialsHelper;
 import io.jenkins.plugins.amazoninspectorbuildstep.csvconversion.CsvConverter;
 import io.jenkins.plugins.amazoninspectorbuildstep.html.HtmlGenerator;
@@ -63,7 +63,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     private final String iamRole;
     private final String awsRegion;
     private final String dockerUsername;
-    private final String bomermanPath;
+    private final String sbomgenPath;
     private final int countCritical;
     private final int countHigh;
     private final int countMedium;
@@ -72,12 +72,12 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
     @DataBoundConstructor
     public AmazonInspectorBuilder(String archivePath, String iamRole, String awsRegion, String dockerUsername,
-                                  String bomermanPath, int countCritical, int countHigh, int countMedium, int countLow) {
+                                  String sbomgenPath, int countCritical, int countHigh, int countMedium, int countLow) {
         this.archivePath = archivePath;
         this.dockerUsername = dockerUsername;
         this.iamRole = iamRole;
         this.awsRegion = awsRegion;
-        this.bomermanPath = bomermanPath;
+        this.sbomgenPath = sbomgenPath;
         this.countCritical = countCritical;
         this.countHigh = countHigh;
         this.countMedium = countMedium;
@@ -111,7 +111,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
             UsernameCredentialsHelper usernameCredentialsHelper = new UsernameCredentialsHelper(job);
             String dockerPassword = usernameCredentialsHelper.getPassword(dockerUsername);
-            String sbom = new BomermanRunner(bomermanPath, archivePath, dockerUsername, dockerPassword).run();
+            String sbom = new SbomgenRunner(sbomgenPath, archivePath, dockerUsername, dockerPassword).run();
 
             JsonObject component = JsonParser.parseString(sbom).getAsJsonObject().get("metadata").getAsJsonObject()
                     .get("component").getAsJsonObject();
@@ -192,8 +192,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
             listener.getLogger().println("CSV Output File: " + sanitizedCsvPath);
             listener.getLogger().println("SBOM Output File: " + sanitizedSbomPath);
-            listener.getLogger().println("HTML Report File:" + sanitizeFilePath("file://" + htmlPath));
-            listener.getLogger().println("\n");
+            listener.getLogger().println("HTML Report File: " + sanitizeFilePath("file://" + htmlPath));
             boolean doesBuildPass = !doesBuildFail(severityCounts.getCounts());
             listener.getLogger().printf("Results: %s\nDoes Build Pass: %s\n",
                     severityCounts, doesBuildPass);

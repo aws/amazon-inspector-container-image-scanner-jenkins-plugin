@@ -1,4 +1,4 @@
-package io.jenkins.plugins.amazoninspectorbuildstep.bomerman;
+package io.jenkins.plugins.amazoninspectorbuildstep.sbomgen;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.gson.JsonArray;
@@ -7,9 +7,9 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.jenkins.plugins.amazoninspectorbuildstep.exception.MalformedScanOutputException;
 
-public class BomermanUtils {
+public class SbomgenUtils {
 
-    public static String processBomermanOutput(String sbom) throws MalformedScanOutputException {
+    public static String processSbomgenOutput(String sbom) throws MalformedScanOutputException {
         sbom.replaceAll("time=.+file=.+\"", "");
         int startIndex = sbom.indexOf("{");
         int endIndex = sbom.lastIndexOf("}");
