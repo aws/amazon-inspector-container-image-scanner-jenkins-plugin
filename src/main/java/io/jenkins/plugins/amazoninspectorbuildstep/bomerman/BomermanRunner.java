@@ -1,5 +1,6 @@
 package io.jenkins.plugins.amazoninspectorbuildstep.bomerman;
 
+import io.jenkins.plugins.amazoninspectorbuildstep.exception.BomermanNotFoundException;
 import io.jenkins.plugins.amazoninspectorbuildstep.exception.MalformedScanOutputException;
 import lombok.Setter;
 
@@ -32,11 +33,11 @@ public class BomermanRunner {
         this.dockerPassword = dockerPassword;
     }
 
-    public String run() throws IOException, MalformedScanOutputException {
+    public String run() throws Exception {
         return runBomerman(bomermanPath, archivePath);
     }
 
-    private String runBomerman(String bomermanPath, String archivePath) throws IOException, MalformedScanOutputException {
+    private String runBomerman(String bomermanPath, String archivePath) throws Exception {
         String[] command = new String[] {
                 bomermanPath, "container", "--image", archivePath
         };
@@ -49,7 +50,15 @@ public class BomermanRunner {
         }
 
         builder.redirectErrorStream(true);
-        Process p = builder.start();
+        Process p = null;
+
+        try {
+            p = builder.start();
+        } catch (IOException e) {
+            throw new BomermanNotFoundException(String.format("There was an issue running inspector-sbomgen, " +
+                    "is %s the correct path?", bomermanPath));
+        }
+
         BufferedReader r = new BufferedReader(new InputStreamReader(p.getInputStream()));
         String line;
         StringBuilder sb = new StringBuilder();
