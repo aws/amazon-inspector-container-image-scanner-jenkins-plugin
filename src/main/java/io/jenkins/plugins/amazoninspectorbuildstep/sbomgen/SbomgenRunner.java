@@ -1,11 +1,13 @@
 package io.jenkins.plugins.amazoninspectorbuildstep.sbomgen;
 
+import com.google.common.annotations.VisibleForTesting;
 import lombok.Setter;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.Map;
 
+import static io.jenkins.plugins.amazoninspectorbuildstep.AmazonInspectorBuilder.logger;
 import static io.jenkins.plugins.amazoninspectorbuildstep.sbomgen.SbomgenUtils.processSbomgenOutput;
 import static io.jenkins.plugins.amazoninspectorbuildstep.sbomgen.SbomgenUtils.stripProperties;
 
@@ -35,31 +37,45 @@ public class SbomgenRunner {
     }
 
     private String runSbomgen(String sbomgenPath, String archivePath) throws Exception {
-            String[] command = new String[] {
-                    sbomgenPath, "container", "--image", archivePath
-            };
+        if (!isValidPath(sbomgenPath)) {
+            throw new IllegalArgumentException("Invalid sbomgen path: " + sbomgenPath);
+        }
 
-            ProcessBuilder builder = new ProcessBuilder(command);
-            Map<String, String> environment = builder.environment();
-            if (dockerPassword != null && !dockerPassword.isEmpty()) {
-                environment.put("INSPECTOR_SBOMGEN_USERNAME", dockerUsername);
-                environment.put("INSPECTOR_SBOMGEN_PASSWORD", dockerPassword);
-            }
+        if (!isValidPath(archivePath)) {
+            throw new IllegalArgumentException("Invalid archive path: " + archivePath);
+        }
+
+        String[] command = new String[] {
+                sbomgenPath, "container", "--image", archivePath
+        };
+
+        ProcessBuilder builder = new ProcessBuilder(command);
+        Map<String, String> environment = builder.environment();
+
+        if (dockerPassword != null && !dockerPassword.isEmpty()) {
+            environment.put("INSPECTOR_SBOMGEN_USERNAME", dockerUsername);
+            environment.put("INSPECTOR_SBOMGEN_PASSWORD", dockerPassword);
+        }
 
 
-            builder.redirectErrorStream(true);
+        builder.redirectErrorStream(true);
+        Process p = builder.start();
 
-            Process p = builder.start();
+        BufferedReader r = new BufferedReader(new InputStreamReader(p.getInputStream()));
+        String line;
+        StringBuilder sb = new StringBuilder();
+        while (true) {
+            line = r.readLine();
+            sb.append(line + "\n");
+            if (line == null) { break; }
+        }
 
-            BufferedReader r = new BufferedReader(new InputStreamReader(p.getInputStream()));
-            String line;
-            StringBuilder sb = new StringBuilder();
-            while (true) {
-                line = r.readLine();
-                sb.append(line + "\n");
-                if (line == null) { break; }
-            }
+        return stripProperties(processSbomgenOutput(sb.toString()));
+    }
 
-            return stripProperties(processSbomgenOutput(sb.toString()));
+    @VisibleForTesting
+    protected boolean isValidPath(String path) {
+        String regex = "^[a-zA-Z0-9/._\\-:]+$";
+        return path.matches(regex);
     }
 }
