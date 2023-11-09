@@ -193,6 +193,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             listener.getLogger().println("CSV Output File: " + sanitizedCsvPath);
             listener.getLogger().println("SBOM Output File: " + sanitizedSbomPath);
             listener.getLogger().println("HTML Report File: " + sanitizeFilePath("file://" + htmlPath));
+
             boolean doesBuildPass = !doesBuildFail(severityCounts.getCounts());
             listener.getLogger().printf("Results: %s\nDoes Build Pass: %s\n",
                     severityCounts, doesBuildPass);
