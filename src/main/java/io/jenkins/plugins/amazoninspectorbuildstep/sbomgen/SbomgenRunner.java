@@ -1,9 +1,11 @@
 package io.jenkins.plugins.amazoninspectorbuildstep.sbomgen;
 
 import com.google.common.annotations.VisibleForTesting;
+import io.jenkins.plugins.amazoninspectorbuildstep.exception.SbomgenNotFoundException;
 import lombok.Setter;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Map;
 
@@ -59,7 +61,14 @@ public class SbomgenRunner {
 
 
         builder.redirectErrorStream(true);
-        Process p = builder.start();
+        Process p = null;
+
+        try {
+            p = builder.start();
+        } catch (IOException e) {
+            throw new SbomgenNotFoundException(String.format("There was an issue running inspector-sbomgen, " +
+                    "is %s the correct path?", sbomgenPath));
+        }
 
         BufferedReader r = new BufferedReader(new InputStreamReader(p.getInputStream()));
         String line;
