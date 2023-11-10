@@ -7418,7 +7418,7 @@ table and the footer
 
       const downloadJsonButton = document.querySelector("#download-json");
       const jsonDownLoadLink = document.createElement("a");
-      jsonDownLoadLink.setAttribute("href", encodeURIComponent(result.jsonFilePath));
+      jsonDownLoadLink.setAttribute("href", result.jsonFilePath);
       jsonDownLoadLink.setAttribute("download", "");
       downloadJsonButton.appendChild(jsonDownLoadLink);
       downloadJsonButton.addEventListener(
@@ -7431,7 +7431,7 @@ table and the footer
 
       const downloadCsvButton = document.querySelector("#download-csv");
       const csvDownLoadLink = document.createElement("a");
-      csvDownLoadLink.setAttribute("href", encodeURIComponent(result.csvFilePath));
+      csvDownLoadLink.setAttribute("href", result.csvFilePath);
       csvDownLoadLink.setAttribute("download", "");
       downloadCsvButton.appendChild(csvDownLoadLink);
       downloadCsvButton.addEventListener(
