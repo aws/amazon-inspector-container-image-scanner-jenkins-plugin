@@ -28,7 +28,7 @@ public class HtmlJarHandler {
     }
 
     public File copyFile(File destFile, String fileName) throws IOException {
-
+        destFile.createNewFile();
         JarFile jarFile = new JarFile(jarPath);
 
         JarEntry entry = jarFile.getJarEntry(fileName);

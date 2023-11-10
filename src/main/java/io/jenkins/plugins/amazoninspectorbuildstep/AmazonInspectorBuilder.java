@@ -130,16 +130,18 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
             SbomData sbomData = SbomData.builder().sbom(gson.fromJson(responseData, Sbom.class)).build();
 
+            String workspacePath = String.format("%s/%s", env.get("WORKSPACE"), env.get("BUILD_NUMBER"));
+            new File(workspacePath).mkdirs();
             String sbomFileName = String.format("%s-%s-sbom.json", build.getParent().getDisplayName(),
                     build.getDisplayName()).replaceAll("[ #]", "");
-            String sbomPath = String.format("%s/%s", build.getRootDir().getAbsolutePath(), sbomFileName);
+            String sbomPath = String.format("%s/%s", workspacePath, sbomFileName);
 
             writeSbomDataToFile(gson.toJson(sbomData.getSbom()), sbomPath);
 
             CsvConverter converter = new CsvConverter(sbomData);
             String csvFileName = String.format("%s-%s.csv", build.getParent().getDisplayName(),
                     build.getDisplayName()).replaceAll("[ #]", "");
-            String csvPath = String.format("%s/%s", build.getRootDir().getAbsolutePath(), csvFileName);
+            String csvPath = String.format("%s/%s", workspacePath, csvFileName);
 
             logger.println("Converting SBOM Results to CSV.");
             converter.convert(csvPath);
@@ -185,7 +187,8 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             String htmlJarPath = new File(HtmlJarHandler.class.getProtectionDomain().getCodeSource().getLocation()
                     .toURI()).getPath();
             HtmlJarHandler htmlJarHandler = new HtmlJarHandler(htmlJarPath);
-            String htmlPath = htmlJarHandler.copyHtmlToDir(build.getRootDir().getAbsolutePath());
+
+            String htmlPath = htmlJarHandler.copyHtmlToDir(workspacePath);
 
             String html = new Gson().toJson(htmlData);
             new HtmlGenerator(htmlPath).generateNewHtml(html);
