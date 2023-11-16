@@ -12,6 +12,7 @@ import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.AbstractProject;
+import hudson.model.DirectoryBrowserSupport;
 import hudson.model.Job;
 import hudson.model.Result;
 import hudson.security.ACL;
@@ -102,9 +103,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         this.job = build.getParent();
 
         PrintStream printStream = new PrintStream(outFile, StandardCharsets.UTF_8);
-
         try {
-
             if (Jenkins.getInstanceOrNull() == null) {
                 throw new RuntimeException("No Jenkins instance found");
             }
@@ -132,6 +131,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
             String workspacePath = String.format("%s/%s", env.get("WORKSPACE"), env.get("BUILD_NUMBER"));
             new File(workspacePath).mkdirs();
+
             String sbomFileName = String.format("%s-%s-sbom.json", build.getParent().getDisplayName(),
                     build.getDisplayName()).replaceAll("[ #]", "");
             String sbomPath = String.format("%s/%s", workspacePath, sbomFileName);
@@ -149,8 +149,6 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             SbomOutputParser parser = new SbomOutputParser(sbomData);
             SeverityCounts severityCounts = parser.parseSbom();
 
-            String sanitizedSbomPath = sanitizeFilePath("file://" + sbomPath);
-            String sanitizedCsvPath = sanitizeFilePath("file://" + csvPath);
             String sanitizedImageId = null;
             String componentName = component.get("name").getAsString();
 
@@ -166,9 +164,12 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                 tag = splitName[1];
             }
 
+            String outputWorkspacePath = String.format("%sjob/%s/ws/%s", env.get("JENKINS_URL"), env.get("JOB_NAME"),
+                    env.get("BUILD_NUMBER"));
+
             HtmlData htmlData = HtmlData.builder()
-                    .jsonFilePath(sanitizedSbomPath)
-                    .csvFilePath(sanitizedCsvPath)
+                    .jsonFilePath(outputWorkspacePath + "/" + sbomFileName)
+                    .csvFilePath(outputWorkspacePath + "/" + csvFileName)
                     .imageMetadata(ImageMetadata.builder()
                             .id(splitName[0])
                             .tags(tag)
@@ -193,9 +194,11 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             String html = new Gson().toJson(htmlData);
             new HtmlGenerator(htmlPath).generateNewHtml(html);
 
-            listener.getLogger().println("CSV Output File: " + sanitizedCsvPath);
-            listener.getLogger().println("SBOM Output File: " + sanitizedSbomPath);
-            listener.getLogger().println("HTML Report File: " + sanitizeFilePath("file://" + htmlPath));
+            logger.println("Prefixing file paths with Jenkins URL from settings, currently: " + env.get("JENKINS_URL"));
+
+            listener.getLogger().println("CSV Output File: " + outputWorkspacePath + "/" + csvFileName);
+            listener.getLogger().println("SBOM Output File: " + outputWorkspacePath + "/" + sbomFileName);
+            listener.getLogger().println("HTML Report File: " + outputWorkspacePath + "/index.html");
 
             boolean doesBuildPass = !doesBuildFail(severityCounts.getCounts());
             listener.getLogger().printf("Results: %s\nDoes Build Pass: %s\n",
