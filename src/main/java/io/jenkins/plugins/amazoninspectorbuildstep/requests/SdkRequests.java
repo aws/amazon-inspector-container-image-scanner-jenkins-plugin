@@ -15,9 +15,6 @@ import software.amazon.awssdk.services.sts.model.AssumeRoleRequest;
 
 import software.amazon.awssdk.services.inspectorscan.model.OutputFormat;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-
 public class SdkRequests {
     String region;
     String roleArn;
@@ -26,13 +23,12 @@ public class SdkRequests {
         this.roleArn = roleArn;
     }
 
-    public String requestSbom(String sbom) throws URISyntaxException {
+    public String requestSbom(String sbom) {
         SdkHttpClient client = ApacheHttpClient.builder().build();
         InspectorScanClient scanClient = InspectorScanClient.builder()
                 .region(Region.of(region))
                 .httpClient(client)
                 .credentialsProvider(getCredentialProvider())
-                .endpointOverride(new URI(String.format("https://prod.%s.waystar.inspector.aws.a2z.com", region)))
                 .build();
 
         JsonNodeParser jsonNodeParser = JsonNodeParser.create();

@@ -55,6 +55,7 @@ import org.jenkinsci.plugins.plaincredentials.StringCredentials;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import static io.jenkins.plugins.amazoninspectorbuildstep.utils.InspectorRegions.BETA_REGIONS;
+import static io.jenkins.plugins.amazoninspectorbuildstep.utils.InspectorRegions.INSPECTOR_REGIONS;
 import static io.jenkins.plugins.amazoninspectorbuildstep.utils.Sanitizer.sanitizeFilePath;
 import static io.jenkins.plugins.amazoninspectorbuildstep.utils.Sanitizer.sanitizeText;
 
@@ -199,7 +200,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             listener.getLogger().println("CSV Output File: " + outputWorkspacePath + "/" + csvFileName);
             listener.getLogger().println("SBOM Output File: " + outputWorkspacePath + "/" + sbomFileName);
             listener.getLogger().println("HTML Report File: " + outputWorkspacePath + "/index.html");
-
+            listener.getLogger().println("Alternate Report Link: file://" + htmlPath);
             boolean doesBuildPass = !doesBuildFail(severityCounts.getCounts());
             listener.getLogger().printf("Results: %s\nDoes Build Pass: %s\n",
                     severityCounts, doesBuildPass);
@@ -293,7 +294,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
             items.add("Select AWS Region", null);
 
-            for (String region : BETA_REGIONS) {
+            for (String region : INSPECTOR_REGIONS) {
                 items.add(region, region);
             }
 
