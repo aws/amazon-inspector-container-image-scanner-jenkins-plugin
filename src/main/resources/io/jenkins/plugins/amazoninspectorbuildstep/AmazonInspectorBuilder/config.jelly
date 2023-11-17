@@ -55,25 +55,25 @@
             <b>Vulnerability Thresholds:</b>
         </f:block>
         <div class="vulnWrapper">
-            <label class="vulnLabel required-content" for="countCritical">Critical:</label>
+            <label class="vulnLabel required-field" for="countCritical">Critical:</label>
             <div class="resizedTextbox">
                 <f:textbox default="0" name="countCritical" field="countCritical" />
             </div>
         </div>
-        <div class="vulnWrapper required-content">
-            <label class="vulnLabel" for="countHigh">High:</label>
+        <div class="vulnWrapper">
+            <label class="vulnLabel required-field" for="countHigh">High:</label>
             <div class="resizedTextbox">
                 <f:textbox default="0" name="countHigh" field="countHigh" />
             </div>
         </div>
-        <div class="vulnWrapper required-content">
-            <label class="vulnLabel" for="countMedium">Medium:</label>
+        <div class="vulnWrapper">
+            <label class="vulnLabel required-field" for="countMedium">Medium:</label>
             <div class="resizedTextbox">
                 <f:textbox default="5" name="countMedium" field="countMedium" />
             </div>
         </div>
-        <div class="vulnWrapper required-content">
-            <label class="vulnLabel" for="countLow">Low:</label>
+        <div class="vulnWrapper">
+            <label class="vulnLabel  required-field" for="countLow">Low:</label>
             <div class="resizedTextbox">
                 <f:textbox default="10" name="countLow" field="countLow" />
             </div>
