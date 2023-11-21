@@ -1,18 +1,32 @@
-
 <?jelly escape-by-default='true'?>
 
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
     <style>
         .required-field::after {
-        content: "*";
-        color: red;
-        margin-left:2px;
+            content: "*";
+            color: red;
+            margin-left:2px;
+        }
+        .padding {
+            padding-right: 200px;
+        }
+        .resizedTextbox {
+            width: 10%;
+        }
+        .vulnWrapper {
+            display: flex;
+            flex-direction: row;
+            justify-content: left;
+            align-items: center;
+        }
+        .vulnLabel {
+            width: 20%;
         }
     </style>
 
     <strong class="required-field">Path to inspector-sbomgen</strong>
     <f:entry field="sbomgenPath">
-        <f:textbox placeholder="/Users/user/Downloads/inspector-sbomgen" />
+        <f:textbox placeholder="/Users/user/Downloads/inspector-sbomgen" value="${it.sbomgenPath}"/>
     </f:entry>
 
     <strong class="required-field">Image Id</strong>
@@ -32,25 +46,10 @@
 
     <strong>Docker Credentials</strong>
     <f:entry field="dockerUsername">
-        <f:select />
+        <f:select clazz="padding"></f:select>
     </f:entry>
 
     <f:entry>
-        <!-- Add CSS to align the textboxes horizontally -->
-        <style>
-            .resizedTextbox {
-                width: 10%;
-            }
-            .vulnWrapper {
-                display: flex;
-                flex-direction: row;
-                justify-content: left;
-                align-items: center;
-            }
-            .vulnLabel {
-                width: 20%;
-            }
-        </style>
         <f:block>
             <b>Vulnerability Thresholds:</b>
         </f:block>

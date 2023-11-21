@@ -108,11 +108,12 @@
         <version>4.52</version>
         <relativePath />
     </parent>
-    <groupId>io.jenkins.plugins</groupId>
-    <artifactId>amazon-inspector-scanner</artifactId>
-    <version>${revision}${changelist}</version>
+
+    <groupId>com.amazon.inspector.jenkins</groupId>
+    <artifactId>amazon-inspector-jenkins-plugin</artifactId>
+    <version>1.0</version>
     <packaging>hpi</packaging>
-    <name>AWS Inspector Scanner</name>
+    <name>Amazon Inspector Scanner</name>
     <url>https://github.com/jenkinsci/${project.artifactId}-plugin</url>
     <scm child.scm.connection.inherit.append.path="false" child.scm.developerConnection.inherit.append.path="false" child.scm.url.inherit.append.path="false">
         <connection>scm:git:https://github.com/${gitHubRepo}</connection>
@@ -124,8 +125,6 @@
     <properties>
         <enforcer.skip>true</enforcer.skip>
         <access-modifier-checker.skip>true</access-modifier-checker.skip>
-        <revision>1.0</revision>
-        <changelist>-SNAPSHOT</changelist>
         <!-- https://www.jenkins.io/doc/developer/plugin-development/choosing-jenkins-baseline/ -->
         <jenkins.version>2.361.4</jenkins.version>
         <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
