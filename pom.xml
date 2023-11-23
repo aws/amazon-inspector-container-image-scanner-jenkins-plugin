@@ -111,7 +111,7 @@
     <artifactId>amazon-inspector-scanner</artifactId>
     <version>${revision}${changelist}</version>
     <packaging>hpi</packaging>
-    <name>AWS Inspector Scanner</name>
+    <name>Amazon Inspector Scanner</name>
     <url>https://github.com/jenkinsci/${project.artifactId}-plugin</url>
     <scm child.scm.connection.inherit.append.path="false" child.scm.developerConnection.inherit.append.path="false" child.scm.url.inherit.append.path="false">
         <connection>scm:git:https://github.com/${gitHubRepo}</connection>
