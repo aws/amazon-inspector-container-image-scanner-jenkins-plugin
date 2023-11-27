@@ -54,6 +54,7 @@ import org.apache.commons.lang.StringEscapeUtils;
 import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.plaincredentials.StringCredentials;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.verb.POST;
 
 import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.utils.InspectorRegions.INSPECTOR_REGIONS;
 import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.utils.Sanitizer.sanitizeFilePath;
@@ -260,6 +261,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             return items;
         }
 
+        @POST
         public ListBoxModel doFillDockerUsernameItems() {
             if (Jenkins.get().hasPermission(READ)) {
                 return getUsernameCredentialModels();
