@@ -1,6 +1,45 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.jenkins-ci.plugins</groupId>
+        <artifactId>plugin</artifactId>
+        <version>4.75</version>
+        <relativePath />
+    </parent>
+
+    <groupId>io.jenkins.plugins</groupId>
+    <artifactId>amazon-inspector-image-scanner</artifactId>
+    <version>${revision}${changelist}</version>
+    <packaging>hpi</packaging>
+
+    <name>Amazon Inspector Scanner</name>
+    <url>https://github.com/jenkinsci/${project.artifactId}-plugin</url>
+    <licenses>
+        <license>
+            <name>Apache-2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <scm child.scm.connection.inherit.append.path="false" child.scm.developerConnection.inherit.append.path="false" child.scm.url.inherit.append.path="false">
+        <connection>scm:git:https://github.com/${gitHubRepo}</connection>
+        <developerConnection>scm:git:https://github.com/${gitHubRepo}</developerConnection>
+        <tag>${scmTag}</tag>
+        <url>https://github.com/${gitHubRepo}</url>
+    </scm>
+
+    <properties>
+        <enforcer.skip>true</enforcer.skip>
+        <access-modifier-checker.skip>true</access-modifier-checker.skip>
+        <revision>1.0</revision>
+        <changelist>-SNAPSHOT</changelist>
+        <!-- https://www.jenkins.io/doc/developer/plugin-development/choosing-jenkins-baseline/ -->
+        <jenkins.version>2.414.3</jenkins.version>
+        <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
+    </properties>
 
     <dependencyManagement>
         <dependencies>
@@ -13,15 +52,6 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
-
-    <licenses>
-        <license>
-            <name>Apache-2.0</name>
-            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
-            <distribution>repo</distribution>
-        </license>
-    </licenses>
-
     <dependencies>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
@@ -99,35 +129,6 @@
             <artifactId>aws-json-protocol</artifactId>
         </dependency>
     </dependencies>
-
-    <parent>
-        <groupId>org.jenkins-ci.plugins</groupId>
-        <artifactId>plugin</artifactId>
-        <version>4.75</version>
-        <relativePath />
-    </parent>
-    <groupId>io.jenkins.plugins</groupId>
-    <artifactId>amazon-inspector-image-scanner</artifactId>
-    <version>${revision}${changelist}</version>
-    <packaging>hpi</packaging>
-    <name>Amazon Inspector Scanner</name>
-    <url>https://github.com/jenkinsci/${project.artifactId}-plugin</url>
-    <scm child.scm.connection.inherit.append.path="false" child.scm.developerConnection.inherit.append.path="false" child.scm.url.inherit.append.path="false">
-        <connection>scm:git:https://github.com/${gitHubRepo}</connection>
-        <developerConnection>scm:git:https://github.com/${gitHubRepo}</developerConnection>
-        <tag>${scmTag}</tag>
-        <url>https://github.com/${gitHubRepo}</url>
-    </scm>
-
-    <properties>
-        <enforcer.skip>true</enforcer.skip>
-        <access-modifier-checker.skip>true</access-modifier-checker.skip>
-        <revision>1.0</revision>
-        <changelist>-SNAPSHOT</changelist>
-        <!-- https://www.jenkins.io/doc/developer/plugin-development/choosing-jenkins-baseline/ -->
-        <jenkins.version>2.414.3</jenkins.version>
-        <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
-    </properties>
 
     <repositories>
         <repository>
