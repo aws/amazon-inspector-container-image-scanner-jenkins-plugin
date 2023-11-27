@@ -2,13 +2,13 @@ package com.amazon.inspector.jenkins.amazoninspectorbuildstep.csvconversion;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.opencsv.CSVWriter;
-import freemarker.template.utility.StringUtil;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Components.Affect;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Components.Component;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Components.Property;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Components.Rating;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Components.Vulnerability;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.SbomData;
+import org.apache.commons.lang.StringUtils;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -75,7 +75,7 @@ public class CsvConverter {
                 CsvData csvData = buildCsvData(vulnerability, componentMap.get(componentRef.getRef()));
 
                 String[] dataLine = new String[] {csvData.getVulnerabilityId(),
-                        StringUtil.capitalize(csvData.getSeverity()), csvData.getPublished(), csvData.getModified(),
+                        StringUtils.capitalize(csvData.getSeverity()), csvData.getPublished(), csvData.getModified(),
                         csvData.getDescription(), csvData.getPackageInstalledVersion(),
                         csvData.getPackageFixedVersion(), csvData.getPackagePath(), csvData.getEpssScore(),
                         csvData.getExploitAvailable(), csvData.getExploitLastSeen(), csvData.getCwes()};
