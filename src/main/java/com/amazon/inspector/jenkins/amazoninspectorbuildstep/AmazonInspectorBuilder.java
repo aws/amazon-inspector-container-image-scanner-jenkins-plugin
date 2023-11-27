@@ -17,6 +17,7 @@ import hudson.model.Result;
 import hudson.security.ACL;
 import hudson.model.Run;
 import hudson.model.TaskListener;
+import hudson.security.Permission;
 import hudson.tasks.Builder;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.util.ListBoxModel;
@@ -57,6 +58,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.utils.InspectorRegions.INSPECTOR_REGIONS;
 import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.utils.Sanitizer.sanitizeFilePath;
 import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.utils.Sanitizer.sanitizeText;
+import static hudson.security.Permission.READ;
 
 @Getter
 public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
@@ -241,23 +243,6 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             load();
         }
 
-        private ListBoxModel getStringCredentialModels() {
-            ListBoxModel items = new ListBoxModel();
-            List<StringCredentials> credentials = CredentialsProvider.lookupCredentials(
-                    StringCredentials.class,
-                    Jenkins.getInstance(),
-                    ACL.SYSTEM,
-                    Collections.emptyList()
-            );
-
-            items.add("Select Credential ID", null);
-            for (StringCredentials credential : credentials) {
-                items.add(credential.getId(), credential.getId());
-            }
-
-            return items;
-        }
-
         private ListBoxModel getUsernameCredentialModels() {
             ListBoxModel items = new ListBoxModel();
             List<UsernamePasswordCredentials> credentials = CredentialsProvider.lookupCredentials(
@@ -275,20 +260,11 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             return items;
         }
 
-        public ListBoxModel doFillAccessKeyIdItems() {
-            return getStringCredentialModels();
-        }
-
-        public ListBoxModel doFillSecretKeyIdItems() {
-            return getStringCredentialModels();
-        }
-
-        public ListBoxModel doFillSessionTokenIdItems() {
-            return getStringCredentialModels();
-        }
-
         public ListBoxModel doFillDockerUsernameItems() {
-            return getUsernameCredentialModels();
+            if (Jenkins.get().hasPermission(READ)) {
+                return getUsernameCredentialModels();
+            }
+            return new ListBoxModel();
         }
 
         public ListBoxModel doFillAwsRegionItems() {
