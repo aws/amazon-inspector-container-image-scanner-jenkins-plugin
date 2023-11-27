@@ -12,6 +12,7 @@ import java.util.Map;
 import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomgen.SbomgenUtils.processSbomgenOutput;
 import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomgen.SbomgenUtils.stripProperties;
 
+@SuppressWarnings("lgtm[jenkins/plaintext-storage]")
 public class SbomgenRunner {
     public String sbomgenPath;
     public String archivePath;
