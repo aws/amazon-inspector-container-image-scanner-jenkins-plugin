@@ -1,7 +1,7 @@
 package com.amazon.inspector.jenkins.amazoninspectorbuildstep;
 
 import com.cloudbees.plugins.credentials.CredentialsProvider;
-import com.cloudbees.plugins.credentials.common.UsernamePasswordCredentials;
+import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
@@ -17,7 +17,6 @@ import hudson.model.Result;
 import hudson.security.ACL;
 import hudson.model.Run;
 import hudson.model.TaskListener;
-import hudson.security.Permission;
 import hudson.tasks.Builder;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.util.ListBoxModel;
@@ -33,7 +32,6 @@ import java.util.List;
 import java.util.Map;
 
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomgen.SbomgenRunner;
-import com.amazon.inspector.jenkins.amazoninspectorbuildstep.credentials.UsernameCredentialsHelper;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.csvconversion.CsvConverter;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.html.HtmlGenerator;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.html.HtmlJarHandler;
@@ -52,7 +50,6 @@ import jenkins.tasks.SimpleBuildStep;
 import lombok.Getter;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.jenkinsci.Symbol;
-import org.jenkinsci.plugins.plaincredentials.StringCredentials;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.verb.POST;
 
@@ -67,7 +64,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     private final String archivePath;
     private final String iamRole;
     private final String awsRegion;
-    private final String dockerUsername;
+    private final String credentialId;
     private String sbomgenPath;
     private final int countCritical;
     private final int countHigh;
@@ -77,10 +74,10 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
     @DataBoundConstructor
     public AmazonInspectorBuilder(String archivePath, String sbomgenPath, String iamRole, String awsRegion,
-                                  String dockerUsername, int countCritical, int countHigh, int countMedium,
+                                  String credentialId, int countCritical, int countHigh, int countMedium,
                                   int countLow) {
         this.archivePath = archivePath;
-        this.dockerUsername = dockerUsername;
+        this.credentialId = credentialId;
         this.sbomgenPath = sbomgenPath;
         this.iamRole = iamRole;
         this.awsRegion = awsRegion;
@@ -103,6 +100,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     public void perform(Run<?, ?> build, FilePath workspace, EnvVars env, Launcher launcher, TaskListener listener)
             throws IOException, InterruptedException {
         logger = listener.getLogger();
+
         build.getEnvironment(listener).put("sbomgenPath", sbomgenPath);
 
         File outFile = new File(build.getRootDir(), "out");
@@ -114,9 +112,10 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                 throw new RuntimeException("No Jenkins instance found");
             }
 
-            UsernameCredentialsHelper usernameCredentialsHelper = new UsernameCredentialsHelper(job);
-            String dockerPassword = usernameCredentialsHelper.getPassword(dockerUsername);
-            String sbom = new SbomgenRunner(sbomgenPath, archivePath, dockerUsername, dockerPassword).run();
+            StandardUsernamePasswordCredentials credential = CredentialsProvider.findCredentialById(credentialId,
+                    StandardUsernamePasswordCredentials.class, build);
+            String sbom = new SbomgenRunner(sbomgenPath, archivePath, credential.getUsername(),
+                    credential.getPassword().getPlainText()).run();
 
             JsonObject component = JsonParser.parseString(sbom).getAsJsonObject().get("metadata").getAsJsonObject()
                     .get("component").getAsJsonObject();
@@ -244,27 +243,30 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             load();
         }
 
-        private ListBoxModel getUsernameCredentialModels() {
+        private ListBoxModel getCredentialIdModels() {
             ListBoxModel items = new ListBoxModel();
-            List<UsernamePasswordCredentials> credentials = CredentialsProvider.lookupCredentials(
-                    UsernamePasswordCredentials.class,
+            List<StandardUsernamePasswordCredentials> credentials = CredentialsProvider.lookupCredentials(
+                    StandardUsernamePasswordCredentials.class,
                     Jenkins.getInstance(),
                     ACL.SYSTEM,
                     Collections.emptyList()
             );
 
             items.add("Select Docker Username", null);
-            for (UsernamePasswordCredentials credential : credentials) {
-                items.add(credential.getUsername(), credential.getUsername());
+            for (StandardUsernamePasswordCredentials credential : credentials) {
+                if (credential.getUsername() != null && !credential.getUsername().isEmpty()) {
+                    items.add(String.format("[%s] %s/*****", credential.getId(), credential.getUsername()),
+                            credential.getId());
+                }
             }
 
             return items;
         }
 
         @POST
-        public ListBoxModel doFillDockerUsernameItems() {
+        public ListBoxModel doFillCredentialIdItems() {
             if (Jenkins.get().hasPermission(READ)) {
-                return getUsernameCredentialModels();
+                return getCredentialIdModels();
             }
             return new ListBoxModel();
         }

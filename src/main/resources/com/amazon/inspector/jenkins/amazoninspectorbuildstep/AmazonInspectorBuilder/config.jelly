@@ -45,7 +45,7 @@
     </f:entry>
 
     <strong>Docker Credentials</strong>
-    <f:entry field="dockerUsername">
+    <f:entry field="credentialId">
         <f:select clazz="padding"></f:select>
     </f:entry>
 
