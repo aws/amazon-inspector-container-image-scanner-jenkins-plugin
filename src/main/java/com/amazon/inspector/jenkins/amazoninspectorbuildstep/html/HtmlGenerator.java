@@ -1,7 +1,7 @@
 package com.amazon.inspector.jenkins.amazoninspectorbuildstep.html;
 
 import lombok.AllArgsConstructor;
-import org.apache.commons.lang.StringEscapeUtils;
+import org.apache.commons.lang3.StringEscapeUtils;
 
 import java.io.BufferedWriter;
 import java.io.File;

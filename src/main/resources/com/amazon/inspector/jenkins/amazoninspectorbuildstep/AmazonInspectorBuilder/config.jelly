@@ -2,6 +2,12 @@
 
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
     <style>
+        .bold {
+            font-weight: bold;
+        }
+        .hidden {
+            display: none;
+        }
         .required-field::after {
             content: "*";
             color: red;
@@ -44,37 +50,44 @@
         <f:textbox placeholder="arn:aws:iam::{ACCOUNT_ID}:role/{ROLE_NAME}"/>
     </f:entry>
 
-    <strong>Docker Credentials</strong>
-    <f:entry field="credentialId">
+    <f:entry field="credentialId" title="Docker Credentials">
         <f:select clazz="padding"></f:select>
     </f:entry>
 
+
+    <f:entry field="isThresholdEnabled">
+        <f:checkbox id="isThresholdEnabled" class="bold" checked="false"
+                    title="Enable Vulnerability Thresholds"
+                    tooltip="Specifies whether scanned vulnerabilities exceeding a value will cause a build failure."
+                    onclick='document.getElementById("isThresholdEnabled").checked ?
+            document.getElementById("thresholds").style.display = "block" :
+            document.getElementById("thresholds").style.display = "none"'/>
+    </f:entry>
     <f:entry>
-        <f:block>
-            <b>Vulnerability Thresholds:</b>
-        </f:block>
-        <div class="vulnWrapper">
-            <label class="vulnLabel required-field" for="countCritical">Critical:</label>
-            <div class="resizedTextbox">
-                <f:textbox default="0" name="countCritical" field="countCritical" />
+        <div id="thresholds" class="hidden">
+            <div class="vulnWrapper" >
+                <label class="vulnLabel required-field" for="countCritical">Critical:</label>
+                <div class="resizedTextbox">
+                    <f:textbox default="0" name="countCritical" field="countCritical" />
+                </div>
             </div>
-        </div>
-        <div class="vulnWrapper">
-            <label class="vulnLabel required-field" for="countHigh">High:</label>
-            <div class="resizedTextbox">
-                <f:textbox default="0" name="countHigh" field="countHigh" />
+            <div class="vulnWrapper">
+                <label class="vulnLabel required-field" for="countHigh">High:</label>
+                <div class="resizedTextbox">
+                    <f:textbox default="0" name="countHigh" field="countHigh" />
+                </div>
             </div>
-        </div>
-        <div class="vulnWrapper">
-            <label class="vulnLabel required-field" for="countMedium">Medium:</label>
-            <div class="resizedTextbox">
-                <f:textbox default="5" name="countMedium" field="countMedium" />
+            <div class="vulnWrapper">
+                <label class="vulnLabel required-field" for="countMedium">Medium:</label>
+                <div class="resizedTextbox">
+                    <f:textbox default="5" name="countMedium" field="countMedium" />
+                </div>
             </div>
-        </div>
-        <div class="vulnWrapper">
-            <label class="vulnLabel  required-field" for="countLow">Low:</label>
-            <div class="resizedTextbox">
-                <f:textbox default="10" name="countLow" field="countLow" />
+            <div class="vulnWrapper">
+                <label class="vulnLabel  required-field" for="countLow">Low:</label>
+                <div class="resizedTextbox">
+                    <f:textbox default="10" name="countLow" field="countLow" />
+                </div>
             </div>
         </div>
     </f:entry>

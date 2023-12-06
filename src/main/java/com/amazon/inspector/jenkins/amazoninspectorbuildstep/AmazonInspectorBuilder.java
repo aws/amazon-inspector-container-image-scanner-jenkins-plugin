@@ -56,6 +56,7 @@ import org.kohsuke.stapler.verb.POST;
 import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.utils.InspectorRegions.INSPECTOR_REGIONS;
 import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.utils.Sanitizer.sanitizeFilePath;
 import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.utils.Sanitizer.sanitizeText;
+import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.utils.Sanitizer.sanitizeUrl;
 import static hudson.security.Permission.READ;
 
 @Getter
@@ -65,6 +66,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     private final String iamRole;
     private final String awsRegion;
     private final String credentialId;
+    private final boolean isThresholdEnabled;
     private String sbomgenPath;
     private final int countCritical;
     private final int countHigh;
@@ -74,13 +76,14 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
     @DataBoundConstructor
     public AmazonInspectorBuilder(String archivePath, String sbomgenPath, String iamRole, String awsRegion,
-                                  String credentialId, int countCritical, int countHigh, int countMedium,
-                                  int countLow) {
+                                  String credentialId, boolean isThresholdEnabled, int countCritical, int countHigh,
+                                  int countMedium, int countLow) {
         this.archivePath = archivePath;
         this.credentialId = credentialId;
         this.sbomgenPath = sbomgenPath;
         this.iamRole = iamRole;
         this.awsRegion = awsRegion;
+        this.isThresholdEnabled = isThresholdEnabled;
         this.countCritical = countCritical;
         this.countHigh = countHigh;
         this.countMedium = countMedium;
@@ -173,8 +176,8 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                     env.get("BUILD_NUMBER"));
 
             HtmlData htmlData = HtmlData.builder()
-                    .jsonFilePath(outputWorkspacePath + "/" + sbomFileName)
-                    .csvFilePath(outputWorkspacePath + "/" + csvFileName)
+                    .jsonFilePath(sanitizeUrl(outputWorkspacePath + "/" + sbomFileName))
+                    .csvFilePath(sanitizeUrl(outputWorkspacePath + "/" + csvFileName))
                     .imageMetadata(ImageMetadata.builder()
                             .id(splitName[0])
                             .tags(tag)
@@ -201,19 +204,27 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
             logger.println("Prefixing file paths with Jenkins URL from settings, currently: " + env.get("JENKINS_URL"));
 
-            listener.getLogger().println("CSV Output File: " + outputWorkspacePath + "/" + csvFileName);
-            listener.getLogger().println("SBOM Output File: " + outputWorkspacePath + "/" + sbomFileName);
+            listener.getLogger().println("CSV Output File: " + sanitizeUrl(outputWorkspacePath + "/" + csvFileName));
+            listener.getLogger().println("SBOM Output File: " + sanitizeUrl(outputWorkspacePath + "/" + sbomFileName));
             listener.getLogger().println("HTML Report File: " + outputWorkspacePath + "/index.html");
             listener.getLogger().println("Alternate Report Link: file://" + htmlPath);
             boolean doesBuildPass = !doesBuildFail(severityCounts.getCounts());
-            listener.getLogger().printf("Results: %s\nDoes Build Pass: %s\n",
-                    severityCounts, doesBuildPass);
 
-            if (doesBuildPass) {
+            if (!isThresholdEnabled) {
+                build.setResult(Result.SUCCESS);
+                doesBuildPass = true;
+            } else if (isThresholdEnabled && doesBuildPass) {
                 build.setResult(Result.SUCCESS);
             } else {
                 build.setResult(Result.FAILURE);
             }
+
+            listener.getLogger().println("Results: " + severityCounts);
+            if (!isThresholdEnabled) {
+                listener.getLogger().println("Ignoring results due to thresholds being disabled.");
+            }
+
+            listener.getLogger().println("Does Build Pass: " + doesBuildPass);
 
         } catch (Exception e) {
             listener.getLogger().println("Plugin execution ran into an error and is being aborted!");
