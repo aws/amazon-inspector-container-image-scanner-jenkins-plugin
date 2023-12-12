@@ -1,6 +1,5 @@
 package com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomgen;
 
-import com.amazon.inspector.jenkins.amazoninspectorbuildstep.AmazonInspectorBuilder;
 import com.google.common.annotations.VisibleForTesting;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.exception.SbomgenNotFoundException;
 import lombok.Setter;
@@ -8,6 +7,9 @@ import lombok.Setter;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomgen.SbomgenUtils.processSbomgenOutput;
@@ -36,10 +38,14 @@ public class SbomgenRunner {
     }
 
     public String run() throws Exception {
-        return runSbomgen(sbomgenPath, archivePath);
+        return runSbomgen(sbomgenPath, archivePath, null);
     }
 
-    private String runSbomgen(String sbomgenPath, String archivePath) throws Exception {
+    public String runScan(String roleArn) throws Exception {
+        return runSbomgen(sbomgenPath, archivePath, roleArn);
+    }
+
+    private String runSbomgen(String sbomgenPath, String archivePath, String roleArn) throws Exception {
         if (!isValidPath(sbomgenPath)) {
             throw new IllegalArgumentException("Invalid sbomgen path: " + sbomgenPath);
         }
@@ -48,9 +54,12 @@ public class SbomgenRunner {
             throw new IllegalArgumentException("Invalid archive path: " + archivePath);
         }
 
-        String[] command = new String[] {
-                sbomgenPath, "container", "--image", archivePath
-        };
+        List<String> command = new ArrayList<>();
+        command.addAll(Arrays.asList(sbomgenPath, "container", "--image", archivePath));
+
+        if (roleArn != null) {
+            command.addAll(Arrays.asList("--scan-sbom", "--aws-iam-role-arn", roleArn));
+        }
 
         ProcessBuilder builder = new ProcessBuilder(command);
         Map<String, String> environment = builder.environment();
@@ -59,7 +68,6 @@ public class SbomgenRunner {
             environment.put("INSPECTOR_SBOMGEN_USERNAME", dockerUsername);
             environment.put("INSPECTOR_SBOMGEN_PASSWORD", dockerPassword);
         }
-
 
         builder.redirectErrorStream(true);
         Process p = null;
@@ -80,7 +88,13 @@ public class SbomgenRunner {
             if (line == null) { break; }
         }
 
-        return stripProperties(processSbomgenOutput(sb.toString()));
+        String processedOutput = processSbomgenOutput(sb.toString());
+
+        if (roleArn != null) {
+            return processedOutput;
+        }
+
+        return stripProperties(processedOutput);
     }
 
     @VisibleForTesting

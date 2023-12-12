@@ -40,7 +40,6 @@ import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.html.compone
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.html.components.SeverityValues;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Sbom;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.SbomData;
-import com.amazon.inspector.jenkins.amazoninspectorbuildstep.requests.SdkRequests;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomparsing.SbomOutputParser;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomparsing.Severity;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomparsing.SeverityCounts;
@@ -117,9 +116,9 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
             StandardUsernamePasswordCredentials credential = CredentialsProvider.findCredentialById(credentialId,
                     StandardUsernamePasswordCredentials.class, build);
-            String sbom = new SbomgenRunner(sbomgenPath, archivePath, credential.getUsername(),
-                    credential.getPassword().getPlainText()).run();
-
+            SbomgenRunner sbomgenRunner = new SbomgenRunner(sbomgenPath, archivePath, credential.getUsername(),
+                    credential.getPassword().getPlainText());
+            String sbom = sbomgenRunner.run();
             JsonObject component = JsonParser.parseString(sbom).getAsJsonObject().get("metadata").getAsJsonObject()
                     .get("component").getAsJsonObject();
 
@@ -132,10 +131,10 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             }
 
             listener.getLogger().println("Sending SBOM to Inspector for validation");
-            String responseData = new SdkRequests(awsRegion, iamRole).requestSbom(sbom);
 
+            String scannedSbom = sbomgenRunner.runScan(iamRole);
             Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
-            SbomData sbomData = SbomData.builder().sbom(gson.fromJson(responseData, Sbom.class)).build();
+            SbomData sbomData = SbomData.builder().sbom(gson.fromJson(scannedSbom, Sbom.class)).build();
 
             String workspacePath = String.format("%s/%s", env.get("WORKSPACE"), env.get("BUILD_NUMBER"));
             new File(workspacePath).mkdirs();
