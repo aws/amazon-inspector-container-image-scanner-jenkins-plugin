@@ -15,7 +15,7 @@ public class SbomgenUtils {
         int endIndex = sbom.lastIndexOf("}");
 
         if (startIndex == -1 || endIndex == -1 || startIndex > endIndex) {
-            throw new MalformedScanOutputException("Sbom scanning output formatted incorrectly: \n" + sbom);
+            throw new MalformedScanOutputException("Sbom scanning output formatted incorrectly.");
         }
 
         return sbom.substring(startIndex, endIndex + 1);
