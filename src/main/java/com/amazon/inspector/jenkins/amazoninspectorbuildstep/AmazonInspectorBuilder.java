@@ -1,5 +1,6 @@
 package com.amazon.inspector.jenkins.amazoninspectorbuildstep;
 
+import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomgen.SbomgenDownloader;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.google.gson.Gson;
@@ -48,9 +49,11 @@ import com.amazon.inspector.jenkins.amazoninspectorbuildstep.utils.HtmlConversio
 import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildStep;
 import lombok.Getter;
+import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.verb.POST;
 
 import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.utils.InspectorRegions.INSPECTOR_REGIONS;
@@ -67,7 +70,9 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     private final String awsRegion;
     private final String credentialId;
     private final boolean isThresholdEnabled;
-    private String sbomgenPath;
+    private final String sbomgenPath;
+    private final String sbomgenSource;
+    private final boolean osArch;
     private final int countCritical;
     private final int countHigh;
     private final int countMedium;
@@ -75,12 +80,15 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     private Job<?, ?> job;
 
     @DataBoundConstructor
-    public AmazonInspectorBuilder(String archivePath, String sbomgenPath, String iamRole, String awsRegion,
-                                  String credentialId, boolean isThresholdEnabled, int countCritical, int countHigh,
-                                  int countMedium, int countLow) {
+    public AmazonInspectorBuilder(String archivePath, String sbomgenPath, boolean osArch, String iamRole, String awsRegion,
+                                  String credentialId, boolean linuxArm64, boolean linuxAmd64, String sbomgenSource,
+                                  boolean isThresholdEnabled, int countCritical, int countHigh, int countMedium,
+                                  int countLow) {
         this.archivePath = archivePath;
         this.credentialId = credentialId;
         this.sbomgenPath = sbomgenPath;
+        this.sbomgenSource = sbomgenSource;
+        this.osArch = osArch;
         this.iamRole = iamRole;
         this.awsRegion = awsRegion;
         this.isThresholdEnabled = isThresholdEnabled;
@@ -103,8 +111,9 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     public void perform(Run<?, ?> build, FilePath workspace, EnvVars env, Launcher launcher, TaskListener listener)
             throws IOException, InterruptedException {
         logger = listener.getLogger();
-
-        build.getEnvironment(listener).put("sbomgenPath", sbomgenPath);
+        logger.println(sbomgenSource);
+        logger.println(sbomgenPath);
+        logger.println(osArch);
 
         File outFile = new File(build.getRootDir(), "out");
         this.job = build.getParent();
@@ -118,13 +127,22 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             StandardUsernamePasswordCredentials credential = CredentialsProvider.findCredentialById(credentialId,
                     StandardUsernamePasswordCredentials.class, build);
 
+            String activeSbomgenPath = sbomgenPath;
+            if (!sbomgenSource.isEmpty() && sbomgenSource != null) {
+                logger.println("Automatic SBOMGen Sourcing selected, downloading now...");
+                activeSbomgenPath = SbomgenDownloader.getBinary(sbomgenSource);
+            } else {
+                build.getEnvironment(listener).put("sbomgenPath", activeSbomgenPath);
+            }
+
             String sbom;
             if (credential != null) {
-                sbom = new SbomgenRunner(sbomgenPath, archivePath, credential.getUsername(),
+                sbom = new SbomgenRunner(activeSbomgenPath, archivePath, credential.getUsername(),
                         credential.getPassword().getPlainText()).run();
             } else {
-                sbom = new SbomgenRunner(sbomgenPath, archivePath, null, null).run();
+                sbom = new SbomgenRunner(activeSbomgenPath, archivePath, null, null).run();
             }
+
 
 
             JsonObject component = JsonParser.parseString(sbom).getAsJsonObject().get("metadata").getAsJsonObject()
@@ -259,6 +277,12 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     public static class DescriptorImpl extends BuildStepDescriptor<Builder> {
         public DescriptorImpl() {
             load();
+        }
+
+        @Override
+        public AmazonInspectorBuilder newInstance(StaplerRequest req, JSONObject formData) throws FormException {
+            formData.put("sbomgenSource", JSONObject.fromObject(formData.get("sbomgenSource")).get("value"));
+            return req.bindJSON(AmazonInspectorBuilder.class, formData);
         }
 
         private ListBoxModel getCredentialIdModels() {
