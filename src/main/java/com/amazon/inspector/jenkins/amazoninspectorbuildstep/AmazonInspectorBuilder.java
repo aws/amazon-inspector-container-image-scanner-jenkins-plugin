@@ -179,7 +179,6 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                 tag = splitName[1];
             }
 
-            // http://localhost:8080/job/TestPiepline/20/artifact/TestPiepline-20-sbom.json
             String outputWorkspacePath = String.format("%sjob/%s/%s/artifact", env.get("JENKINS_URL"), env.get("JOB_NAME"),
                     env.get("BUILD_NUMBER"));
 
