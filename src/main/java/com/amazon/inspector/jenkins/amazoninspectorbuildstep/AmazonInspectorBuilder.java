@@ -124,9 +124,6 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                 throw new RuntimeException("No Jenkins instance found");
             }
 
-            StandardUsernamePasswordCredentials credential = CredentialsProvider.findCredentialById(credentialId,
-                    StandardUsernamePasswordCredentials.class, build);
-
             String activeSbomgenPath = sbomgenPath;
             if (!sbomgenSource.isEmpty() && sbomgenSource != null) {
                 logger.println("Automatic SBOMGen Sourcing selected, downloading now...");
@@ -134,6 +131,9 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             } else {
                 build.getEnvironment(listener).put("sbomgenPath", activeSbomgenPath);
             }
+
+            StandardUsernamePasswordCredentials credential = CredentialsProvider.findCredentialById(credentialId,
+                    StandardUsernamePasswordCredentials.class, build);
 
             String sbom;
             if (credential != null) {
@@ -143,7 +143,13 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                 sbom = new SbomgenRunner(activeSbomgenPath, archivePath, null, null).run();
             }
 
-
+            SbomgenRunner sbomgenRunner;
+            if (credential == null) {
+                sbomgenRunner = new SbomgenRunner(activeSbomgenPath, archivePath, null, null);
+            } else {
+                 sbomgenRunner = new SbomgenRunner(activeSbomgenPath, archivePath, credential.getUsername(),
+                        credential.getPassword().getPlainText());
+            }
 
             JsonObject component = JsonParser.parseString(sbom).getAsJsonObject().get("metadata").getAsJsonObject()
                     .get("component").getAsJsonObject();
