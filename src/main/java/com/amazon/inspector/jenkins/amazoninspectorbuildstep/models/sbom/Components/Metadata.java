@@ -9,7 +9,4 @@ import java.util.List;
 @Setter
 public class Metadata {
     private List<Property> properties;
-    private List<Tool> tools;
-    private String timestamp;
-
 }
