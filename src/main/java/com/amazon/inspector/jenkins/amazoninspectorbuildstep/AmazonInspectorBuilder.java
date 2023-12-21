@@ -117,8 +117,15 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
             StandardUsernamePasswordCredentials credential = CredentialsProvider.findCredentialById(credentialId,
                     StandardUsernamePasswordCredentials.class, build);
-            String sbom = new SbomgenRunner(sbomgenPath, archivePath, credential.getUsername(),
-                    credential.getPassword().getPlainText()).run();
+
+            String sbom;
+            if (credential != null) {
+                sbom = new SbomgenRunner(sbomgenPath, archivePath, credential.getUsername(),
+                        credential.getPassword().getPlainText()).run();
+            } else {
+                sbom = new SbomgenRunner(sbomgenPath, archivePath, null, null).run();
+            }
+
 
             JsonObject component = JsonParser.parseString(sbom).getAsJsonObject().get("metadata").getAsJsonObject()
                     .get("component").getAsJsonObject();
@@ -137,19 +144,19 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
             SbomData sbomData = SbomData.builder().sbom(gson.fromJson(responseData, Sbom.class)).build();
 
-            String workspacePath = String.format("%s/%s", env.get("WORKSPACE"), env.get("BUILD_NUMBER"));
-            new File(workspacePath).mkdirs();
+            String artifactDestinationPath = build.getArtifactsDir().getAbsolutePath();
+            new File(artifactDestinationPath).mkdirs();
 
             String sbomFileName = String.format("%s-%s-sbom.json", build.getParent().getDisplayName(),
                     build.getDisplayName()).replaceAll("[ #]", "");
-            String sbomPath = String.format("%s/%s", workspacePath, sbomFileName);
+            String sbomPath = String.format("%s/%s", artifactDestinationPath, sbomFileName);
 
             writeSbomDataToFile(gson.toJson(sbomData.getSbom()), sbomPath);
 
             CsvConverter converter = new CsvConverter(sbomData);
             String csvFileName = String.format("%s-%s.csv", build.getParent().getDisplayName(),
                     build.getDisplayName()).replaceAll("[ #]", "");
-            String csvPath = String.format("%s/%s", workspacePath, csvFileName);
+            String csvPath = String.format("%s/%s", artifactDestinationPath, csvFileName);
 
             logger.println("Converting SBOM Results to CSV.");
             converter.convert(csvPath);
@@ -172,7 +179,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                 tag = splitName[1];
             }
 
-            String outputWorkspacePath = String.format("%sjob/%s/ws/%s", env.get("JENKINS_URL"), env.get("JOB_NAME"),
+            String outputWorkspacePath = String.format("%sjob/%s/%s/artifact", env.get("JENKINS_URL"), env.get("JOB_NAME"),
                     env.get("BUILD_NUMBER"));
 
             HtmlData htmlData = HtmlData.builder()
@@ -197,7 +204,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                     .toURI()).getPath();
             HtmlJarHandler htmlJarHandler = new HtmlJarHandler(htmlJarPath);
 
-            String htmlPath = htmlJarHandler.copyHtmlToDir(workspacePath);
+            String htmlPath = htmlJarHandler.copyHtmlToDir(artifactDestinationPath);
 
             String html = new Gson().toJson(htmlData);
             new HtmlGenerator(htmlPath).generateNewHtml(html);
