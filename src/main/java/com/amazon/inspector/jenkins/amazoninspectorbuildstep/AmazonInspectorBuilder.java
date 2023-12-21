@@ -146,7 +146,6 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                 sbom = new SbomgenRunner(activeSbomgenPath, archivePath, null, null).run();
             }
 
-
             JsonObject component = JsonParser.parseString(sbom).getAsJsonObject().get("metadata").getAsJsonObject()
                     .get("component").getAsJsonObject();
 
