@@ -30,17 +30,18 @@
         }
     </style>
 
-<!--    <input type="radio" id="html" name="fav_language" value="HTML">-->
-<!--    <label for="html">HTML</label><br>-->
-
-    <f:section title="Automatic SBOMGen Sourcing">
-            <f:radioBlock name="sbomgenSource" title="Linux, AMD64" value="linuxAmd64" checked="${instance.osArch == 'linuxAmd64'}">
-            </f:radioBlock>
-            <f:radioBlock name="sbomgenSource" title="Linux, ARM64" value="linuxArm64" checked="${instance.osArch == 'linuxArm64'}">
-            </f:radioBlock>
-            <f:radioBlock name="sbomgenSource" title="Test" value="test" checked="${instance.osArch == 'linuxArm64'}">
-            </f:radioBlock>
-    </f:section>
+<!--    <f:radioBlock title="Automatic SBOMGen Sourcing" name="sbomgenSelection" checked="true" value="auto">-->
+        <f:radioBlock name="sbomgenSource" title="Linux, AMD64" value="linuxAmd64" checked="false">
+        </f:radioBlock>
+        <f:radioBlock name="sbomgenSource" title="Linux, ARM64" value="linuxArm64" checked="false">
+        </f:radioBlock>
+<!--    </f:radioBlock>-->
+<!--    <f:radioBlock title="Manual SBOMGen Sourcing" name="sbomgenSelection" checked="false" value="manual">-->
+        <strong class="required-field">Path to inspector-sbomgen</strong>
+        <f:entry field="sbomgenPath">
+            <f:textbox placeholder="/Users/user/Downloads/inspector-sbomgen"/>
+        </f:entry>
+<!--    </f:radioBlock>-->
 
     <strong class="required-field">Image Id</strong>
     <f:entry field="archivePath">
