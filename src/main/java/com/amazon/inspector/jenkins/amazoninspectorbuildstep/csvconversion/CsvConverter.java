@@ -46,7 +46,7 @@ public class CsvConverter {
     private Map<String, Component> populateComponentMap(SbomData sbomData) {
         Map<String, Component> componentMap = new HashMap<>();
 
-        if (sbomData.getSbom().getComponents() == null) {
+        if (sbomData == null || sbomData.getSbom() == null || sbomData.getSbom().getComponents() == null) {
             return componentMap;
         }
 
@@ -153,8 +153,8 @@ public class CsvConverter {
     }
 
     @VisibleForTesting
-    protected String getPropertyValueFromKey(Vulnerability vulnerability, String key) {
-        if (vulnerability == null) {
+    protected static String getPropertyValueFromKey(Vulnerability vulnerability, String key) {
+        if (vulnerability == null || vulnerability.getProperties() == null) {
             return "N/A";
         }
 
