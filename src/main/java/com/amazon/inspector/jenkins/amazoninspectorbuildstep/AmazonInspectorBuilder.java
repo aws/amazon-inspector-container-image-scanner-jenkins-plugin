@@ -121,7 +121,6 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         File outFile = new File(build.getRootDir(), "out");
         this.job = build.getParent();
 
-        logger.println(sbomgenMethod + " " + sbomgenPath + " " + sbomgenSource);
         PrintStream printStream = new PrintStream(outFile, StandardCharsets.UTF_8);
         try {
             if (Jenkins.getInstanceOrNull() == null) {
@@ -147,13 +146,6 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                 sbom = new SbomgenRunner(activeSbomgenPath, archivePath, null, null).run();
             }
 
-            SbomgenRunner sbomgenRunner;
-            if (credential == null) {
-                sbomgenRunner = new SbomgenRunner(activeSbomgenPath, archivePath, null, null);
-            } else {
-                sbomgenRunner = new SbomgenRunner(activeSbomgenPath, archivePath, credential.getUsername(),
-                    credential.getPassword().getPlainText());
-            }
 
             JsonObject component = JsonParser.parseString(sbom).getAsJsonObject().get("metadata").getAsJsonObject()
                     .get("component").getAsJsonObject();
