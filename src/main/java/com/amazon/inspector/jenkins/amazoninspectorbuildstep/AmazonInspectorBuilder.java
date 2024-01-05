@@ -65,6 +65,7 @@ import static hudson.security.Permission.READ;
 @Getter
 public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     public static PrintStream logger;
+    private final String sbomgenMethod;
     private final String archivePath;
     private final String iamRole;
     private final String awsRegion;
@@ -81,13 +82,14 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
     @DataBoundConstructor
     public AmazonInspectorBuilder(String archivePath, String sbomgenPath, boolean osArch, String iamRole, String awsRegion,
-                                  String credentialId, boolean linuxArm64, boolean linuxAmd64, String sbomgenSource,
+                                  String credentialId, String sbomgenMethod, String sbomgenSource,
                                   boolean isThresholdEnabled, int countCritical, int countHigh, int countMedium,
                                   int countLow) {
         this.archivePath = archivePath;
         this.credentialId = credentialId;
-        this.sbomgenPath = sbomgenPath;
         this.sbomgenSource = sbomgenSource;
+        this.sbomgenPath = sbomgenPath;
+        this.sbomgenMethod = sbomgenMethod;
         this.osArch = osArch;
         this.iamRole = iamRole;
         this.awsRegion = awsRegion;
@@ -107,17 +109,19 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         return criticalExceedsLimit || highExceedsLimit || mediumExceedsLimit || lowExceedsLimit;
     }
 
+    public String isSource(String value) {
+        return Boolean.toString(sbomgenMethod.equals(value));
+    }
+
     @Override
     public void perform(Run<?, ?> build, FilePath workspace, EnvVars env, Launcher launcher, TaskListener listener)
-            throws IOException, InterruptedException {
+            throws IOException {
         logger = listener.getLogger();
-        logger.println(sbomgenSource);
-        logger.println(sbomgenPath);
-        logger.println(osArch);
 
         File outFile = new File(build.getRootDir(), "out");
         this.job = build.getParent();
 
+        logger.println(sbomgenMethod + " " + sbomgenPath + " " + sbomgenSource);
         PrintStream printStream = new PrintStream(outFile, StandardCharsets.UTF_8);
         try {
             if (Jenkins.getInstanceOrNull() == null) {
@@ -125,7 +129,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             }
 
             String activeSbomgenPath = sbomgenPath;
-            if (!sbomgenSource.isEmpty() && sbomgenSource != null) {
+            if (sbomgenSource != null && !sbomgenSource.isEmpty()) {
                 logger.println("Automatic SBOMGen Sourcing selected, downloading now...");
                 activeSbomgenPath = SbomgenDownloader.getBinary(sbomgenSource);
             } else {
@@ -147,8 +151,8 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             if (credential == null) {
                 sbomgenRunner = new SbomgenRunner(activeSbomgenPath, archivePath, null, null);
             } else {
-                 sbomgenRunner = new SbomgenRunner(activeSbomgenPath, archivePath, credential.getUsername(),
-                        credential.getPassword().getPlainText());
+                sbomgenRunner = new SbomgenRunner(activeSbomgenPath, archivePath, credential.getUsername(),
+                    credential.getPassword().getPlainText());
             }
 
             JsonObject component = JsonParser.parseString(sbom).getAsJsonObject().get("metadata").getAsJsonObject()
@@ -287,7 +291,16 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
         @Override
         public AmazonInspectorBuilder newInstance(StaplerRequest req, JSONObject formData) throws FormException {
-            formData.put("sbomgenSource", JSONObject.fromObject(formData.get("sbomgenSource")).get("value"));
+            String value = JSONObject.fromObject(formData.get("sbomgenSelection")).get("value").toString();
+            formData.put("isAutomaticSbomgen", value.equals("automatic"));
+            formData.put("sbomgenMethod", value);
+
+            if (value.equals("manual")) {
+                formData.put("sbomgenPath", JSONObject.fromObject(formData.get("sbomgenSelection")).get("sbomgenPath"));
+            } else if (value.equals("automatic")) {
+                formData.put("sbomgenSource", JSONObject.fromObject(JSONObject.fromObject(formData.get("sbomgenSelection")).get("sbomgenSource")).get("value"));
+            }
+            
             return req.bindJSON(AmazonInspectorBuilder.class, formData);
         }
 

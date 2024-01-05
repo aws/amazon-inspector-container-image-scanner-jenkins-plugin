@@ -30,18 +30,20 @@
         }
     </style>
 
-<!--    <f:radioBlock title="Automatic SBOMGen Sourcing" name="sbomgenSelection" checked="true" value="auto">-->
+    <f:radioBlock title="Automatic SBOMGen Sourcing" name="sbomgenSelection"
+                  checked="false" value="automatic">
         <f:radioBlock name="sbomgenSource" title="Linux, AMD64" value="linuxAmd64" checked="false">
         </f:radioBlock>
         <f:radioBlock name="sbomgenSource" title="Linux, ARM64" value="linuxArm64" checked="false">
         </f:radioBlock>
-<!--    </f:radioBlock>-->
-<!--    <f:radioBlock title="Manual SBOMGen Sourcing" name="sbomgenSelection" checked="false" value="manual">-->
+    </f:radioBlock>
+    <f:radioBlock title="Manual SBOMGen Sourcing" name="sbomgenSelection" checked="${instance.isSource('manual')}"
+                  value="manual">
         <strong class="required-field">Path to inspector-sbomgen</strong>
         <f:entry field="sbomgenPath">
             <f:textbox placeholder="/Users/user/Downloads/inspector-sbomgen"/>
         </f:entry>
-<!--    </f:radioBlock>-->
+    </f:radioBlock>
 
     <strong class="required-field">Image Id</strong>
     <f:entry field="archivePath">
