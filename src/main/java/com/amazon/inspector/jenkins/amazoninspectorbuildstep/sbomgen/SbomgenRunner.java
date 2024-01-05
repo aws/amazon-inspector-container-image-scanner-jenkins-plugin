@@ -80,7 +80,6 @@ public class SbomgenRunner {
         StringBuilder sb = new StringBuilder();
         while (true) {
             line = r.readLine();
-            AmazonInspectorBuilder.logger.println(line);
             sb.append(line + "\n");
             if (line == null) { break; }
         }
