@@ -45,9 +45,6 @@ public class SbomgenRunner {
             throw new IllegalArgumentException("Invalid sbomgen path: " + sbomgenPath);
         }
 
-        if (!isValidPath(archivePath)) {
-            throw new IllegalArgumentException("Invalid archive path: " + archivePath);
-        }
         AmazonInspectorBuilder.logger.println("Making downloaded SBOMGen executable...");
         new ProcessBuilder(new String[]{"chmod", "+x", sbomgenPath}).start();
 
@@ -63,7 +60,6 @@ public class SbomgenRunner {
             environment.put("INSPECTOR_SBOMGEN_USERNAME", dockerUsername);
             environment.put("INSPECTOR_SBOMGEN_PASSWORD", dockerPassword);
         }
-
 
         builder.redirectErrorStream(true);
         Process p = null;

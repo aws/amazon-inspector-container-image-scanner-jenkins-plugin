@@ -25,15 +25,12 @@ public class SbomgenDownloader {
     private static String getUrl(String configInput) {
         final String linuxAmd64Url = "https://amazon-inspector-sbomgen.s3.amazonaws.com/latest/linux/amd64/inspector-sbomgen.zip";
         final String linuxArm64Url = "https://amazon-inspector-sbomgen.s3.amazonaws.com/latest/linux/arm64/inspector-sbomgen.zip";
-        final String macosAmd64Url = "https://drive.corp.amazon.com/view/Amazon%20Inspector%20SBOM%20Generator/inspector-sbomgen-1.1.0-internal.zip?download=true";
 
         switch (configInput) {
             case "linuxAmd64":
                 return linuxAmd64Url;
             case "linuxArm64":
                 return linuxArm64Url;
-            case "test":
-                return macosAmd64Url;
         }
         if ("linuxAmd64Url".equals(configInput)) {
             return linuxAmd64Url;

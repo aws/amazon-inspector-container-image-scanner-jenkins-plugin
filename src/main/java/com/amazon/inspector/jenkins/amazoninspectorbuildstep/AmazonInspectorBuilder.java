@@ -5,6 +5,7 @@ import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -31,6 +32,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomgen.SbomgenRunner;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.csvconversion.CsvConverter;
@@ -149,18 +151,12 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             JsonObject component = JsonParser.parseString(sbom).getAsJsonObject().get("metadata").getAsJsonObject()
                     .get("component").getAsJsonObject();
 
-            String imageSha = "No Sha Found";
-            for (JsonElement element : component.get("properties").getAsJsonArray()) {
-                String elementName = element.getAsJsonObject().get("name").getAsString();
-                if (elementName.equals("amazon:inspector:sbom_collector:image_id")) {
-                    imageSha = element.getAsJsonObject().get("value").getAsString();
-                }
-            }
+            Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
+            String imageSha = getImageSha(sbom);
 
             listener.getLogger().println("Sending SBOM to Inspector for validation");
             String responseData = new SdkRequests(awsRegion, iamRole).requestSbom(sbom);
 
-            Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
             SbomData sbomData = SbomData.builder().sbom(gson.fromJson(responseData, Sbom.class)).build();
 
             String artifactDestinationPath = build.getArtifactsDir().getAbsolutePath();
@@ -260,6 +256,22 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         } finally {
             printStream.close();
         }
+    }
+
+    public static String getImageSha(String sbom) {
+        JsonElement jsonElement = JsonParser.parseString(sbom);
+        JsonArray properties = jsonElement.getAsJsonObject().get("metadata")
+                .getAsJsonObject().get("component")
+                .getAsJsonObject().get("properties")
+                .getAsJsonArray();
+
+        for (JsonElement property : properties) {
+            if (property.getAsJsonObject().get("name").getAsString().equals("amazon:inspector:sbom_generator:image_id")) {
+                return property.getAsJsonObject().get("value").getAsString();
+            }
+        }
+
+        return "No Sha Found";
     }
 
     public static void writeSbomDataToFile(String sbomData, String outputFilePath) {
