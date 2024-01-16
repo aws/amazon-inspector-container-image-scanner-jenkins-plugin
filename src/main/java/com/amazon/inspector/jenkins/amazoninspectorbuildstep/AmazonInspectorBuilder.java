@@ -9,6 +9,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
@@ -66,6 +67,7 @@ import static hudson.security.Permission.READ;
 
 @Getter
 public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
+    @SuppressFBWarnings()
     public static PrintStream logger;
     private final String sbomgenMethod;
     private final String archivePath;

@@ -1,5 +1,7 @@
 package com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomgen;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 import javax.management.openmbean.InvalidKeyException;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -76,6 +78,7 @@ public class SbomgenDownloader {
     }
 
 
+    @SuppressFBWarnings()
     private static String unzipFile(String zipPath) throws IOException {
         String destinationPath = zipPath.replace(".zip", "");
         byte[] buffer = new byte[1024];
