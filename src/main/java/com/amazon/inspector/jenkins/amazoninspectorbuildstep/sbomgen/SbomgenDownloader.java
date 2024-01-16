@@ -84,12 +84,12 @@ public class SbomgenDownloader {
         ZipEntry zipEntry = zis.getNextEntry();
         String sbomgenPath = "";
         while (zipEntry != null) {
-            System.out.println(zipEntry.getName());
             File newFile = newFile(new File(destinationPath), zipEntry);
             if (zipEntry.getName().endsWith("inspector-sbomgen")) {
                 sbomgenPath = newFile.getAbsolutePath();
                 newFile.setExecutable(true);
             }
+
             if (zipEntry.isDirectory()) {
                 if (!newFile.isDirectory() && !newFile.mkdirs()) {
                     throw new IOException("Failed to create directory " + newFile);
@@ -112,6 +112,7 @@ public class SbomgenDownloader {
 
         zis.closeEntry();
         zis.close();
+
 
         return sbomgenPath;
     }
