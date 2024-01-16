@@ -8,6 +8,7 @@ import lombok.Setter;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.Arrays;
 import java.util.Map;
 
 import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomgen.SbomgenUtils.processSbomgenOutput;
@@ -44,14 +45,14 @@ public class SbomgenRunner {
             throw new IllegalArgumentException("Invalid sbomgen path: " + sbomgenPath);
         }
 
-        if (!isValidPath(archivePath)) {
-            throw new IllegalArgumentException("Invalid archive path: " + archivePath);
-        }
+        AmazonInspectorBuilder.logger.println("Making downloaded SBOMGen executable...");
+        new ProcessBuilder(new String[]{"chmod", "+x", sbomgenPath}).start();
 
+        AmazonInspectorBuilder.logger.println("Running command...");
         String[] command = new String[] {
                 sbomgenPath, "container", "--image", archivePath
         };
-
+        AmazonInspectorBuilder.logger.println(Arrays.toString(command));
         ProcessBuilder builder = new ProcessBuilder(command);
         Map<String, String> environment = builder.environment();
 
@@ -59,7 +60,6 @@ public class SbomgenRunner {
             environment.put("INSPECTOR_SBOMGEN_USERNAME", dockerUsername);
             environment.put("INSPECTOR_SBOMGEN_PASSWORD", dockerPassword);
         }
-
 
         builder.redirectErrorStream(true);
         Process p = null;
