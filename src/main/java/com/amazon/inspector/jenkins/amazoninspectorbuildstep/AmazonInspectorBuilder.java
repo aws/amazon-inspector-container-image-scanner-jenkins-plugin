@@ -139,14 +139,21 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                 build.getEnvironment(listener).put("sbomgenPath", activeSbomgenPath);
             }
 
-            StandardUsernamePasswordCredentials credential = CredentialsProvider.findCredentialById(credentialId,
-                    StandardUsernamePasswordCredentials.class, build);
+            StandardUsernamePasswordCredentials credential = null;
+            if (credentialId != null) {
+                logger.println("Credential ID is null, this is not normal, please check your config. " +
+                        "Continuing without docker credentials.");
+                credential = CredentialsProvider.findCredentialById(credentialId,
+                        StandardUsernamePasswordCredentials.class, build);
+            }
 
             String sbom;
             if (credential != null) {
+                logger.println("Running inspector-sbomgen with credential: " + credential.getId());
                 sbom = new SbomgenRunner(activeSbomgenPath, archivePath, credential.getUsername(),
                         credential.getPassword().getPlainText()).run();
             } else {
+                logger.println("No credential provided, running without.");
                 sbom = new SbomgenRunner(activeSbomgenPath, archivePath, null, null).run();
             }
 
