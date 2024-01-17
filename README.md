@@ -16,6 +16,7 @@ Follow the steps in each section of this document to use the Inspector Jenkins p
 
 #### 3. Install the Inspector SBOM Generator
 * Install and configure the Amazon Inspector SBOM Generator. For instructions, see [Installing Amazon Inspector SBOM Generator (Sbomgen)](https://docs.aws.amazon.com/inspector/latest/user/sbom-generator.html)
+
 #### 4. Add your Docker credentials to Jenkins
 1. Go to **Dashboard > Manage Jenkins > Credentials > System > Global credentials > Add credentials**.
 2. Fill in details and select **Create**.
@@ -23,6 +24,10 @@ Follow the steps in each section of this document to use the Inspector Jenkins p
 #### 5. Add an Amazon Inspector Scan build step to your project
 1. On the configuration page, scroll down to **Build Steps**, select **Add build step** and select **Amazon Inspector Scan**.
 2. Configure the Amazon Inspector Scan build step by filling in following details:
+    * Select one of the following Inspector-SBOMGen installation methods:
+        * Automatic: Download the most recent version of inspector-sbomgen, based on operating system and CPU architecture.
+        * Manual: Provide an absolute path to a downloaded version of inspector-sbomgen.
+          * Download: https://docs.aws.amazon.com/inspector/latest/user/sbom-generator.html#install-sbomgen
     * For **Path to inspector-sbomgen** add the installation path to your Amazon Inspector SBOM Generator generator.
     * For **Image Id** input the path to your image. Your image can be local, remote, or archived. Image names should follow the Docker naming convention. If analyzing an exported image, provide the path to the expected tar file. See the following example Image Id paths:
         * For local or remote containers: `NAME[:TAG|@DIGEST]`
@@ -46,7 +51,6 @@ Issue #1: If you receive the following error:
 InstanceProfileCredentialsProvider(): Failed to load credentials from IMDS.
 
 Resolution : Set up aws_access_key_id and aws_secret_access_key in ~/.aws/credential
-
 
 ### Known Limitations and Issues
 
