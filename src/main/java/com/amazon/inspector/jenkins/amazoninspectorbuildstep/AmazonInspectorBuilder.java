@@ -140,7 +140,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             }
 
             StandardUsernamePasswordCredentials credential = null;
-            if (credentialId != null) {
+            if (credentialId == null) {
                 logger.println("Credential ID is null, this is not normal, please check your config. " +
                         "Continuing without docker credentials.");
                 credential = CredentialsProvider.findCredentialById(credentialId,
