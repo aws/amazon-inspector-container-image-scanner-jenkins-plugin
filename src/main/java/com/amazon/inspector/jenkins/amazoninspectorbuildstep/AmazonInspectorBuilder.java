@@ -367,7 +367,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
             items.add("Select AWS Credentials", null);
             for (AmazonWebServicesCredentials credential : credentials) {
-                if (credential.getCredentials() != null && !credential.getCredentials().getAWSAccessKeyId().isEmpty()) {
+                if (credential != null && credential.getCredentials() != null) {
                     items.add(String.format("[%s] %s", credential.getId(), credential.getDisplayName()),
                             credential.getId());
                 }
