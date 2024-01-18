@@ -356,6 +356,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             return new ListBoxModel();
         }
 
+        @SuppressFBWarnings()
         private ListBoxModel getAwsCredentialIdModels() {
             ListBoxModel items = new ListBoxModel();
             List<AmazonWebServicesCredentials> credentials = CredentialsProvider.lookupCredentials(
