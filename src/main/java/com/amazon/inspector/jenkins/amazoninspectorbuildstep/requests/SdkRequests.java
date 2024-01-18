@@ -1,5 +1,9 @@
 package com.amazon.inspector.jenkins.amazoninspectorbuildstep.requests;
 
+import com.amazon.inspector.jenkins.amazoninspectorbuildstep.AmazonInspectorBuilder;
+import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;
+import software.amazon.awssdk.auth.credentials.AwsCredentials;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.core.document.Document;
 import software.amazon.awssdk.http.SdkHttpClient;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
@@ -16,10 +20,12 @@ import software.amazon.awssdk.services.sts.model.AssumeRoleRequest;
 import software.amazon.awssdk.services.inspectorscan.model.OutputFormat;
 
 public class SdkRequests {
-    String region;
-    String roleArn;
-    public SdkRequests(String region, String roleArn) {
+    private final String region;
+    private final AmazonWebServicesCredentials awsCredential;
+    private final String roleArn;
+    public SdkRequests(String region, AmazonWebServicesCredentials awsCredential, String roleArn) {
         this.region = region;
+        this.awsCredential = awsCredential;
         this.roleArn = roleArn;
     }
 
@@ -44,13 +50,37 @@ public class SdkRequests {
         return response.sbom().toString();
     }
 
-    public StsAssumeRoleCredentialsProvider getCredentialProvider() {
-        StsClient stsClient = StsClient.builder()
-                .region(Region.of(region))
-                .build();
+    private AwsCredentialsProvider getCredentialProvider() {
+        if (awsCredential == null) {
+            AmazonInspectorBuilder.logger.println("AWS Credential not provided, authenticating using default credential provider chain.");
+            StsClient stsClient = StsClient.builder().region(Region.of(region)).build();
+            return getStsCredentialProvider(stsClient);
+        }
 
+        AmazonInspectorBuilder.logger.println("Using explicitly provided AWS credentials to authenticate.");
+        StsClient stsClient = StsClient.builder().credentialsProvider(createRawCredentialProvider()).region(Region.of(region)).build();
+        return getStsCredentialProvider(stsClient);
+    }
+
+    private AwsCredentialsProvider createRawCredentialProvider() {
+        return () -> new AwsCredentials() {
+            @Override
+            public String accessKeyId() {
+                return awsCredential.getCredentials().getAWSAccessKeyId();
+            }
+
+            @Override
+            public String secretAccessKey() {
+                return awsCredential.getCredentials().getAWSSecretKey();
+            }
+        };
+    }
+
+    public StsAssumeRoleCredentialsProvider getStsCredentialProvider(StsClient stsClient) {
         return StsAssumeRoleCredentialsProvider.builder().stsClient(stsClient).refreshRequest(AssumeRoleRequest.builder()
                 .roleArn(roleArn)
                 .roleSessionName("inspectorscan").build()).build();
     }
+
+
 }
