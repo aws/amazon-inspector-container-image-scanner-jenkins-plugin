@@ -1,6 +1,7 @@
 package com.amazon.inspector.jenkins.amazoninspectorbuildstep;
 
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomgen.SbomgenDownloader;
+import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.google.gson.Gson;
@@ -82,15 +83,17 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     private final int countHigh;
     private final int countMedium;
     private final int countLow;
+    private final String awsCredentialId;
     private Job<?, ?> job;
 
     @DataBoundConstructor
     public AmazonInspectorBuilder(String archivePath, String sbomgenPath, boolean osArch, String iamRole, String awsRegion,
-                                  String credentialId, String sbomgenMethod, String sbomgenSource,
+                                  String credentialId, String awsCredentialId, String sbomgenMethod, String sbomgenSource,
                                   boolean isThresholdEnabled, int countCritical, int countHigh, int countMedium,
                                   int countLow) {
         this.archivePath = archivePath;
         this.credentialId = credentialId;
+        this.awsCredentialId = awsCredentialId;
         this.sbomgenSource = sbomgenSource;
         this.sbomgenPath = sbomgenPath;
         this.sbomgenMethod = sbomgenMethod;
@@ -150,7 +153,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
             String sbom;
             if (credential != null) {
-                logger.println("Running inspector-sbomgen with credential: " + credential.getId());
+                logger.println("Running inspector-sbomgen with docker credential: " + credential.getId());
                 sbom = new SbomgenRunner(activeSbomgenPath, archivePath, credential.getUsername(),
                         credential.getPassword().getPlainText()).run();
             } else {
@@ -164,8 +167,16 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
             String imageSha = getImageSha(sbom);
 
-            listener.getLogger().println("Sending SBOM to Inspector for validation");
-            String responseData = new SdkRequests(awsRegion, iamRole).requestSbom(sbom);
+            listener.getLogger().print("Sending SBOM to Inspector for validation ");
+            AmazonWebServicesCredentials awsCredential = null;
+            if (awsCredentialId != null) {
+                listener.getLogger().print("with credential:" + awsCredentialId);
+                awsCredential = CredentialsProvider.findCredentialById(awsCredentialId,
+                        AmazonWebServicesCredentials.class, build);
+            }
+            listener.getLogger().print("\n");
+
+            String responseData = new SdkRequests(awsRegion, awsCredential, iamRole).requestSbom(sbom);
 
             SbomData sbomData = SbomData.builder().sbom(gson.fromJson(responseData, Sbom.class)).build();
 
@@ -341,6 +352,35 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         public ListBoxModel doFillCredentialIdItems() {
             if (Jenkins.get().hasPermission(READ)) {
                 return getCredentialIdModels();
+            }
+            return new ListBoxModel();
+        }
+
+        @SuppressFBWarnings()
+        private ListBoxModel getAwsCredentialIdModels() {
+            ListBoxModel items = new ListBoxModel();
+            List<AmazonWebServicesCredentials> credentials = CredentialsProvider.lookupCredentials(
+                    AmazonWebServicesCredentials.class,
+                    Jenkins.getInstance(),
+                    ACL.SYSTEM,
+                    Collections.emptyList()
+            );
+
+            items.add("Select AWS Credentials", null);
+            for (AmazonWebServicesCredentials credential : credentials) {
+                if (credential != null && credential.getCredentials() != null) {
+                    items.add(String.format("[%s] %s", credential.getId(), credential.getDisplayName()),
+                            credential.getId());
+                }
+            }
+
+            return items;
+        }
+
+        @POST
+        public ListBoxModel doFillAwsCredentialIdItems() {
+            if (Jenkins.get().hasPermission(READ)) {
+                return getAwsCredentialIdModels();
             }
             return new ListBoxModel();
         }
