@@ -168,13 +168,13 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             String imageSha = getImageSha(sbom);
 
             listener.getLogger().print("Sending SBOM to Inspector for validation ");
+            AmazonWebServicesCredentials awsCredential = null;
             if (awsCredentialId != null) {
                 listener.getLogger().print("with credential:" + awsCredentialId);
+                awsCredential = CredentialsProvider.findCredentialById(awsCredentialId,
+                        AmazonWebServicesCredentials.class, build);
             }
             listener.getLogger().print("\n");
-
-            AmazonWebServicesCredentials awsCredential = CredentialsProvider.findCredentialById(awsCredentialId,
-                    AmazonWebServicesCredentials.class, build);
 
             String responseData = new SdkRequests(awsRegion, awsCredential, iamRole).requestSbom(sbom);
 
