@@ -1,12 +1,16 @@
 package com.amazon.inspector.jenkins.amazoninspectorbuildstep;
 
+import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomgen.SbomgenDownloader;
+import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
@@ -30,6 +34,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomgen.SbomgenRunner;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.csvconversion.CsvConverter;
@@ -48,9 +53,11 @@ import com.amazon.inspector.jenkins.amazoninspectorbuildstep.utils.HtmlConversio
 import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildStep;
 import lombok.Getter;
+import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.verb.POST;
 
 import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.utils.InspectorRegions.INSPECTOR_REGIONS;
@@ -61,26 +68,36 @@ import static hudson.security.Permission.READ;
 
 @Getter
 public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
+    @SuppressFBWarnings()
     public static PrintStream logger;
+    private final String sbomgenMethod;
     private final String archivePath;
     private final String iamRole;
     private final String awsRegion;
     private final String credentialId;
     private final boolean isThresholdEnabled;
-    private String sbomgenPath;
+    private final String sbomgenPath;
+    private final String sbomgenSource;
+    private final boolean osArch;
     private final int countCritical;
     private final int countHigh;
     private final int countMedium;
     private final int countLow;
+    private final String awsCredentialId;
     private Job<?, ?> job;
 
     @DataBoundConstructor
-    public AmazonInspectorBuilder(String archivePath, String sbomgenPath, String iamRole, String awsRegion,
-                                  String credentialId, boolean isThresholdEnabled, int countCritical, int countHigh,
-                                  int countMedium, int countLow) {
+    public AmazonInspectorBuilder(String archivePath, String sbomgenPath, boolean osArch, String iamRole, String awsRegion,
+                                  String credentialId, String awsCredentialId, String sbomgenMethod, String sbomgenSource,
+                                  boolean isThresholdEnabled, int countCritical, int countHigh, int countMedium,
+                                  int countLow) {
         this.archivePath = archivePath;
         this.credentialId = credentialId;
+        this.awsCredentialId = awsCredentialId;
+        this.sbomgenSource = sbomgenSource;
         this.sbomgenPath = sbomgenPath;
+        this.sbomgenMethod = sbomgenMethod;
+        this.osArch = osArch;
         this.iamRole = iamRole;
         this.awsRegion = awsRegion;
         this.isThresholdEnabled = isThresholdEnabled;
@@ -99,12 +116,14 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         return criticalExceedsLimit || highExceedsLimit || mediumExceedsLimit || lowExceedsLimit;
     }
 
+    public String isSource(String value) {
+        return Boolean.toString(sbomgenMethod.equals(value));
+    }
+
     @Override
     public void perform(Run<?, ?> build, FilePath workspace, EnvVars env, Launcher launcher, TaskListener listener)
-            throws IOException, InterruptedException {
+            throws IOException {
         logger = listener.getLogger();
-
-        build.getEnvironment(listener).put("sbomgenPath", sbomgenPath);
 
         File outFile = new File(build.getRootDir(), "out");
         this.job = build.getParent();
@@ -115,33 +134,50 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                 throw new RuntimeException("No Jenkins instance found");
             }
 
-            StandardUsernamePasswordCredentials credential = CredentialsProvider.findCredentialById(credentialId,
-                    StandardUsernamePasswordCredentials.class, build);
+            String activeSbomgenPath = sbomgenPath;
+            if (sbomgenSource != null && !sbomgenSource.isEmpty()) {
+                logger.println("Automatic SBOMGen Sourcing selected, downloading now...");
+                activeSbomgenPath = SbomgenDownloader.getBinary(sbomgenSource);
+            } else {
+                build.getEnvironment(listener).put("sbomgenPath", activeSbomgenPath);
+            }
+
+            StandardUsernamePasswordCredentials credential = null;
+            if (credentialId == null) {
+                logger.println("Credential ID is null, this is not normal, please check your config. " +
+                        "Continuing without docker credentials.");
+            } else {
+                credential = CredentialsProvider.findCredentialById(credentialId,
+                        StandardUsernamePasswordCredentials.class, build);
+            }
 
             String sbom;
             if (credential != null) {
-                sbom = new SbomgenRunner(sbomgenPath, archivePath, credential.getUsername(),
+                logger.println("Running inspector-sbomgen with docker credential: " + credential.getId());
+                sbom = new SbomgenRunner(activeSbomgenPath, archivePath, credential.getUsername(),
                         credential.getPassword().getPlainText()).run();
             } else {
-                sbom = new SbomgenRunner(sbomgenPath, archivePath, null, null).run();
+                logger.println("No credential provided, running without.");
+                sbom = new SbomgenRunner(activeSbomgenPath, archivePath, null, null).run();
             }
-
 
             JsonObject component = JsonParser.parseString(sbom).getAsJsonObject().get("metadata").getAsJsonObject()
                     .get("component").getAsJsonObject();
 
-            String imageSha = "No Sha Found";
-            for (JsonElement element : component.get("properties").getAsJsonArray()) {
-                String elementName = element.getAsJsonObject().get("name").getAsString();
-                if (elementName.equals("amazon:inspector:sbom_collector:image_id")) {
-                    imageSha = element.getAsJsonObject().get("value").getAsString();
-                }
-            }
-
-            listener.getLogger().println("Sending SBOM to Inspector for validation");
-            String responseData = new SdkRequests(awsRegion, iamRole).requestSbom(sbom);
-
             Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
+            String imageSha = getImageSha(sbom);
+
+            listener.getLogger().print("Sending SBOM to Inspector for validation ");
+            AmazonWebServicesCredentials awsCredential = null;
+            if (awsCredentialId != null) {
+                listener.getLogger().print("with credential:" + awsCredentialId);
+                awsCredential = CredentialsProvider.findCredentialById(awsCredentialId,
+                        AmazonWebServicesCredentials.class, build);
+            }
+            listener.getLogger().print("\n");
+
+            String responseData = new SdkRequests(awsRegion, awsCredential, iamRole).requestSbom(sbom);
+
             SbomData sbomData = SbomData.builder().sbom(gson.fromJson(responseData, Sbom.class)).build();
 
             String artifactDestinationPath = build.getArtifactsDir().getAbsolutePath();
@@ -243,6 +279,22 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         }
     }
 
+    public static String getImageSha(String sbom) {
+        JsonElement jsonElement = JsonParser.parseString(sbom);
+        JsonArray properties = jsonElement.getAsJsonObject().get("metadata")
+                .getAsJsonObject().get("component")
+                .getAsJsonObject().get("properties")
+                .getAsJsonArray();
+
+        for (JsonElement property : properties) {
+            if (property.getAsJsonObject().get("name").getAsString().equals("amazon:inspector:sbom_generator:image_id")) {
+                return property.getAsJsonObject().get("value").getAsString();
+            }
+        }
+
+        return "No Sha Found";
+    }
+
     public static void writeSbomDataToFile(String sbomData, String outputFilePath) {
         try (PrintWriter writer = new PrintWriter(new FileWriter(outputFilePath))) {
             for (String line : sbomData.split("\n")) {
@@ -259,6 +311,21 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     public static class DescriptorImpl extends BuildStepDescriptor<Builder> {
         public DescriptorImpl() {
             load();
+        }
+
+        @Override
+        public AmazonInspectorBuilder newInstance(StaplerRequest req, JSONObject formData) throws FormException {
+            String value = JSONObject.fromObject(formData.get("sbomgenSelection")).get("value").toString();
+            formData.put("isAutomaticSbomgen", value.equals("automatic"));
+            formData.put("sbomgenMethod", value);
+
+            if (value.equals("manual")) {
+                formData.put("sbomgenPath", JSONObject.fromObject(formData.get("sbomgenSelection")).get("sbomgenPath"));
+            } else if (value.equals("automatic")) {
+                formData.put("sbomgenSource", JSONObject.fromObject(JSONObject.fromObject(formData.get("sbomgenSelection")).get("sbomgenSource")).get("value"));
+            }
+            
+            return req.bindJSON(AmazonInspectorBuilder.class, formData);
         }
 
         private ListBoxModel getCredentialIdModels() {
@@ -285,6 +352,35 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         public ListBoxModel doFillCredentialIdItems() {
             if (Jenkins.get().hasPermission(READ)) {
                 return getCredentialIdModels();
+            }
+            return new ListBoxModel();
+        }
+
+        @SuppressFBWarnings()
+        private ListBoxModel getAwsCredentialIdModels() {
+            ListBoxModel items = new ListBoxModel();
+            List<AmazonWebServicesCredentials> credentials = CredentialsProvider.lookupCredentials(
+                    AmazonWebServicesCredentials.class,
+                    Jenkins.getInstance(),
+                    ACL.SYSTEM,
+                    Collections.emptyList()
+            );
+
+            items.add("Select AWS Credentials", null);
+            for (AmazonWebServicesCredentials credential : credentials) {
+                if (credential != null && credential.getCredentials() != null) {
+                    items.add(String.format("[%s] %s", credential.getId(), credential.getDisplayName()),
+                            credential.getId());
+                }
+            }
+
+            return items;
+        }
+
+        @POST
+        public ListBoxModel doFillAwsCredentialIdItems() {
+            if (Jenkins.get().hasPermission(READ)) {
+                return getAwsCredentialIdModels();
             }
             return new ListBoxModel();
         }
