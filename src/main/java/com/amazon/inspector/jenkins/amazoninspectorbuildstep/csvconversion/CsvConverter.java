@@ -182,11 +182,18 @@ public class CsvConverter {
     }
 
     protected String getSeverity(Vulnerability vulnerability) {
+        final String UNTRIAGED = "UNTRIAGED";
+
         if (vulnerability == null || vulnerability.getRatings() == null) {
-            return "";
+            return UNTRIAGED;
         }
 
         List<Rating> ratings = vulnerability.getRatings();
+
+        if (ratings.isEmpty()) {
+            return UNTRIAGED;
+        }
+
         final String nvd = "NVD";
         final String cvss = "CVSSv3";
 
