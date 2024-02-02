@@ -7,11 +7,9 @@ import java.util.Map;
 
 import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomparsing.Severity.CRITICAL;
 import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomparsing.Severity.HIGH;
-import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomparsing.Severity.INFO;
-import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomparsing.Severity.INFORMATIONAL;
 import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomparsing.Severity.LOW;
 import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomparsing.Severity.MEDIUM;
-import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomparsing.Severity.NONE;
+import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomparsing.Severity.OTHER;
 
 public class SeverityCounts {
 
@@ -22,14 +20,13 @@ public class SeverityCounts {
         counts.put(CRITICAL, 0);
         counts.put(HIGH, 0);
         counts.put(MEDIUM, 0);
-        counts.put(INFORMATIONAL, 0);
-        counts.put(INFO, 0);
         counts.put(LOW, 0);
-        counts.put(NONE, 0);
     }
 
     public void increment(Severity severityToIncrement) {
-        counts.put(severityToIncrement, counts.get(severityToIncrement) + 1);
+        if (counts.containsKey(severityToIncrement)) {
+            counts.put(severityToIncrement, counts.get(severityToIncrement) + 1);
+        }
     }
 
     public String toString() {
