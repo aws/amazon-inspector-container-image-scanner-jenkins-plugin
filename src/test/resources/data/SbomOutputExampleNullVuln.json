@@ -1,0 +1,51 @@
+{
+  "status": "SBOM parsed successfully, 1 vulnerabilities found",
+  "sbom": {
+    "bomFormat": "CycloneDX",
+    "specVersion": "1.5",
+    "version": 1,
+    "serialNumber": "urn:uuid:0077b45b-ff1e-4dbb-8950-ded11d8242b1",
+    "metadata": {
+      "properties": [
+        {
+          "name": "amazon:inspector:sbom_scanner:critical_vulnerabilities",
+          "value": "1"
+        },
+        {
+          "name": "amazon:inspector:sbom_scanner:high_vulnerabilities",
+          "value": "0"
+        },
+        {
+          "name": "amazon:inspector:sbom_scanner:medium_vulnerabilities",
+          "value": "0"
+        },
+        {
+          "name": "amazon:inspector:sbom_scanner:low_vulnerabilities",
+          "value": "0"
+        }
+      ],
+      "tools": [
+        {
+          "name": "CycloneDX SBOM API",
+          "vendor": "Amazon Inspector",
+          "version": "empty:083c9b00:083c9b00:083c9b00"
+        }
+      ],
+      "timestamp": "2023-06-28T14:15:53.760Z"
+    },
+    "components": [
+      {
+        "bom-ref": "comp-1",
+        "type": "library",
+        "name": "log4j-core",
+        "purl": "pkg:maven/org.apache.logging.log4j/log4j-core@2.12.1"
+      },
+      {
+        "bom-ref": "comp-2",
+        "type": "library",
+        "name": "exampleComponent",
+        "purl": "pkg:maven/org.apache.logging.log4j/log4j-core@2.12.1"
+      }
+    ]
+  }
+}
