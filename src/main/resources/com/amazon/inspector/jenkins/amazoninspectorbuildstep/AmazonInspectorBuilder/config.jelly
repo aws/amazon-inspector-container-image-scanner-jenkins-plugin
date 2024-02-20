@@ -70,6 +70,9 @@
         <f:select clazz="padding"></f:select>
     </f:entry>
 
+    <f:entry field="awsProfileName" title="AWS Profile Name">
+        <f:textbox value="default"/>
+    </f:entry>
 
     <f:entry field="isThresholdEnabled">
         <f:checkbox id="isThresholdEnabled" class="bold" checked="false"
