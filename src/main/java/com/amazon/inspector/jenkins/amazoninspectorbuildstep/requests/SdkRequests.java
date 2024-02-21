@@ -4,6 +4,7 @@ import com.amazon.inspector.jenkins.amazoninspectorbuildstep.AmazonInspectorBuil
 import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
 import software.amazon.awssdk.core.document.Document;
@@ -56,18 +57,21 @@ public class SdkRequests {
     }
 
     private AwsCredentialsProvider getCredentialProvider() {
+        if (awsCredential != null) {
+            AmazonInspectorBuilder.logger.println("Using explicitly provided AWS credentials to authenticate.");
+            StsClient stsClient = StsClient.builder().credentialsProvider(createRawCredentialProvider()).region(Region.of(region)).build();
+            return getStsCredentialProvider(stsClient);
+        }
 
-
-        if (awsCredential == null) {
+        if (awsCredential == null && awsProfileName != null && !awsProfileName.equals("default")) {
+            AmazonInspectorBuilder.logger.println("AWS Credential not provided, authenticating using profile name " + awsProfileName);
             ProfileCredentialsProvider provider = ProfileCredentialsProvider.builder().profileName(awsProfileName).build();
-            AmazonInspectorBuilder.logger.println("AWS Credential not provided, authenticating using default credential " +
-                    "provider chain and profile name" + awsProfileName);
             StsClient stsClient = StsClient.builder().credentialsProvider(provider).region(Region.of(region)).build();
             return getStsCredentialProvider(stsClient);
         }
 
-        AmazonInspectorBuilder.logger.println("Using explicitly provided AWS credentials to authenticate.");
-        StsClient stsClient = StsClient.builder().credentialsProvider(createRawCredentialProvider()).region(Region.of(region)).build();
+        AmazonInspectorBuilder.logger.println("Using default credential provider chain to authenticate.");
+        StsClient stsClient = StsClient.builder().credentialsProvider(DefaultCredentialsProvider.create()).region(Region.of(region)).build();
         return getStsCredentialProvider(stsClient);
     }
 
