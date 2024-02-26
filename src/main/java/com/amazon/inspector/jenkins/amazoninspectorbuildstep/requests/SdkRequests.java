@@ -37,41 +37,51 @@ public class SdkRequests {
 
     public String requestSbom(String sbom) {
         SdkHttpClient client = ApacheHttpClient.builder().build();
-        InspectorScanClient scanClient = InspectorScanClient.builder()
-                .region(Region.of(region))
-                .httpClient(client)
-                .credentialsProvider(getCredentialProvider())
-                .build();
+        String workingProfileName = awsProfileName;
+        while (true) {
+            try {
+                InspectorScanClient scanClient = InspectorScanClient.builder()
+                        .region(Region.of(region))
+                        .httpClient(client)
+                        .credentialsProvider(getCredentialProvider(workingProfileName))
+                        .build();
 
-        JsonNodeParser jsonNodeParser = JsonNodeParser.create();
-        DocumentUnmarshaller unmarshaller = new DocumentUnmarshaller();
-        Document document = jsonNodeParser.parse(sbom).visit(unmarshaller);
+                JsonNodeParser jsonNodeParser = JsonNodeParser.create();
+                DocumentUnmarshaller unmarshaller = new DocumentUnmarshaller();
+                Document document = jsonNodeParser.parse(sbom).visit(unmarshaller);
 
-        ScanSbomRequest request = ScanSbomRequest.builder()
-                .sbom(document)
-                .outputFormat(OutputFormat.CYCLONE_DX_1_5)
-                .build();
-        ScanSbomResponse response = scanClient.scanSbom(request);
-
-        return response.sbom().toString();
+                ScanSbomRequest request = ScanSbomRequest.builder()
+                        .sbom(document)
+                        .outputFormat(OutputFormat.CYCLONE_DX_1_5)
+                        .build();
+                ScanSbomResponse response = scanClient.scanSbom(request);
+                return response.sbom().toString();
+            } catch (Exception e) {
+                if (!workingProfileName.equals("default")) {
+                    AmazonInspectorBuilder.logger.println("An issue occurred while authenticating, attempting to " +
+                            "authenticate with default credential provider chain");
+                    workingProfileName = "default";
+                } else {
+                    throw e;
+                }
+            }
+        }
     }
 
-    private AwsCredentialsProvider getCredentialProvider() {
+    private AwsCredentialsProvider getCredentialProvider(String workingProfileName) {
+        AwsCredentialsProvider provider = null;
         if (awsCredential != null) {
             AmazonInspectorBuilder.logger.println("Using explicitly provided AWS credentials to authenticate.");
-            StsClient stsClient = StsClient.builder().credentialsProvider(createRawCredentialProvider()).region(Region.of(region)).build();
-            return getStsCredentialProvider(stsClient);
-        }
-
-        if (awsCredential == null && awsProfileName != null && !awsProfileName.equals("default")) {
-            AmazonInspectorBuilder.logger.println("AWS Credential not provided, authenticating using profile name " + awsProfileName);
-            ProfileCredentialsProvider provider = ProfileCredentialsProvider.builder().profileName(awsProfileName).build();
-            StsClient stsClient = StsClient.builder().credentialsProvider(provider).region(Region.of(region)).build();
-            return getStsCredentialProvider(stsClient);
+            provider = createRawCredentialProvider();
+        } else if (awsCredential == null && workingProfileName != null && !workingProfileName.equals("default")) {
+            AmazonInspectorBuilder.logger.println("AWS Credential not provided, authenticating using profile name " + workingProfileName);
+            provider = ProfileCredentialsProvider.builder().profileName(workingProfileName).build();
+        } else {
+            provider = DefaultCredentialsProvider.create();
         }
 
         AmazonInspectorBuilder.logger.println("Using default credential provider chain to authenticate.");
-        StsClient stsClient = StsClient.builder().credentialsProvider(DefaultCredentialsProvider.create()).region(Region.of(region)).build();
+        StsClient stsClient = StsClient.builder().credentialsProvider(provider).region(Region.of(region)).build();
         return getStsCredentialProvider(stsClient);
     }
 
