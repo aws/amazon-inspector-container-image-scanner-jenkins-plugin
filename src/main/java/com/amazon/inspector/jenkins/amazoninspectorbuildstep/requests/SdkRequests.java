@@ -38,12 +38,15 @@ public class SdkRequests {
     public String requestSbom(String sbom) {
         SdkHttpClient client = ApacheHttpClient.builder().build();
         String workingProfileName = awsProfileName;
+        AmazonWebServicesCredentials workingCredential = awsCredential;
+        boolean retry = true;
+
         while (true) {
             try {
                 InspectorScanClient scanClient = InspectorScanClient.builder()
                         .region(Region.of(region))
                         .httpClient(client)
-                        .credentialsProvider(getCredentialProvider(workingProfileName))
+                        .credentialsProvider(getCredentialProvider(workingProfileName, workingCredential))
                         .build();
 
                 JsonNodeParser jsonNodeParser = JsonNodeParser.create();
@@ -57,24 +60,29 @@ public class SdkRequests {
                 ScanSbomResponse response = scanClient.scanSbom(request);
                 return response.sbom().toString();
             } catch (Exception e) {
-                if (!workingProfileName.equals("default")) {
-                    AmazonInspectorBuilder.logger.println("An issue occurred while authenticating, attempting to " +
-                            "authenticate with default credential provider chain");
-                    workingProfileName = "default";
-                } else {
+                if (!retry) {
                     throw e;
                 }
+
+                retry = false;
+                AmazonInspectorBuilder.logger.println("An issue occurred while authenticating, attempting to " +
+                        "authenticate with default credential provider chain");
+                workingProfileName = "default";
+                workingCredential = null;
+                continue;
             }
         }
     }
 
-    private AwsCredentialsProvider getCredentialProvider(String workingProfileName) {
+    private AwsCredentialsProvider getCredentialProvider(String workingProfileName,
+                                                         AmazonWebServicesCredentials workingCredential) {
         AwsCredentialsProvider provider = null;
-        if (awsCredential != null) {
+        if (workingCredential != null) {
             AmazonInspectorBuilder.logger.println("Using explicitly provided AWS credentials to authenticate.");
-            provider = createRawCredentialProvider();
-        } else if (awsCredential == null && workingProfileName != null && !workingProfileName.equals("default")) {
-            AmazonInspectorBuilder.logger.println("AWS Credential not provided, authenticating using profile name " + workingProfileName);
+            provider = createRawCredentialProvider(workingCredential);
+        } else if (workingCredential == null && workingProfileName != null && !workingProfileName.equals("default")) {
+            AmazonInspectorBuilder.logger.println("AWS Credential not provided, authenticating using profile name " +
+                    workingProfileName);
             provider = ProfileCredentialsProvider.builder().profileName(workingProfileName).build();
         } else {
             AmazonInspectorBuilder.logger.println("Using default credential provider chain to authenticate.");
@@ -85,16 +93,16 @@ public class SdkRequests {
         return getStsCredentialProvider(stsClient);
     }
 
-    private AwsCredentialsProvider createRawCredentialProvider() {
+    private AwsCredentialsProvider createRawCredentialProvider(AmazonWebServicesCredentials workingCredential) {
         return () -> new AwsCredentials() {
             @Override
             public String accessKeyId() {
-                return awsCredential.getCredentials().getAWSAccessKeyId();
+                return workingCredential.getCredentials().getAWSAccessKeyId();
             }
 
             @Override
             public String secretAccessKey() {
-                return awsCredential.getCredentials().getAWSSecretKey();
+                return workingCredential.getCredentials().getAWSSecretKey();
             }
         };
     }
