@@ -36,7 +36,6 @@ public class SdkRequests {
         this.roleArn = roleArn;
     }
 
-    @SuppressFBWarnings
     public String requestSbom(String sbom) {
         SdkHttpClient client = ApacheHttpClient.builder().build();
         String workingProfileName = awsProfileName;
@@ -76,6 +75,7 @@ public class SdkRequests {
         }
     }
 
+    @SuppressFBWarnings
     private AwsCredentialsProvider getCredentialProvider(String workingProfileName,
                                                          AmazonWebServicesCredentials workingCredential) {
         AwsCredentialsProvider provider = null;
