@@ -2,6 +2,7 @@ package com.amazon.inspector.jenkins.amazoninspectorbuildstep.requests;
 
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.AmazonInspectorBuilder;
 import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
@@ -35,6 +36,7 @@ public class SdkRequests {
         this.roleArn = roleArn;
     }
 
+    @SuppressFBWarnings
     public String requestSbom(String sbom) {
         SdkHttpClient client = ApacheHttpClient.builder().build();
         String workingProfileName = awsProfileName;
