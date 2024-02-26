@@ -84,16 +84,18 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     private final int countMedium;
     private final int countLow;
     private final String awsCredentialId;
+    private final String awsProfileName;
     private Job<?, ?> job;
 
     @DataBoundConstructor
     public AmazonInspectorBuilder(String archivePath, String sbomgenPath, boolean osArch, String iamRole, String awsRegion,
-                                  String credentialId, String awsCredentialId, String sbomgenMethod, String sbomgenSource,
-                                  boolean isThresholdEnabled, int countCritical, int countHigh, int countMedium,
-                                  int countLow) {
+                                  String credentialId, String awsProfileName, String awsCredentialId, String sbomgenMethod,
+                                  String sbomgenSource, boolean isThresholdEnabled, int countCritical, int countHigh,
+                                  int countMedium, int countLow) {
         this.archivePath = archivePath;
         this.credentialId = credentialId;
         this.awsCredentialId = awsCredentialId;
+        this.awsProfileName = awsProfileName;
         this.sbomgenSource = sbomgenSource;
         this.sbomgenPath = sbomgenPath;
         this.sbomgenMethod = sbomgenMethod;
@@ -176,7 +178,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             }
             listener.getLogger().print("\n");
 
-            String responseData = new SdkRequests(awsRegion, awsCredential, iamRole).requestSbom(sbom);
+            String responseData = new SdkRequests(awsRegion, awsCredential, awsProfileName, iamRole).requestSbom(sbom);
 
             SbomData sbomData = SbomData.builder().sbom(gson.fromJson(responseData, Sbom.class)).build();
 

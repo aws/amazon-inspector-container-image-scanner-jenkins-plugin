@@ -66,10 +66,13 @@
         <f:select clazz="padding"></f:select>
     </f:entry>
 
-    <f:entry field="awsCredentialId" title="AWS Credentials">
+    <f:entry field="awsCredentialId" title="Authentication Option 1: AWS Credentials">
         <f:select clazz="padding"></f:select>
     </f:entry>
 
+    <f:entry field="awsProfileName" title="Authentication Option 2: AWS Profile Name">
+        <f:textbox placeholder="default"/>
+    </f:entry>
 
     <f:entry field="isThresholdEnabled">
         <f:checkbox id="isThresholdEnabled" class="bold" checked="false"
