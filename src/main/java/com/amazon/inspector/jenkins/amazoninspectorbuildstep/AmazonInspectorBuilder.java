@@ -197,7 +197,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             String csvPath = String.format("%s/%s", artifactDestinationPath, csvFileName);
 
             logger.println("Converting SBOM Results to CSV.");
-            converter.convert(csvPath);
+
 
             SbomOutputParser parser = new SbomOutputParser(sbomData);
             SeverityCounts severityCounts = parser.parseSbom();
@@ -210,6 +210,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             } else {
                 sanitizedImageId = sanitizeText(componentName);
             }
+            converter.convert(csvPath, sanitizedImageId, imageSha, build.getId(), severityCounts);
 
             String[] splitName = sanitizedImageId.split(":");
             String tag = null;
