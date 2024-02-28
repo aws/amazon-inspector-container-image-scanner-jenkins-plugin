@@ -169,10 +169,10 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
             String imageSha = getImageSha(sbom);
 
-            listener.getLogger().print("Sending SBOM to Inspector for validation ");
+            listener.getLogger().printf("Sending SBOM to Inspector for validation with info: credential:%s, role:%s, profile:%s",
+                    awsCredentialId, iamRole, awsProfileName);
             AmazonWebServicesCredentials awsCredential = null;
             if (awsCredentialId != null) {
-                listener.getLogger().print("with credential:" + awsCredentialId);
                 awsCredential = CredentialsProvider.findCredentialById(awsCredentialId,
                         AmazonWebServicesCredentials.class, build);
             }
