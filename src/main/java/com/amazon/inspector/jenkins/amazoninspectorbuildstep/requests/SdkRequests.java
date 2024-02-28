@@ -81,12 +81,12 @@ public class SdkRequests {
         if (workingCredential != null) {
             AmazonInspectorBuilder.logger.println("Using explicitly provided AWS credentials to authenticate.");
             return StaticCredentialsProvider.create(createRawCredentialProvider(workingCredential).resolveCredentials());
-        } else if (roleArn != null) {
-            AmazonInspectorBuilder.logger.println("Authenticating to STS via a role.");
+        } else if (roleArn != null && !roleArn.isEmpty()) {
+            AmazonInspectorBuilder.logger.println("Authenticating to STS via a role and default credential provider chain.");
             StsClient stsClient = StsClient.builder().region(Region.of(region)).build();
             return StsAssumeRoleCredentialsProvider.builder().stsClient(stsClient).refreshRequest(AssumeRoleRequest.builder()
                     .roleArn(roleArn).roleSessionName("inspectorscan").build()).build();
-        } else if (workingProfileName != null) {
+        } else if (workingProfileName != null && !workingProfileName.isEmpty()) {
             AmazonInspectorBuilder.logger.println(
                     String.format("AWS Credential and role not provided, authenticating using \"%s\" as profile name.",
                             workingProfileName)
