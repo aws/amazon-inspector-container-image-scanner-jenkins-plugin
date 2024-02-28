@@ -1,5 +1,7 @@
 package com.amazon.inspector.jenkins.amazoninspectorbuildstep.csvconversion;
 
+import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomparsing.Severity;
+import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomparsing.SeverityCounts;
 import com.google.common.annotations.VisibleForTesting;
 import com.opencsv.CSVWriter;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Components.Affect;
@@ -27,8 +29,18 @@ public class CsvConverter {
         this.componentMap = populateComponentMap(sbomData);
     }
 
-    public void convert(String filePath) {
-        List<String[]> dataLineArray = buildCsvDataLines();
+    public void convert(String filePath, String imageName, String imageSha, String buildId, SeverityCounts counts) {
+        Map<Severity, Integer> countMap = counts.getCounts();
+        List<String[]> dataLineArray = new ArrayList<>();
+        dataLineArray.add(new String[]{"#image_name:" + imageName});
+        dataLineArray.add(new String[]{"#image_sha:" + imageSha});
+        dataLineArray.add(new String[]{"#build_id:" + buildId});
+        dataLineArray.add(new String[]{"#low_vulnerabilities:" + countMap.get(Severity.LOW)});
+        dataLineArray.add(new String[]{"#medium_vulnerabilities:" + countMap.get(Severity.MEDIUM)});
+        dataLineArray.add(new String[]{"#high_vulnerabilities:" + countMap.get(Severity.HIGH)});
+        dataLineArray.add(new String[]{"#critical_vulnerabilities:" + countMap.get(Severity.CRITICAL)});
+        dataLineArray.addAll(buildCsvDataLines());
+
         File file = new File(filePath);
 
         try {

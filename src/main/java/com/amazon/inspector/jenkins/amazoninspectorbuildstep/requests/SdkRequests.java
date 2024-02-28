@@ -88,7 +88,7 @@ public class SdkRequests {
             provider = ProfileCredentialsProvider.builder().profileName(workingProfileName).build();
         } else {
             AmazonInspectorBuilder.logger.println("Using default credential provider chain to authenticate.");
-            provider = DefaultCredentialsProvider.create();
+            return DefaultCredentialsProvider.create();
         }
 
         StsClient stsClient = StsClient.builder().credentialsProvider(provider).region(Region.of(region)).build();
