@@ -7,6 +7,7 @@ import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
 import software.amazon.awssdk.core.document.Document;
 import software.amazon.awssdk.http.SdkHttpClient;
@@ -70,7 +71,6 @@ public class SdkRequests {
                         "authenticate with default credential provider chain");
                 workingProfileName = "default";
                 workingCredential = null;
-                continue;
             }
         }
     }
@@ -78,21 +78,24 @@ public class SdkRequests {
     @SuppressFBWarnings
     private AwsCredentialsProvider getCredentialProvider(String workingProfileName,
                                                          AmazonWebServicesCredentials workingCredential) {
-        AwsCredentialsProvider provider = null;
         if (workingCredential != null) {
             AmazonInspectorBuilder.logger.println("Using explicitly provided AWS credentials to authenticate.");
-            provider = createRawCredentialProvider(workingCredential);
-        } else if (workingCredential == null && workingProfileName != null && !workingProfileName.equals("default")) {
-            AmazonInspectorBuilder.logger.println("AWS Credential not provided, authenticating using profile name " +
-                    workingProfileName);
-            provider = ProfileCredentialsProvider.builder().profileName(workingProfileName).build();
+            return StaticCredentialsProvider.create(createRawCredentialProvider(workingCredential).resolveCredentials());
+        } else if (roleArn != null) {
+            AmazonInspectorBuilder.logger.println("Authenticating to STS via a role.");
+            StsClient stsClient = StsClient.builder().region(Region.of(region)).build();
+            return StsAssumeRoleCredentialsProvider.builder().stsClient(stsClient).refreshRequest(AssumeRoleRequest.builder()
+                    .roleArn(roleArn).roleSessionName("inspectorscan").build()).build();
+        } else if (workingProfileName != null) {
+            AmazonInspectorBuilder.logger.println(
+                    String.format("AWS Credential and role not provided, authenticating using \"%s\" as profile name.",
+                            workingProfileName)
+            );
+            return ProfileCredentialsProvider.builder().profileName(workingProfileName).build();
         } else {
             AmazonInspectorBuilder.logger.println("Using default credential provider chain to authenticate.");
             return DefaultCredentialsProvider.create();
         }
-
-        StsClient stsClient = StsClient.builder().credentialsProvider(provider).region(Region.of(region)).build();
-        return getStsCredentialProvider(stsClient);
     }
 
     private AwsCredentialsProvider createRawCredentialProvider(AmazonWebServicesCredentials workingCredential) {
@@ -107,11 +110,5 @@ public class SdkRequests {
                 return workingCredential.getCredentials().getAWSSecretKey();
             }
         };
-    }
-
-    public StsAssumeRoleCredentialsProvider getStsCredentialProvider(StsClient stsClient) {
-        return StsAssumeRoleCredentialsProvider.builder().stsClient(stsClient).refreshRequest(AssumeRoleRequest.builder()
-                .roleArn(roleArn)
-                .roleSessionName("inspectorscan").build()).build();
     }
 }
