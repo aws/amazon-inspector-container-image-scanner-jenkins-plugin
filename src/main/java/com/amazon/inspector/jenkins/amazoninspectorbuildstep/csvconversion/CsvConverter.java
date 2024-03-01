@@ -15,6 +15,7 @@ import org.apache.commons.lang.StringUtils;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -40,7 +41,7 @@ public class CsvConverter {
         File file = new File(filePath);
 
         try {
-            FileWriter outputfile = new FileWriter(file);
+            FileWriter outputfile = new FileWriter(file, Charset.forName("UTF-8"));
             CSVWriter writer = new CSVWriter(outputfile);
 
             writer.writeAll(dataLineArray);

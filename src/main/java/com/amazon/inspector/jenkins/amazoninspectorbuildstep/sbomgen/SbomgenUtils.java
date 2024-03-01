@@ -7,6 +7,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.exception.MalformedScanOutputException;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 public class SbomgenUtils {
 
@@ -23,12 +24,13 @@ public class SbomgenUtils {
     }
 
     @VisibleForTesting
+    @SuppressFBWarnings()
     public static String stripProperties(String sbom) {
         JsonObject json = JsonParser.parseString(sbom).getAsJsonObject();
 
         if (json == null || json.getAsJsonObject() == null || json.getAsJsonObject().get("components") == null) {
             AmazonInspectorBuilder.logger.printf("Strip properties failed the null check. json: %s, jsonObject: %s, " +
-                    "components: %s\n", json == null, json.getAsJsonObject() == null,
+                    "components: %s%n", json == null, json.getAsJsonObject() == null,
                     json.getAsJsonObject().get("components") == null);
             return sbom;
         }
