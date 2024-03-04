@@ -41,36 +41,37 @@
 
     <f:radioBlock title="Manual" name="sbomgenSelection" checked="${instance.isSource('manual')}"
                   value="manual">
-        <strong class="required-field">Path to inspector-sbomgen</strong>
+        <p>Path to inspector-sbomgen</p>
         <f:entry field="sbomgenPath">
             <f:textbox placeholder="/Users/user/Downloads/inspector-sbomgen"/>
         </f:entry>
     </f:radioBlock>
 
-    <strong class="required-field">Image Id</strong>
+    <p class="required-field">Image Id</p>
     <f:entry field="archivePath">
         <f:textbox placeholder="/Users/user/Downloads/alpine.tar or alpine:latest" />
-    </f:entry>
-
-    <strong class="required-field">AWS Region</strong>
-    <f:entry field="awsRegion">
-        <f:select />
-    </f:entry>
-
-    <strong class="required-field">IAM Role</strong>
-    <f:entry field="iamRole">
-        <f:textbox placeholder="arn:aws:iam::{ACCOUNT_ID}:role/{ROLE_NAME}"/>
     </f:entry>
 
     <f:entry field="credentialId" title="Docker Credentials">
         <f:select clazz="padding"></f:select>
     </f:entry>
 
-    <f:entry field="awsCredentialId" title="Authentication Option 1: AWS Credentials">
+    <p class="required-field">AWS Region</p>
+    <f:entry field="awsRegion">
+        <f:select />
+    </f:entry>
+
+    <p class="required-field">AWS Authentication Options (Choose One)</p>
+    <hr></hr>
+    <f:entry field="iamRole" title="IAM Role">
+        <f:textbox placeholder="arn:aws:iam::{ACCOUNT_ID}:role/{ROLE_NAME}"/>
+    </f:entry>
+
+    <f:entry field="awsCredentialId" title="AWS Credentials">
         <f:select clazz="padding"></f:select>
     </f:entry>
 
-    <f:entry field="awsProfileName" title="Authentication Option 2: AWS Profile Name">
+    <f:entry field="awsProfileName" title="AWS Profile Name">
         <f:textbox placeholder="default"/>
     </f:entry>
 

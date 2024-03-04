@@ -15,6 +15,7 @@ import org.apache.commons.lang.StringUtils;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -32,19 +33,15 @@ public class CsvConverter {
     public void convert(String filePath, String imageName, String imageSha, String buildId, SeverityCounts counts) {
         Map<Severity, Integer> countMap = counts.getCounts();
         List<String[]> dataLineArray = new ArrayList<>();
-        dataLineArray.add(new String[]{"#image_name:" + imageName});
-        dataLineArray.add(new String[]{"#image_sha:" + imageSha});
-        dataLineArray.add(new String[]{"#build_id:" + buildId});
-        dataLineArray.add(new String[]{"#low_vulnerabilities:" + countMap.get(Severity.LOW)});
-        dataLineArray.add(new String[]{"#medium_vulnerabilities:" + countMap.get(Severity.MEDIUM)});
-        dataLineArray.add(new String[]{"#high_vulnerabilities:" + countMap.get(Severity.HIGH)});
-        dataLineArray.add(new String[]{"#critical_vulnerabilities:" + countMap.get(Severity.CRITICAL)});
+        dataLineArray.add(new String[]{"#image_name:" + imageName, "image_sha:" + imageSha, "build_id:" + buildId});
+        dataLineArray.add(new String[]{"#low_vulnerabilities:" + countMap.get(Severity.LOW), "medium_vulnerabilities:" + countMap.get(Severity.MEDIUM),
+                "high_vulnerabilities:" + countMap.get(Severity.HIGH), "critical_vulnerabilities:" + countMap.get(Severity.CRITICAL)});
         dataLineArray.addAll(buildCsvDataLines());
 
         File file = new File(filePath);
 
         try {
-            FileWriter outputfile = new FileWriter(file);
+            FileWriter outputfile = new FileWriter(file, Charset.forName("UTF-8"));
             CSVWriter writer = new CSVWriter(outputfile);
 
             writer.writeAll(dataLineArray);
