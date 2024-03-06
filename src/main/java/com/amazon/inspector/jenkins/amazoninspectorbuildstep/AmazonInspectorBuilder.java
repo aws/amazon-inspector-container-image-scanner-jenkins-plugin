@@ -122,6 +122,10 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         return Boolean.toString(sbomgenMethod.equals(value));
     }
 
+    public String isOs(String value) {
+        return Boolean.toString(sbomgenMethod.equals("automatic") && sbomgenSource.equals(value));
+    }
+
     @Override
     public void perform(Run<?, ?> build, FilePath workspace, EnvVars env, Launcher launcher, TaskListener listener)
             throws IOException {
