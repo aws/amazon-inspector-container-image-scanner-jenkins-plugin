@@ -33,9 +33,9 @@
     <f:entry field="sbomgenSelectionWrapper" title="Inspector-sbomgen Installation Method"></f:entry>
 
     <f:radioBlock title="Automatic" name="sbomgenSelection" checked="${instance.isSource('automatic')}" value="automatic">
-        <f:radioBlock name="sbomgenSource" title="Linux, AMD64" value="linuxAmd64" checked="false">
+        <f:radioBlock name="sbomgenSource" title="Linux, AMD64" value="linuxAmd64" checked="${instance.isOs('linuxAmd64')}">
         </f:radioBlock>
-        <f:radioBlock name="sbomgenSource" title="Linux, ARM64" value="linuxArm64" checked="false">
+        <f:radioBlock name="sbomgenSource" title="Linux, ARM64" value="linuxArm64" checked="${instance.isOs('linuxArm64')}">
         </f:radioBlock>
     </f:radioBlock>
 
