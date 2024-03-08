@@ -47,6 +47,9 @@ import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomparsing.SbomOut
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomparsing.Severity;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomparsing.SeverityCounts;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.utils.HtmlConversionUtils;
+import io.jenkins.plugins.oidc_provider.IdTokenCredentials;
+import io.jenkins.plugins.oidc_provider.IdTokenFileCredentials;
+import io.jenkins.plugins.oidc_provider.IdTokenStringCredentials;
 import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildStep;
 import jenkins.util.BuildListenerAdapter;
@@ -181,7 +184,8 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             }
             listener.getLogger().print("\n");
 
-            String responseData = new SdkRequests(awsRegion, awsCredential, awsProfileName, iamRole).requestSbom(sbom);
+            IdTokenStringCredentials oicd = CredentialsProvider.findCredentialById("0647d50f-220f-4aea-87a2-9ebc0cdee773", IdTokenStringCredentials.class, build);
+            String responseData = new SdkRequests(awsRegion, awsCredential, oicd, awsProfileName, iamRole).requestSbom(sbom);
 
             SbomData sbomData = SbomData.builder().sbom(gson.fromJson(responseData, Sbom.class)).build();
 
