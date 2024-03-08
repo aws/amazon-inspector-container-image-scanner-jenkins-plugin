@@ -1,25 +1,28 @@
-This plugin gives you the ability to add Amazon Inspector vulnerability scans to your pipeline. These scans leverage the Inspector SBOM generator binary and Amazon Inspector Scan API to produce detailed reports at the end of your build so you can investigate and remediate risk before deployment. The scans can also be configured to pass or fail pipeline executions based on the number and severity of vulnerabilities detected.
+The Jenkins plugin leverages the Amazon Inspector SBOM Generator binary and Amazon Inspector Scan API to produce detailed reports at the end of your build, so you can investigate and remediate risk before deployment.
 
-Amazon Inspector is a vulnerability management service offered by AWS that scans container images for both operating system and programming language package vulnerabilities based on CVEs. For more information on Amazon Inspector's CI/CD integration see [Integrating Amazon Inspector scans into your CI/CD pipeline](https://docs.aws.amazon.com/inspector/latest/user/scanning-cicd.html).
+Amazon Inspector is a vulnerability management service that scans container images for operating system and programming language package vulnerabilities based on CVEs.
 
-For a list of packages and container image formats the Inspector plugin supports see, [Supported packages and image formats](https://docs.aws.amazon.com/inspector/latest/user/sbom-generator.html#sbomgen-supported).
-
-Follow the steps in each section of this document to use the Inspector Jenkins plugin:
+Using the Amazon Inspector Jenkins plugin, you can add Amazon Inspector vulnerability scans to your Jenkins pipeline.
 
 #### 1. Set up an AWS account
-* Configure an AWS account with an IAM role that allows access to the Inspector SBOM scanning API. For instructions, see [Setting up an AWS account to use the Amazon Inspector CI/CD integration](https://docs.aws.amazon.com/inspector/latest/user/configure-cicd-account.html)
+* Configure an AWS account with an IAM role that allows access to the Amazon Inspector Scan API.
 
 #### 2. Install the Inspector Jenkins Plugin
 1. From your Jenkins dashboard, go to **Manage Jenkins > Manage Plugins** and select the **Available** tab.
-2. Search for **Amazon Inspector Scans**.
-3. Install the plugin.
+2. Choose Available.
+3. From the Available tab, search for Amazon Inspector Scans, and then install the plugin.
 
 #### 3. Install the Inspector SBOM Generator
 * Install and configure the Amazon Inspector SBOM Generator. For instructions, see [Installing Amazon Inspector SBOM Generator (Sbomgen)](https://docs.aws.amazon.com/inspector/latest/user/sbom-generator.html)
 
 #### 4. Add your Docker credentials to Jenkins
-1. Go to **Dashboard > Manage Jenkins > Credentials > System > Global credentials > Add credentials**.
-2. Fill in details and select **Create**.
+The following procedure describes how to add docker credentials to Jenkins from the Jenkins dashboard.
+
+1. From the Jenkins dashboard, choose Manage Jenkins, Credentials, and then System.
+2. Choose Global credentials and then Add credentials.
+3. For Kind, select Username with password.
+4. For Scope, select Global (Jenkins, nodes, items, all child items, etc).
+5. Enter your details, and then choose OK.
 
 #### 5. Add an Amazon Inspector Scan build step to your project
 1. On the configuration page, scroll down to **Build Steps**, select **Add build step** and select **Amazon Inspector Scan**.
@@ -34,8 +37,9 @@ Follow the steps in each section of this document to use the Inspector Jenkins p
         * For a tar file: `/path/to/image.tar`
     * For private registry and container images, please refer to https://docs.aws.amazon.com/inspector/latest/user/sbom-generator.html
     * Select an **AWS Region** to send the scan request through.
-    * For **IAM Role** enter the ARN for the role you configured in step 1.
-    * For **Docker credentials** select your Docker username.
+    * (Optional) For IAM role, provide a role ARN (arn:aws:iam::AccountNumber:role/RoleName).
+    * (Optional) For AWS credentials, select Id to authenticate based on an IAM user.
+    * (Optional) For AWS profile name, provide the name of a profile to authenticate using a profile name.
     * (Optional) Specify the **Vulnerability thresholds** per severity. If the number you specify is exceeded during a scan the image build will fail. If the values are all 0 the build will succeed regardless of the number of vulnerabilities found.
 3. Select **Save**.
 
