@@ -21,6 +21,7 @@ import hudson.model.Result;
 import hudson.security.ACL;
 import hudson.model.Run;
 import hudson.model.TaskListener;
+import hudson.tasks.ArtifactArchiver;
 import hudson.tasks.Builder;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.util.ListBoxModel;
@@ -47,9 +48,9 @@ import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomparsing.SbomOut
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomparsing.Severity;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomparsing.SeverityCounts;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.utils.HtmlConversionUtils;
-import io.jenkins.plugins.oidc_provider.IdTokenCredentials;
 import io.jenkins.plugins.oidc_provider.IdTokenFileCredentials;
 import io.jenkins.plugins.oidc_provider.IdTokenStringCredentials;
+
 import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildStep;
 import jenkins.util.BuildListenerAdapter;
@@ -75,6 +76,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     private final String iamRole;
     private final String awsRegion;
     private final String credentialId;
+    private final String oicdCredentialId;
     private final boolean isThresholdEnabled;
     private final String sbomgenPath;
     private final String sbomgenSource;
@@ -91,10 +93,11 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     public AmazonInspectorBuilder(String archivePath, String sbomgenPath, boolean osArch, String iamRole, String awsRegion,
                                   String credentialId, String awsProfileName, String awsCredentialId, String sbomgenMethod,
                                   String sbomgenSource, boolean isThresholdEnabled, int countCritical, int countHigh,
-                                  int countMedium, int countLow) {
+                                  int countMedium, int countLow, String oicdCredentialId) {
         this.archivePath = archivePath;
         this.credentialId = credentialId;
         this.awsCredentialId = awsCredentialId;
+        this.oicdCredentialId = oicdCredentialId;
         this.awsProfileName = awsProfileName;
         this.sbomgenSource = sbomgenSource;
         this.sbomgenPath = sbomgenPath;
@@ -114,7 +117,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         boolean highExceedsLimit = counts.get(Severity.HIGH) > countHigh;
         boolean mediumExceedsLimit = counts.get(Severity.MEDIUM) > countMedium;
         boolean lowExceedsLimit = counts.get(Severity.LOW) > countLow;
-        
+
         return criticalExceedsLimit || highExceedsLimit || mediumExceedsLimit || lowExceedsLimit;
     }
 
@@ -184,8 +187,15 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             }
             listener.getLogger().print("\n");
 
-            IdTokenStringCredentials oicd = CredentialsProvider.findCredentialById("0647d50f-220f-4aea-87a2-9ebc0cdee773", IdTokenStringCredentials.class, build);
-            String responseData = new SdkRequests(awsRegion, awsCredential, oicd, awsProfileName, iamRole).requestSbom(sbom);
+            String workingOicdCredentialId = oicdCredentialId;
+            if (workingOicdCredentialId == null) {
+                workingOicdCredentialId = "";
+            }
+            IdTokenStringCredentials oicdStr = CredentialsProvider.findCredentialById(workingOicdCredentialId, IdTokenStringCredentials.class, build);
+            IdTokenFileCredentials oicdFile = CredentialsProvider.findCredentialById(workingOicdCredentialId, IdTokenFileCredentials.class, build);
+            String oicdToken = getOicdToken(oicdStr, oicdFile);
+
+            String responseData = new SdkRequests(awsRegion, awsCredential, oicdToken, awsProfileName, iamRole).requestSbom(sbom);
 
             SbomData sbomData = SbomData.builder().sbom(gson.fromJson(responseData, Sbom.class)).build();
 
@@ -203,7 +213,6 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             artifactMap.put(csvFileName, csvWorkspacePath);
             FilePath csvFile = workspace.child(csvWorkspacePath);
             logger.println("Converting SBOM Results to CSV.");
-
 
             SbomOutputParser parser = new SbomOutputParser(sbomData);
             SeverityCounts severityCounts = parser.parseSbom();
@@ -271,7 +280,6 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             }
 
             listener.getLogger().println("Does Build Pass: " + doesBuildPass);
-
         } catch (Exception e) {
             listener.getLogger().println("Plugin execution ran into an error and is being aborted!");
             build.setResult(Result.ABORTED);
@@ -280,6 +288,16 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         } finally {
             printStream.close();
         }
+    }
+
+    private String getOicdToken(IdTokenStringCredentials oicdStr, IdTokenFileCredentials oicdFile) throws IOException {
+        if (oicdStr != null) {
+            return oicdStr.getSecret().getPlainText();
+        } else if (oicdFile != null) {
+            return new String(oicdFile.getContent().readAllBytes(), StandardCharsets.UTF_8);
+        }
+
+        return null;
     }
 
     public static String getImageSha(String sbom) {
@@ -317,7 +335,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             } else if (value.equals("automatic")) {
                 formData.put("sbomgenSource", JSONObject.fromObject(JSONObject.fromObject(formData.get("sbomgenSelection")).get("sbomgenSource")).get("value"));
             }
-            
+
             return req.bindJSON(AmazonInspectorBuilder.class, formData);
         }
 
@@ -339,6 +357,50 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             }
 
             return items;
+        }
+
+        private ListBoxModel getOicdStringIdModels() {
+            ListBoxModel items = new ListBoxModel();
+            List<IdTokenStringCredentials> credentials = CredentialsProvider.lookupCredentials(
+                    IdTokenStringCredentials.class,
+                    Jenkins.getInstance(),
+                    ACL.SYSTEM,
+                    Collections.emptyList()
+            );
+
+            for (IdTokenStringCredentials credential : credentials) {
+                items.add(credential.getId());
+            }
+
+            return items;
+        }
+
+        private ListBoxModel getOicdFileIdModels() {
+            ListBoxModel items = new ListBoxModel();
+            List<IdTokenFileCredentials> credentials = CredentialsProvider.lookupCredentials(
+                    IdTokenFileCredentials.class,
+                    Jenkins.getInstance(),
+                    ACL.SYSTEM,
+                    Collections.emptyList()
+            );
+
+            for (IdTokenFileCredentials credential : credentials) {
+                items.add(credential.getId());
+            }
+
+            return items;
+        }
+
+        @POST
+        public ListBoxModel doFillOicdCredentialIdItems() {
+            if (Jenkins.get().hasPermission(READ)) {
+                ListBoxModel items = new ListBoxModel();
+                items.add("Select Docker Username", null);
+                items.addAll(getOicdFileIdModels());
+                items.addAll(getOicdStringIdModels());
+                return items;
+            }
+            return new ListBoxModel();
         }
 
         @POST

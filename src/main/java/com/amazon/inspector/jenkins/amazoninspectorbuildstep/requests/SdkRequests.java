@@ -3,7 +3,6 @@ package com.amazon.inspector.jenkins.amazoninspectorbuildstep.requests;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.AmazonInspectorBuilder;
 import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import io.jenkins.plugins.oidc_provider.IdTokenStringCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
@@ -29,11 +28,11 @@ import software.amazon.awssdk.services.sts.model.AssumeRoleWithWebIdentityReques
 public class SdkRequests {
     private final String region;
     private final AmazonWebServicesCredentials awsCredential;
-    private final IdTokenStringCredentials oicd;
+    private final String oicd;
     private final String roleArn;
     private final String awsProfileName;
 
-    public SdkRequests(String region, AmazonWebServicesCredentials awsCredential, IdTokenStringCredentials oicd,
+    public SdkRequests(String region, AmazonWebServicesCredentials awsCredential, String oicd,
                        String awsProfileName, String roleArn) {
         this.region = region;
         this.awsCredential = awsCredential;
@@ -46,7 +45,7 @@ public class SdkRequests {
         SdkHttpClient client = ApacheHttpClient.builder().build();
         String workingProfileName = awsProfileName;
         AmazonWebServicesCredentials workingCredential = awsCredential;
-        String workingOicd = oicd.getSecret().getPlainText();
+        String workingOicd = oicd;
         boolean retry = true;
 
         while (true) {
@@ -68,6 +67,7 @@ public class SdkRequests {
                 ScanSbomResponse response = scanClient.scanSbom(request);
                 return response.sbom().toString();
             } catch (Exception e) {
+                AmazonInspectorBuilder.logger.println(e);
                 if (!retry) {
                     throw e;
                 }
@@ -91,13 +91,14 @@ public class SdkRequests {
             return StaticCredentialsProvider.create(createRawCredentialProvider(workingCredential).resolveCredentials());
         } else if (roleArn != null && !roleArn.isEmpty() && workingOicd != null && !workingOicd.isEmpty()) {
             AmazonInspectorBuilder.logger.println("Using OAuth token and role to authenticate.");
+            AmazonInspectorBuilder.logger.println(workingOicd);
             AssumeRoleWithWebIdentityRequest webIdentityRequest = AssumeRoleWithWebIdentityRequest.builder()
                     .roleArn(roleArn)
                     .roleSessionName("inspectorscan")
                     .webIdentityToken(workingOicd)
                     .build();
             stsClient.assumeRoleWithWebIdentity(webIdentityRequest);
-            return StsAssumeRoleWithWebIdentityCredentialsProvider.builder().stsClient(stsClient).build();
+            return StsAssumeRoleWithWebIdentityCredentialsProvider.builder().stsClient(stsClient).refreshRequest(webIdentityRequest).build();
         } else if (roleArn != null && !roleArn.isEmpty()) {
             AmazonInspectorBuilder.logger.println("Authenticating to STS via a role and default credential provider chain.");
 
