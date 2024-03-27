@@ -221,9 +221,12 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                 tag = splitName[1];
             }
 
+            String outputWorkspacePath = String.format("%sjob/%s/%s/artifact", env.get("JENKINS_URL"), env.get("JOB_NAME"),
+                    env.get("BUILD_NUMBER"));
+
             HtmlData htmlData = HtmlData.builder()
-                    .jsonFilePath(sanitizeUrl(workspace.getRemote() + "/" + sbomFileName))
-                    .csvFilePath(sanitizeUrl(workspace.getRemote() + "/" + csvFileName))
+                    .jsonFilePath(sanitizeUrl(outputWorkspacePath + "/" + sbomFileName))
+                    .csvFilePath(sanitizeUrl(outputWorkspacePath + "/" + csvFileName))
                     .imageMetadata(ImageMetadata.builder()
                             .id(splitName[0])
                             .tags(tag)
@@ -248,8 +251,6 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
             build.getArtifactManager().archive(workspace, launcher, new BuildListenerAdapter(listener), artifactMap);
 
-            String outputWorkspacePath = String.format("%sjob/%s/%s/artifact", env.get("JENKINS_URL"), env.get("JOB_NAME"),
-                    env.get("BUILD_NUMBER"));
             listener.getLogger().println("CSV Output File: " + sanitizeUrl(outputWorkspacePath + "/" + csvFileName));
             listener.getLogger().println("SBOM Output File: " + sanitizeUrl(outputWorkspacePath + "/" + sbomFileName));
             listener.getLogger().println("HTML Report File: " + outputWorkspacePath + "/index.html");
