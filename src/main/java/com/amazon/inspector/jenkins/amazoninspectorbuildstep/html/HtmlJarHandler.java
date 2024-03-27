@@ -6,6 +6,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringEscapeUtils;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -37,6 +38,9 @@ public class HtmlJarHandler {
     public String readStringFromJarEntry(String fileName) throws IOException {
         JarFile jarFile = new JarFile(jarPath);
         JarEntry entry = jarFile.getJarEntry(fileName);
-        return IOUtils.toString(jarFile.getInputStream(entry), StandardCharsets.UTF_8);
+        InputStream inputStream = jarFile.getInputStream(entry);
+        String content = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
+        inputStream.close();
+        return content;
     }
 }
