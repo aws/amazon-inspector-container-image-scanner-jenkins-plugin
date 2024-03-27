@@ -26,19 +26,16 @@ import hudson.tasks.BuildStepDescriptor;
 import hudson.util.ListBoxModel;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
 
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomgen.SbomgenRunner;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.csvconversion.CsvConverter;
-import com.amazon.inspector.jenkins.amazoninspectorbuildstep.html.HtmlGenerator;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.html.HtmlJarHandler;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.html.HtmlData;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.html.components.ImageMetadata;
@@ -52,9 +49,9 @@ import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomparsing.Severit
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.utils.HtmlConversionUtils;
 import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildStep;
+import jenkins.util.BuildListenerAdapter;
 import lombok.Getter;
 import net.sf.json.JSONObject;
-import org.apache.commons.lang.StringEscapeUtils;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
@@ -136,6 +133,8 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
         PrintStream printStream = new PrintStream(outFile, StandardCharsets.UTF_8);
         try {
+            Map<String, String> artifactMap = new HashMap<>();
+
             if (Jenkins.getInstanceOrNull() == null) {
                 throw new RuntimeException("No Jenkins instance found");
             }
@@ -187,19 +186,21 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             SbomData sbomData = SbomData.builder().sbom(gson.fromJson(responseData, Sbom.class)).build();
 
             String artifactDestinationPath = build.getArtifactsDir().getAbsolutePath();
-            new File(artifactDestinationPath).mkdirs();
+            new FilePath(new File(artifactDestinationPath)).mkdirs();
 
             String sbomFileName = String.format("%s-%s-sbom.json", build.getParent().getDisplayName(),
                     build.getDisplayName()).replaceAll("[ #]", "");
-            String sbomPath = String.format("%s/%s", artifactDestinationPath, sbomFileName);
-
-            writeSbomDataToFile(gson.toJson(sbomData.getSbom()), sbomPath);
+            String sbomWorkspacePath = String.format("%s/%s", build.getId(), sbomFileName);
+            artifactMap.put(sbomFileName, sbomWorkspacePath);
+            FilePath sbomFile = workspace.child(sbomWorkspacePath);
+            sbomFile.write(gson.toJson(sbomData.getSbom()), "UTF-8");
 
             CsvConverter converter = new CsvConverter(sbomData);
             String csvFileName = String.format("%s-%s.csv", build.getParent().getDisplayName(),
                     build.getDisplayName()).replaceAll("[ #]", "");
-            String csvPath = String.format("%s/%s", artifactDestinationPath, csvFileName);
-
+            String csvWorkspacePath = String.format("%s/%s", build.getId(), csvFileName);
+            artifactMap.put(csvFileName, csvWorkspacePath);
+            FilePath csvFile = workspace.child(csvWorkspacePath);
             logger.println("Converting SBOM Results to CSV.");
 
 
@@ -214,7 +215,8 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             } else {
                 sanitizedImageId = sanitizeText(componentName);
             }
-            converter.convert(csvPath, sanitizedImageId, imageSha, build.getId(), severityCounts);
+            String csvContent = converter.convert(sanitizedImageId, imageSha, build.getId(), severityCounts);
+            csvFile.write(csvContent, "UTF-8");
 
             String[] splitName = sanitizedImageId.split(":");
             String tag = null;
@@ -222,12 +224,9 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                 tag = splitName[1];
             }
 
-            String outputWorkspacePath = String.format("%sjob/%s/%s/artifact", env.get("JENKINS_URL"), env.get("JOB_NAME"),
-                    env.get("BUILD_NUMBER"));
-
             HtmlData htmlData = HtmlData.builder()
-                    .jsonFilePath(sanitizeUrl(outputWorkspacePath + "/" + sbomFileName))
-                    .csvFilePath(sanitizeUrl(outputWorkspacePath + "/" + csvFileName))
+                    .jsonFilePath(sanitizeUrl(workspace.getRemote() + "/" + sbomFileName))
+                    .csvFilePath(sanitizeUrl(workspace.getRemote() + "/" + csvFileName))
                     .imageMetadata(ImageMetadata.builder()
                             .id(splitName[0])
                             .tags(tag)
@@ -242,22 +241,22 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                     .vulnerabilities(HtmlConversionUtils.convertVulnerabilities(sbomData.getSbom().getVulnerabilities(),
                             sbomData.getSbom().getComponents()))
                     .build();
+            String reportData = new Gson().toJson(htmlData);
+            String htmlJarPath = String.valueOf(new FilePath(new File(HtmlJarHandler.class.getProtectionDomain().getCodeSource().getLocation()
+                    .toURI())));
 
-            String htmlJarPath = new File(HtmlJarHandler.class.getProtectionDomain().getCodeSource().getLocation()
-                    .toURI()).getPath();
-            HtmlJarHandler htmlJarHandler = new HtmlJarHandler(htmlJarPath);
-
-            String htmlPath = htmlJarHandler.copyHtmlToDir(artifactDestinationPath);
-
-            String html = new Gson().toJson(htmlData);
-            new HtmlGenerator(htmlPath).generateNewHtml(html);
-
+            new HtmlJarHandler(htmlJarPath, reportData).copyHtmlToDir(workspace, build.getId());
+            artifactMap.put("index.html", String.format("%s/%s", build.getId(), "index.html"));
             logger.println("Prefixing file paths with Jenkins URL from settings, currently: " + env.get("JENKINS_URL"));
 
+            build.getArtifactManager().archive(workspace, launcher, new BuildListenerAdapter(listener), artifactMap);
+
+            String outputWorkspacePath = String.format("%sjob/%s/%s/artifact", env.get("JENKINS_URL"), env.get("JOB_NAME"),
+                    env.get("BUILD_NUMBER"));
             listener.getLogger().println("CSV Output File: " + sanitizeUrl(outputWorkspacePath + "/" + csvFileName));
             listener.getLogger().println("SBOM Output File: " + sanitizeUrl(outputWorkspacePath + "/" + sbomFileName));
             listener.getLogger().println("HTML Report File: " + outputWorkspacePath + "/index.html");
-            listener.getLogger().println("Alternate Report Link: file://" + htmlPath);
+
             boolean doesBuildPass = !doesBuildFail(severityCounts.getCounts());
 
             if (!isThresholdEnabled) {
@@ -300,16 +299,6 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         }
 
         return "No Sha Found";
-    }
-
-    public static void writeSbomDataToFile(String sbomData, String outputFilePath) {
-        try (PrintWriter writer = new PrintWriter(new FileWriter(outputFilePath))) {
-            for (String line : sbomData.split("\n")) {
-                writer.println(StringEscapeUtils.unescapeJava(line));
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
     }
 
 

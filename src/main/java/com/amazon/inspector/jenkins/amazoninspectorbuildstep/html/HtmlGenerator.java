@@ -1,5 +1,6 @@
 package com.amazon.inspector.jenkins.amazoninspectorbuildstep.html;
 
+import hudson.FilePath;
 import lombok.AllArgsConstructor;
 import org.apache.commons.lang3.StringEscapeUtils;
 
@@ -13,9 +14,9 @@ import java.nio.file.Paths;
 
 @AllArgsConstructor
 public class HtmlGenerator {
-    private String htmlPath;
+    private FilePath tempHtmlFile;
 
-    public void generateNewHtml(String json) throws IOException {
+    public String generateNewHtml(String json) throws IOException {
         String htmlContent = getHtmlAsString();
 
         String scriptStart = "<script type=\"text/javascript\">";
@@ -24,19 +25,19 @@ public class HtmlGenerator {
         htmlContent = htmlContent.replaceAll(scriptStart,
                 scriptStart + "\n\t\t\tconst txt = '" + trimmedJson + "'");
 
-        createFile(htmlContent);
+        return htmlContent;
     }
 
     private String getHtmlAsString()  throws IOException {
-        File file = new File(htmlPath);
-        byte[] encoded = Files.readAllBytes(Paths.get(htmlPath));
+        File file = new File(tempHtmlFile.getRemote());
+        byte[] encoded = Files.readAllBytes(Paths.get(tempHtmlFile.getRemote()));
         file.delete();
         return new String(encoded, StandardCharsets.UTF_8);
     }
 
     private void createFile(String htmlContent) {
         try {
-            File file = new File(htmlPath);
+            File file = new File(tempHtmlFile.getRemote());
             file.createNewFile();
             FileWriter fw = new FileWriter(file.getAbsoluteFile());
             BufferedWriter bw = new BufferedWriter(fw);
