@@ -35,6 +35,7 @@ public class HtmlJarHandler {
         return htmlContent;
     }
 
+    @SuppressWarnings("OS_OPEN_STREAM")
     public String readStringFromJarEntry(String fileName) throws IOException {
         JarFile jarFile = new JarFile(jarPath);
         JarEntry entry = jarFile.getJarEntry(fileName);
