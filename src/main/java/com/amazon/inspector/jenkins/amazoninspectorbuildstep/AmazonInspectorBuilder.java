@@ -185,9 +185,6 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
             SbomData sbomData = SbomData.builder().sbom(gson.fromJson(responseData, Sbom.class)).build();
 
-            String artifactDestinationPath = build.getArtifactsDir().getAbsolutePath();
-            new FilePath(new File(artifactDestinationPath)).mkdirs();
-
             String sbomFileName = String.format("%s-%s-sbom.json", build.getParent().getDisplayName(),
                     build.getDisplayName()).replaceAll("[ #]", "");
             String sbomWorkspacePath = String.format("%s/%s", build.getId(), sbomFileName);
