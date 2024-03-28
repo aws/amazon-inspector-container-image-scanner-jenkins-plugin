@@ -1,5 +1,6 @@
 package com.amazon.inspector.jenkins.amazoninspectorbuildstep.html;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.FilePath;
 import lombok.AllArgsConstructor;
 import org.apache.commons.io.IOUtils;
@@ -35,13 +36,14 @@ public class HtmlJarHandler {
         return htmlContent;
     }
 
-    @SuppressWarnings("OS_OPEN_STREAM")
+    @SuppressFBWarnings()
     public String readStringFromJarEntry(String fileName) throws IOException {
         JarFile jarFile = new JarFile(jarPath);
         JarEntry entry = jarFile.getJarEntry(fileName);
         InputStream inputStream = jarFile.getInputStream(entry);
         String content = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
         inputStream.close();
+        jarFile.close();
         return content;
     }
 }
