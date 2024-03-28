@@ -1,48 +1,49 @@
 package com.amazon.inspector.jenkins.amazoninspectorbuildstep.html;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import hudson.FilePath;
 import lombok.AllArgsConstructor;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringEscapeUtils;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
 @AllArgsConstructor
 public class HtmlJarHandler {
     public String jarPath;
+    public String htmlData;
 
-    public String copyHtmlToDir(String destDirPath) throws IOException {
-        String logoFileName = "inspector-classic.png";
+    public FilePath copyHtmlToDir(FilePath workspace, String buildId) throws IOException, InterruptedException {
         String htmlFileName = "index.html";
-        File tempLogoFile = new File(destDirPath, logoFileName);
-        File tempHtmlFile = new File(destDirPath, htmlFileName);
-        tempHtmlFile.setExecutable(true);
-
-        copyFile(tempLogoFile, logoFileName);
-        tempHtmlFile = copyFile(tempHtmlFile, htmlFileName);
-        tempHtmlFile.setExecutable(true);
-
-        return tempHtmlFile.getAbsolutePath();
+        String htmlStr = readStringFromJarEntry(htmlFileName);
+        String injectedHtmlStr = injectHtmlData(htmlStr);
+        FilePath htmlFile = workspace.child(String.format("%s/%s", buildId, htmlFileName));
+        htmlFile.write(injectedHtmlStr, "UTF-8");
+        return htmlFile;
     }
 
-    public File copyFile(File destFile, String fileName) throws IOException {
-        destFile.createNewFile();
+    public String injectHtmlData(String htmlContent) throws IOException {
+        String scriptStart = "<script type=\"text/javascript\">";
+        String trimmedJson = StringEscapeUtils.unescapeJava(htmlData).replace("\n", "")
+                .replace("\t", "");
+        htmlContent = htmlContent.replaceAll(scriptStart,
+                scriptStart + "\n\t\t\tconst txt = '" + trimmedJson + "'");
+
+        return htmlContent;
+    }
+
+    @SuppressFBWarnings()
+    public String readStringFromJarEntry(String fileName) throws IOException {
         JarFile jarFile = new JarFile(jarPath);
-
         JarEntry entry = jarFile.getJarEntry(fileName);
-        try (InputStream inputStream = jarFile.getInputStream(entry);
-             FileOutputStream outputStream = new FileOutputStream(destFile)) {
-            byte[] buffer = new byte[4096];
-            int bytesRead;
-            while ((bytesRead = inputStream.read(buffer)) != -1) {
-                outputStream.write(buffer, 0, bytesRead);
-            }
-        }
-
-        return destFile;
+        InputStream inputStream = jarFile.getInputStream(entry);
+        String content = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
+        inputStream.close();
+        jarFile.close();
+        return content;
     }
-
-
 }

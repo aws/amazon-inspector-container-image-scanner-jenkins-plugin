@@ -184,7 +184,6 @@
                                     <directory>${pom.basedir}/src/main/resources</directory>
                                     <includes>
                                         <include>index.html</include>
-                                        <include>inspector-classic.png</include>
                                     </includes>
                                 </resource>
                             </resources>

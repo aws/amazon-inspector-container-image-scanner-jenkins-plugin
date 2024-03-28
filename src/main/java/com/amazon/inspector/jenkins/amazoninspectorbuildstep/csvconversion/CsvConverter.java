@@ -16,6 +16,9 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -30,15 +33,16 @@ public class CsvConverter {
         this.componentMap = populateComponentMap(sbomData);
     }
 
-    public void convert(String filePath, String imageName, String imageSha, String buildId, SeverityCounts counts) {
+    public String convert(String imageName, String imageSha, String buildId, SeverityCounts counts) throws IOException {
         Map<Severity, Integer> countMap = counts.getCounts();
+        String tmpdir = System.getProperty("java.io.tmpdir");
         List<String[]> dataLineArray = new ArrayList<>();
         dataLineArray.add(new String[]{"#image_name:" + imageName, "image_sha:" + imageSha, "build_id:" + buildId});
         dataLineArray.add(new String[]{"#low_vulnerabilities:" + countMap.get(Severity.LOW), "medium_vulnerabilities:" + countMap.get(Severity.MEDIUM),
                 "high_vulnerabilities:" + countMap.get(Severity.HIGH), "critical_vulnerabilities:" + countMap.get(Severity.CRITICAL)});
         dataLineArray.addAll(buildCsvDataLines());
 
-        File file = new File(filePath);
+        File file = new File(tmpdir + "/temp.csv");
 
         try {
             FileWriter outputfile = new FileWriter(file, Charset.forName("UTF-8"));
@@ -50,6 +54,8 @@ public class CsvConverter {
         catch (IOException e) {
             e.printStackTrace();
         }
+
+        return new String(Files.readAllBytes(Paths.get(file.getAbsolutePath())), StandardCharsets.UTF_8);
     }
 
     private Map<String, Component> populateComponentMap(SbomData sbomData) {
