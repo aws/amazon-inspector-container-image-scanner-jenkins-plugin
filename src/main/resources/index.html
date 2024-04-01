@@ -6869,23 +6869,10 @@ table and the footer
                             class="awsui_button_vjswe_1p6jm_101 awsui_variant-normal_vjswe_1p6jm_126"
                             data-analytics-funnel-value="button:rd7:"
                             type="submit"
-                            id= "download-json"
+                            id= "download-artifacts"
                           >
                             <span class="awsui_content_vjswe_1p6jm_97"
-                              >Download SBOM</span
-                            >
-                          </button>
-                        </div>
-
-                        <div class="awsui_child_18582_189oq_97">
-                          <button
-                            class="awsui_button_vjswe_1p6jm_101 awsui_variant-normal_vjswe_1p6jm_126"
-                            data-analytics-funnel-value="button:rd9:"
-                            type="submit"
-                            id= "download-csv"
-                          >
-                            <span class="awsui_content_vjswe_1p6jm_97"
-                              >Download CSV</span
+                              >Download Artifacts</span
                             >
                           </button>
                         </div>
@@ -7419,9 +7406,9 @@ table and the footer
       document.querySelector("#low-number").innerText =
         result.severityValues.low;
 
-      const downloadJsonButton = document.querySelector("#download-json");
+      const downloadJsonButton = document.querySelector("#download-artifacts");
       const jsonDownLoadLink = document.createElement("a");
-      jsonDownLoadLink.setAttribute("href", result.jsonFilePath);
+      jsonDownLoadLink.setAttribute("href", result.artifactsPath);
       jsonDownLoadLink.setAttribute("download", "");
       downloadJsonButton.appendChild(jsonDownLoadLink);
       downloadJsonButton.addEventListener(

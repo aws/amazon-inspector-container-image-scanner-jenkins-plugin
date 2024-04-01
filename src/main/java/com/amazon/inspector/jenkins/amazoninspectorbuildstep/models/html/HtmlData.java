@@ -9,8 +9,7 @@ import java.util.List;
 
 @Builder
 public class HtmlData {
-    public String jsonFilePath;
-    public String csvFilePath;
+    public String artifactsPath;
     public String bomFormat;
     public String specVersion;
     public String version;
