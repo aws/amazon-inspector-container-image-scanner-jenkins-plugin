@@ -221,6 +221,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                 tag = splitName[1];
             }
 
+            @SuppressFBWarnings
             HtmlData htmlData = HtmlData.builder()
                     .artifactsPath(sanitizeUrl(env.get("RUN_ARTIFACTS_DISPLAY_URL")))
                     .imageMetadata(ImageMetadata.builder()
