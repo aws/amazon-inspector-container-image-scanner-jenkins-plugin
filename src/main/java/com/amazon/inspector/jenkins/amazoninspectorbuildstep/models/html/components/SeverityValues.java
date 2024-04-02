@@ -8,4 +8,5 @@ public class SeverityValues {
     public int high;
     public int medium;
     public int low;
+    public int other;
 }

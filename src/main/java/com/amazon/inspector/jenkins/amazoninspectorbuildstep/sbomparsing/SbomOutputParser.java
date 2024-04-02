@@ -39,7 +39,7 @@ public class SbomOutputParser {
         Severity highestSeverity = null;
 
         if (ratings == null || ratings.size() == 0) {
-            return Severity.NONE;
+            return Severity.OTHER;
         }
 
         for (Rating rating : ratings) {

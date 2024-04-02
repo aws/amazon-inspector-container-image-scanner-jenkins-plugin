@@ -3367,8 +3367,8 @@ SPDX-License-Identifier: Apache-2.0
       .awsui_grid-column_14yj0_14yem_113.awsui_colspan-3_14yj0_14yem_142:not(
           #\9
         ) {
-        flex: 0 0 25%;
-        max-width: 25%;
+        flex: 0 0 20%;
+        max-width: 20%;
       }
       .awsui_grid-column_14yj0_14yem_113.awsui_push-3_14yj0_14yem_146:not(#\9) {
         left: 25%;
@@ -3707,54 +3707,9 @@ SPDX-License-Identifier: Apache-2.0
       }
       div.awsui_column-layout_vvxn7_1hjn3_93
         > .awsui_grid_vvxn7_1hjn3_106.awsui_grid-vertical-borders_vvxn7_1hjn3_155
-        > *:not(#\9) {
+        > *:not(:last-child) {
         border-right: var(--border-divider-section-width-8a5uu9, 2px) solid
           var(--color-border-divider-default-et9j7s, #e9ebed);
-      }
-      div.awsui_column-layout_vvxn7_1hjn3_93
-        > .awsui_grid_vvxn7_1hjn3_106.awsui_grid-vertical-borders_vvxn7_1hjn3_155.awsui_grid-breakpoint-default_vvxn7_1hjn3_121
-        > *:not(#\9):nth-child(1n) {
-        border-right-width: 0;
-      }
-      div.awsui_column-layout_vvxn7_1hjn3_93
-        > .awsui_grid_vvxn7_1hjn3_106.awsui_grid-vertical-borders_vvxn7_1hjn3_155.awsui_grid-columns-1_vvxn7_1hjn3_124.awsui_grid-breakpoint-xxs_vvxn7_1hjn3_124
-        > *:not(#\9):nth-child(1n) {
-        border-right-width: 0;
-      }
-      div.awsui_column-layout_vvxn7_1hjn3_93
-        > .awsui_grid_vvxn7_1hjn3_106.awsui_grid-vertical-borders_vvxn7_1hjn3_155.awsui_grid-columns-1_vvxn7_1hjn3_124.awsui_grid-breakpoint-xs_vvxn7_1hjn3_127
-        > *:not(#\9):nth-child(1n) {
-        border-right-width: 0;
-      }
-      div.awsui_column-layout_vvxn7_1hjn3_93
-        > .awsui_grid_vvxn7_1hjn3_106.awsui_grid-vertical-borders_vvxn7_1hjn3_155.awsui_grid-columns-2_vvxn7_1hjn3_130.awsui_grid-breakpoint-xxs_vvxn7_1hjn3_124
-        > *:not(#\9):nth-child(2n) {
-        border-right-width: 0;
-      }
-      div.awsui_column-layout_vvxn7_1hjn3_93
-        > .awsui_grid_vvxn7_1hjn3_106.awsui_grid-vertical-borders_vvxn7_1hjn3_155.awsui_grid-columns-2_vvxn7_1hjn3_130.awsui_grid-breakpoint-xs_vvxn7_1hjn3_127
-        > *:not(#\9):nth-child(2n) {
-        border-right-width: 0;
-      }
-      div.awsui_column-layout_vvxn7_1hjn3_93
-        > .awsui_grid_vvxn7_1hjn3_106.awsui_grid-vertical-borders_vvxn7_1hjn3_155.awsui_grid-columns-3_vvxn7_1hjn3_136.awsui_grid-breakpoint-xxs_vvxn7_1hjn3_124
-        > *:not(#\9):nth-child(2n) {
-        border-right-width: 0;
-      }
-      div.awsui_column-layout_vvxn7_1hjn3_93
-        > .awsui_grid_vvxn7_1hjn3_106.awsui_grid-vertical-borders_vvxn7_1hjn3_155.awsui_grid-columns-3_vvxn7_1hjn3_136.awsui_grid-breakpoint-xs_vvxn7_1hjn3_127
-        > *:not(#\9):nth-child(3n) {
-        border-right-width: 0;
-      }
-      div.awsui_column-layout_vvxn7_1hjn3_93
-        > .awsui_grid_vvxn7_1hjn3_106.awsui_grid-vertical-borders_vvxn7_1hjn3_155.awsui_grid-columns-4_vvxn7_1hjn3_142.awsui_grid-breakpoint-xxs_vvxn7_1hjn3_124
-        > *:not(#\9):nth-child(2n) {
-        border-right-width: 0;
-      }
-      div.awsui_column-layout_vvxn7_1hjn3_93
-        > .awsui_grid_vvxn7_1hjn3_106.awsui_grid-vertical-borders_vvxn7_1hjn3_155.awsui_grid-columns-4_vvxn7_1hjn3_142.awsui_grid-breakpoint-xs_vvxn7_1hjn3_127
-        > *:not(#\9):nth-child(4n) {
-        border-right-width: 0;
       }
       div.awsui_column-layout_vvxn7_1hjn3_93
         > .awsui_grid_vvxn7_1hjn3_106.awsui_grid-horizontal-borders_vvxn7_1hjn3_188:not(
@@ -6801,10 +6756,14 @@ table and the footer
       .low-color {
         color: #906806;
       }
+      .other-color {
+        color: #000000;
+      }
       #critical-number,
       #high-number,
       #medium-number,
-      #low-number {
+      #low-number,
+      #other-number {
         font-size: 24px !important;
       }
       .severity-square-critical {
@@ -7224,6 +7183,38 @@ table and the footer
                           </div>
                         </div>
                       </div>
+                      <div
+                              class="awsui_grid-column_14yj0_14yem_113 awsui_colspan-3_14yj0_14yem_142"
+                      >
+                        <div
+                                class="awsui_restore-pointer-events_14yj0_14yem_282"
+                        >
+                          <div>
+                            <span class="other-color"><strong>Other</strong></span>
+                            <div
+                                    class="awsui_root_2qdw9_1s1m0_93 awsui_root-variant-h3_2qdw9_1s1m0_113 awsui_refresh_2qdw9_1s1m0_110 awsui_root-no-actions_2qdw9_1s1m0_110"
+                            >
+                              <div
+                                      class="awsui_main_2qdw9_1s1m0_132 awsui_refresh_2qdw9_1s1m0_110"
+                              >
+                                <div
+                                        class="awsui_title_2qdw9_1s1m0_179 awsui_title-variant-h3_2qdw9_1s1m0_198 awsui_refresh_2qdw9_1s1m0_110"
+                                >
+                                  <h3
+                                          class="awsui_heading_2qdw9_1s1m0_248 awsui_heading-variant-h3_2qdw9_1s1m0_267"
+                                  >
+                                    <span
+                                            class="awsui_heading-text_2qdw9_1s1m0_273 awsui_heading-text-variant-h3_2qdw9_1s1m0_292"
+                                            id="other-number"
+                                    >0</span
+                                    >
+                                  </h3>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -7405,6 +7396,8 @@ table and the footer
         result.severityValues.medium;
       document.querySelector("#low-number").innerText =
         result.severityValues.low;
+      document.querySelector("#other-number").innerText =
+              result.severityValues.other;
 
       const downloadJsonButton = document.querySelector("#download-artifacts");
       const jsonDownLoadLink = document.createElement("a");
