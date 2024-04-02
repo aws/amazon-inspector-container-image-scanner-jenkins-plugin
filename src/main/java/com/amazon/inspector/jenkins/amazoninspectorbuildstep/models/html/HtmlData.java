@@ -9,7 +9,6 @@ import java.util.List;
 
 @Builder
 public class HtmlData {
-    public String artifactsPath;
     public String bomFormat;
     public String specVersion;
     public String version;
