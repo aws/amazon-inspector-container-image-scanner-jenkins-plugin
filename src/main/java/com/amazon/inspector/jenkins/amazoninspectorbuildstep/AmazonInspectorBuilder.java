@@ -221,12 +221,9 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                 tag = splitName[1];
             }
 
-            String outputWorkspacePath = String.format("%sjob/%s/%s/artifact", env.get("JENKINS_URL"), env.get("JOB_NAME"),
-                    env.get("BUILD_NUMBER"));
-
+            @SuppressFBWarnings
             HtmlData htmlData = HtmlData.builder()
-                    .jsonFilePath(sanitizeUrl(outputWorkspacePath + "/" + sbomFileName))
-                    .csvFilePath(sanitizeUrl(outputWorkspacePath + "/" + csvFileName))
+                    .artifactsPath(sanitizeUrl(env.get("RUN_ARTIFACTS_DISPLAY_URL")))
                     .imageMetadata(ImageMetadata.builder()
                             .id(splitName[0])
                             .tags(tag)
@@ -247,13 +244,10 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
             new HtmlJarHandler(htmlJarPath, reportData).copyHtmlToDir(workspace, build.getId());
             artifactMap.put("index.html", String.format("%s/%s", build.getId(), "index.html"));
-            logger.println("Prefixing file paths with Jenkins URL from settings, currently: " + env.get("JENKINS_URL"));
 
             build.getArtifactManager().archive(workspace, launcher, new BuildListenerAdapter(listener), artifactMap);
 
-            listener.getLogger().println("CSV Output File: " + sanitizeUrl(outputWorkspacePath + "/" + csvFileName));
-            listener.getLogger().println("SBOM Output File: " + sanitizeUrl(outputWorkspacePath + "/" + sbomFileName));
-            listener.getLogger().println("HTML Report File: " + outputWorkspacePath + "/index.html");
+            listener.getLogger().println("Build Artifacts: " + env.get("RUN_ARTIFACTS_DISPLAY_URL"));
 
             boolean doesBuildPass = !doesBuildFail(severityCounts.getCounts());
 

@@ -9,7 +9,6 @@ import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomparsing.
 import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomparsing.Severity.HIGH;
 import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomparsing.Severity.LOW;
 import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomparsing.Severity.MEDIUM;
-import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomparsing.Severity.OTHER;
 
 public class SeverityCounts {
 
