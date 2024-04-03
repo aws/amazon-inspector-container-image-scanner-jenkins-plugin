@@ -39,7 +39,8 @@ public class CsvConverter {
         List<String[]> dataLineArray = new ArrayList<>();
         dataLineArray.add(new String[]{"#image_name:" + imageName, "image_sha:" + imageSha, "build_id:" + buildId});
         dataLineArray.add(new String[]{"#low_vulnerabilities:" + countMap.get(Severity.LOW), "medium_vulnerabilities:" + countMap.get(Severity.MEDIUM),
-                "high_vulnerabilities:" + countMap.get(Severity.HIGH), "critical_vulnerabilities:" + countMap.get(Severity.CRITICAL)});
+                "high_vulnerabilities:" + countMap.get(Severity.HIGH), "critical_vulnerabilities:" + countMap.get(Severity.CRITICAL),
+                "other_vulnerabilities:" + countMap.get(Severity.OTHER)});
         dataLineArray.addAll(buildCsvDataLines());
 
         File file = new File(tmpdir + "/temp.csv");
