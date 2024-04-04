@@ -27,7 +27,7 @@ public class HtmlConversionUtils {
         for (Vulnerability vulnerability : vulnerabilities) {
             String severity = getSeverity(vulnerability.getRatings());
             if (severity == null) {
-                continue;
+                severity = "Untriaged";
             }
 
             for (Affect affect : vulnerability.getAffects()) {

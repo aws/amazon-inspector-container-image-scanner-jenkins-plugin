@@ -164,8 +164,8 @@ public class CsvConverterTest {
 
     @Test
     public void testGetSeverity_NullVulnerability() {
-        assertEquals(csvConverter.getSeverity((Vulnerability) null), "UNTRIAGED");
-        assertEquals(csvConverter.getSeverity(Vulnerability.builder().build()), "UNTRIAGED");
+        assertEquals(csvConverter.getSeverity((Vulnerability) null), "OTHER");
+        assertEquals(csvConverter.getSeverity(Vulnerability.builder().build()), "OTHER");
     }
 
     @Test

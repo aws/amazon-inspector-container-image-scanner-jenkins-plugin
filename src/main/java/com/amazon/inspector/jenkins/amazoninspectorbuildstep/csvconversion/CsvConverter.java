@@ -39,7 +39,8 @@ public class CsvConverter {
         List<String[]> dataLineArray = new ArrayList<>();
         dataLineArray.add(new String[]{"#image_name:" + imageName, "image_sha:" + imageSha, "build_id:" + buildId});
         dataLineArray.add(new String[]{"#low_vulnerabilities:" + countMap.get(Severity.LOW), "medium_vulnerabilities:" + countMap.get(Severity.MEDIUM),
-                "high_vulnerabilities:" + countMap.get(Severity.HIGH), "critical_vulnerabilities:" + countMap.get(Severity.CRITICAL)});
+                "high_vulnerabilities:" + countMap.get(Severity.HIGH), "critical_vulnerabilities:" + countMap.get(Severity.CRITICAL),
+                "other_vulnerabilities:" + countMap.get(Severity.OTHER)});
         dataLineArray.addAll(buildCsvDataLines());
 
         File file = new File(tmpdir + "/temp.csv");
@@ -197,16 +198,16 @@ public class CsvConverter {
     }
 
     protected String getSeverity(Vulnerability vulnerability) {
-        final String UNTRIAGED = "UNTRIAGED";
+        final String OTHER = "OTHER";
 
         if (vulnerability == null || vulnerability.getRatings() == null) {
-            return UNTRIAGED;
+            return OTHER;
         }
 
         List<Rating> ratings = vulnerability.getRatings();
 
         if (ratings.isEmpty()) {
-            return UNTRIAGED;
+            return OTHER;
         }
 
         final String nvd = "NVD";

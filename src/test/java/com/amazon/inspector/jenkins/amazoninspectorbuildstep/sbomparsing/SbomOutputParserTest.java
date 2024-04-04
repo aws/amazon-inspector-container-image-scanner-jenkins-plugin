@@ -22,8 +22,8 @@ public class SbomOutputParserTest {
 
     @Test
     public void testGetHighestRatingFromList_EmptyRatings() {
-        assertEquals(new SbomOutputParser(null).getHighestRatingFromList(null), Severity.NONE);
-        assertEquals(new SbomOutputParser(null).getHighestRatingFromList(List.of()), Severity.NONE);
+        assertEquals(new SbomOutputParser(null).getHighestRatingFromList(null), Severity.OTHER);
+        assertEquals(new SbomOutputParser(null).getHighestRatingFromList(List.of()), Severity.OTHER);
     }
 
     @Test
