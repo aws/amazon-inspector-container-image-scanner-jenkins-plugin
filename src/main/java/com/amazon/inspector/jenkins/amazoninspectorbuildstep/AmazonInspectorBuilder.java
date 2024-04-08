@@ -136,7 +136,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             Map<String, String> artifactMap = new HashMap<>();
 
             if (Jenkins.getInstanceOrNull() == null) {
-                throw new RuntimeException("No Jenkins instance found");
+                throw new RuntimeException("No Jenkins instance found.");
             }
 
             String activeSbomgenPath = sbomgenPath;
