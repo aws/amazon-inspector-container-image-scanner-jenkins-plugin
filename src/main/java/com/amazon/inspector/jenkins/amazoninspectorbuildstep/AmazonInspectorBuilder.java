@@ -392,6 +392,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         }
 
         @POST
+        @SuppressFBWarnings
         public ListBoxModel doFillOidcCredentialIdItems() {
             if (Jenkins.get().hasPermission(READ)) {
                 ListBoxModel items = new ListBoxModel();
