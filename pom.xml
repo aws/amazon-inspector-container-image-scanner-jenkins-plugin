@@ -52,9 +52,27 @@
     </dependencyManagement>
     <dependencies>
         <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>2.16.1</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>plain-credentials</artifactId>
             <version>143.v1b_df8b_d3b_e48</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>jackson2-api</artifactId>
+            <version>2.15.2-350.v0c2f3f8fc595</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.jenkins.plugins</groupId>
+            <artifactId>oidc-provider</artifactId>
+            <version>47.v182a_02f5b_771</version>
         </dependency>
 
         <dependency>
