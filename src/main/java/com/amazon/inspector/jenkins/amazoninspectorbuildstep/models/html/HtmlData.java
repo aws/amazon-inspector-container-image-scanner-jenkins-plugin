@@ -15,6 +15,7 @@ public class HtmlData {
     public String bomFormat;
     public String specVersion;
     public String version;
+    public String updatedAt;
     public ImageMetadata imageMetadata;
     public SeverityValues severityValues;
     public List<HtmlVulnerability> vulnerabilities;
