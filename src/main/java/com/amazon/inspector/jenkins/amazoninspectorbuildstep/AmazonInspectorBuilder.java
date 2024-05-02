@@ -74,6 +74,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     public static PrintStream logger;
     private final String sbomgenMethod;
     private final String archivePath;
+    private final String archiveType;
     private final String iamRole;
     private final String awsRegion;
     private final String credentialId;
@@ -91,11 +92,12 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     private Job<?, ?> job;
 
     @DataBoundConstructor
-    public AmazonInspectorBuilder(String archivePath, String sbomgenPath, boolean osArch, String iamRole, String awsRegion,
-                                  String credentialId, String awsProfileName, String awsCredentialId, String sbomgenMethod,
-                                  String sbomgenSource, boolean isThresholdEnabled, int countCritical, int countHigh,
-                                  int countMedium, int countLow, String oidcCredentialId) {
+    public AmazonInspectorBuilder(String archivePath, String archiveType, String sbomgenPath, boolean osArch, String iamRole,
+                                  String awsRegion, String credentialId, String awsProfileName, String awsCredentialId,
+                                  String sbomgenMethod, String sbomgenSource, boolean isThresholdEnabled, int countCritical,
+                                  int countHigh, int countMedium, int countLow, String oidcCredentialId) {
         this.archivePath = archivePath;
+        this.archiveType = archiveType;
         this.credentialId = credentialId;
         this.awsCredentialId = awsCredentialId;
         this.oidcCredentialId = oidcCredentialId;
@@ -146,6 +148,11 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                 throw new RuntimeException("No Jenkins instance found.");
             }
 
+            String activeArchiveType = archiveType;
+            if (activeArchiveType == null || activeArchiveType.isEmpty()) {
+                activeArchiveType = "container";
+            }
+
             String activeSbomgenPath = sbomgenPath;
             if (sbomgenSource != null && !sbomgenSource.isEmpty()) {
                 logger.println("Automatic SBOMGen Sourcing selected, downloading now...");
@@ -166,11 +173,11 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             String sbom;
             if (credential != null) {
                 logger.println("Running inspector-sbomgen with docker credential: " + credential.getId());
-                sbom = new SbomgenRunner(activeSbomgenPath, archivePath, credential.getUsername(),
+                sbom = new SbomgenRunner(activeSbomgenPath, activeArchiveType, archivePath, credential.getUsername(),
                         credential.getPassword().getPlainText()).run();
             } else {
                 logger.println("No credential provided, running without.");
-                sbom = new SbomgenRunner(activeSbomgenPath, archivePath, null, null).run();
+                sbom = new SbomgenRunner(activeSbomgenPath, activeArchiveType, archivePath, null, null).run();
             }
 
             JsonObject component = JsonParser.parseString(sbom).getAsJsonObject().get("metadata").getAsJsonObject()
