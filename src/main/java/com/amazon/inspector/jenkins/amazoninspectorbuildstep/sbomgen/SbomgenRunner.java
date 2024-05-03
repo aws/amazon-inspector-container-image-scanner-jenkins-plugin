@@ -20,7 +20,7 @@ public class SbomgenRunner {
     public String archiveType;
     public String archivePath;
     @Setter
-    public static String dockerUsername;
+    public String dockerUsername;
     @Setter
     public String dockerPassword;
 
