@@ -1,4 +1,4 @@
-package com.amazon.inspector.jenkins.amazoninspectorbuildstep.requests;
+package com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.requests;
 
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.AmazonInspectorBuilder;
 import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;

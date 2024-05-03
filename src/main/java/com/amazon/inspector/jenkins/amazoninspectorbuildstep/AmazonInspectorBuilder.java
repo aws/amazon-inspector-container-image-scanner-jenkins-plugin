@@ -21,7 +21,6 @@ import hudson.model.Result;
 import hudson.security.ACL;
 import hudson.model.Run;
 import hudson.model.TaskListener;
-import hudson.tasks.ArtifactArchiver;
 import hudson.tasks.Builder;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.util.ListBoxModel;
@@ -30,6 +29,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -43,7 +44,7 @@ import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.html.compone
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.html.components.SeverityValues;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Sbom;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.SbomData;
-import com.amazon.inspector.jenkins.amazoninspectorbuildstep.requests.SdkRequests;
+import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.requests.SdkRequests;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomparsing.SbomOutputParser;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomparsing.Severity;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomparsing.SeverityCounts;
@@ -73,6 +74,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     public static PrintStream logger;
     private final String sbomgenMethod;
     private final String archivePath;
+    private final String archiveType;
     private final String iamRole;
     private final String awsRegion;
     private final String credentialId;
@@ -90,11 +92,12 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     private Job<?, ?> job;
 
     @DataBoundConstructor
-    public AmazonInspectorBuilder(String archivePath, String sbomgenPath, boolean osArch, String iamRole, String awsRegion,
-                                  String credentialId, String awsProfileName, String awsCredentialId, String sbomgenMethod,
-                                  String sbomgenSource, boolean isThresholdEnabled, int countCritical, int countHigh,
-                                  int countMedium, int countLow, String oidcCredentialId) {
+    public AmazonInspectorBuilder(String archivePath, String archiveType, String sbomgenPath, boolean osArch, String iamRole,
+                                  String awsRegion, String credentialId, String awsProfileName, String awsCredentialId,
+                                  String sbomgenMethod, String sbomgenSource, boolean isThresholdEnabled, int countCritical,
+                                  int countHigh, int countMedium, int countLow, String oidcCredentialId) {
         this.archivePath = archivePath;
+        this.archiveType = archiveType;
         this.credentialId = credentialId;
         this.awsCredentialId = awsCredentialId;
         this.oidcCredentialId = oidcCredentialId;
@@ -145,6 +148,11 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                 throw new RuntimeException("No Jenkins instance found.");
             }
 
+            String activeArchiveType = archiveType;
+            if (activeArchiveType == null || activeArchiveType.isEmpty()) {
+                activeArchiveType = "container";
+            }
+
             String activeSbomgenPath = sbomgenPath;
             if (sbomgenSource != null && !sbomgenSource.isEmpty()) {
                 logger.println("Automatic SBOMGen Sourcing selected, downloading now...");
@@ -165,11 +173,11 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             String sbom;
             if (credential != null) {
                 logger.println("Running inspector-sbomgen with docker credential: " + credential.getId());
-                sbom = new SbomgenRunner(activeSbomgenPath, archivePath, credential.getUsername(),
+                sbom = new SbomgenRunner(activeSbomgenPath, activeArchiveType, archivePath, credential.getUsername(),
                         credential.getPassword().getPlainText()).run();
             } else {
                 logger.println("No credential provided, running without.");
-                sbom = new SbomgenRunner(activeSbomgenPath, archivePath, null, null).run();
+                sbom = new SbomgenRunner(activeSbomgenPath, activeArchiveType, archivePath, null, null).run();
             }
 
             JsonObject component = JsonParser.parseString(sbom).getAsJsonObject().get("metadata").getAsJsonObject()
@@ -236,22 +244,17 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
             @SuppressFBWarnings
             HtmlData htmlData = HtmlData.builder()
-                    .artifactsPath(sanitizeUrl(env.get("RUN_ARTIFACTS_DISPLAY_URL")))
+                    .artifactsPath(sanitizeUrl(env.get("RUN_ARTIFACTS_DISPLAY_URL"))) //jenkins specific
+                    .updatedAt(new SimpleDateFormat("MM/dd/yyyy, hh:mm:ss aa").format(Calendar.getInstance().getTime()))
                     .imageMetadata(ImageMetadata.builder()
                             .id(splitName[0])
                             .tags(tag)
                             .sha(imageSha)
                             .build())
-                    .severityValues(SeverityValues.builder()
-                            .critical(severityCounts.getCounts().get(Severity.CRITICAL))
-                            .high(severityCounts.getCounts().get(Severity.HIGH))
-                            .medium(severityCounts.getCounts().get(Severity.MEDIUM))
-                            .low(severityCounts.getCounts().get(Severity.LOW))
-                            .other(severityCounts.getCounts().get(Severity.OTHER))
-                            .build())
                     .vulnerabilities(HtmlConversionUtils.convertVulnerabilities(sbomData.getSbom().getVulnerabilities(),
                             sbomData.getSbom().getComponents()))
                     .build();
+
             String reportData = new Gson().toJson(htmlData);
             String htmlJarPath = String.valueOf(new FilePath(new File(HtmlJarHandler.class.getProtectionDomain().getCodeSource().getLocation()
                     .toURI())));

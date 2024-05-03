@@ -17,9 +17,10 @@ import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomgen.Sbom
 @SuppressWarnings("lgtm[jenkins/plaintext-storage]")
 public class SbomgenRunner {
     public String sbomgenPath;
+    public String archiveType;
     public String archivePath;
     @Setter
-    public static String dockerUsername;
+    public String dockerUsername;
     @Setter
     public String dockerPassword;
 
@@ -32,6 +33,14 @@ public class SbomgenRunner {
     public SbomgenRunner(String sbomgenPath, String archivePath, String dockerUsername, String dockerPassword) {
         this.sbomgenPath = sbomgenPath;
         this.archivePath = archivePath;
+        this.dockerUsername = dockerUsername;
+        this.dockerPassword = dockerPassword;
+    }
+
+    public SbomgenRunner(String sbomgenPath, String activeArchiveType, String archivePath, String dockerUsername, String dockerPassword) {
+        this.sbomgenPath = sbomgenPath;
+        this.archivePath = archivePath;
+        this.archiveType = activeArchiveType;
         this.dockerUsername = dockerUsername;
         this.dockerPassword = dockerPassword;
     }
@@ -49,8 +58,12 @@ public class SbomgenRunner {
         new ProcessBuilder(new String[]{"chmod", "+x", sbomgenPath}).start();
 
         AmazonInspectorBuilder.logger.println("Running command...");
+        String option = "--image";
+        if (!archiveType.equals("container")) {
+            option = "--path";
+        }
         String[] command = new String[] {
-                sbomgenPath, "container", "--image", archivePath
+                sbomgenPath, archiveType, option, archivePath
         };
         AmazonInspectorBuilder.logger.println(Arrays.toString(command));
         ProcessBuilder builder = new ProcessBuilder(command);
