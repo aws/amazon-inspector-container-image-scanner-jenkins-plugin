@@ -34,6 +34,7 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomgen.SbomgenRunner;
@@ -92,11 +93,15 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     private Job<?, ?> job;
 
     @DataBoundConstructor
-    public AmazonInspectorBuilder(String archivePath, String archiveType, String sbomgenPath, boolean osArch, String iamRole,
+    public AmazonInspectorBuilder(String archivePath, String artifactPath, String archiveType, String sbomgenPath, boolean osArch, String iamRole,
                                   String awsRegion, String credentialId, String awsProfileName, String awsCredentialId,
                                   String sbomgenMethod, String sbomgenSource, boolean isThresholdEnabled, int countCritical,
                                   int countHigh, int countMedium, int countLow, String oidcCredentialId) {
-        this.archivePath = archivePath;
+        if (artifactPath != null && !artifactPath.isEmpty()) {
+            this.archivePath = artifactPath;
+        } else {
+            this.archivePath = archivePath;
+        }
         this.archiveType = archiveType;
         this.credentialId = credentialId;
         this.awsCredentialId = awsCredentialId;
@@ -230,9 +235,12 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
             if (componentName.endsWith(".tar")) {
                 sanitizedImageId = sanitizeFilePath("file://" + componentName);
+            } else if (archiveType != null && archiveType.toLowerCase(Locale.ROOT) != "container") {
+                sanitizedImageId = archivePath;
             } else {
                 sanitizedImageId = sanitizeText(componentName);
             }
+
             String csvContent = converter.convert(sanitizedImageId, imageSha, build.getId(), severityCounts);
             csvFile.write(csvContent, "UTF-8");
 
