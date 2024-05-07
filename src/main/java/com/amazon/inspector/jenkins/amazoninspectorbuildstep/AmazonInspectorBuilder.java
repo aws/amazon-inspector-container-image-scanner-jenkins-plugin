@@ -34,6 +34,7 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomgen.SbomgenRunner;
@@ -92,11 +93,15 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     private Job<?, ?> job;
 
     @DataBoundConstructor
-    public AmazonInspectorBuilder(String archivePath, String archiveType, String sbomgenPath, boolean osArch, String iamRole,
+    public AmazonInspectorBuilder(String archivePath, String artifactPath, String archiveType, String sbomgenPath, boolean osArch, String iamRole,
                                   String awsRegion, String credentialId, String awsProfileName, String awsCredentialId,
                                   String sbomgenMethod, String sbomgenSource, boolean isThresholdEnabled, int countCritical,
                                   int countHigh, int countMedium, int countLow, String oidcCredentialId) {
-        this.archivePath = archivePath;
+        if (artifactPath != null && !artifactPath.isEmpty()) {
+            this.archivePath = artifactPath;
+        } else {
+            this.archivePath = archivePath;
+        }
         this.archiveType = archiveType;
         this.credentialId = credentialId;
         this.awsCredentialId = awsCredentialId;
@@ -225,18 +230,21 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             SbomOutputParser parser = new SbomOutputParser(sbomData);
             SeverityCounts severityCounts = parser.parseSbom();
 
-            String sanitizedImageId = null;
+            String sanitizedArchiveName = null;
             String componentName = component.get("name").getAsString();
 
             if (componentName.endsWith(".tar")) {
-                sanitizedImageId = sanitizeFilePath("file://" + componentName);
+                sanitizedArchiveName = sanitizeFilePath("file://" + componentName);
+            } else if (archiveType != null && !archiveType.toLowerCase(Locale.ROOT).equals("container")) {
+                sanitizedArchiveName = archivePath;
             } else {
-                sanitizedImageId = sanitizeText(componentName);
+                sanitizedArchiveName = sanitizeText(componentName);
             }
-            String csvContent = converter.convert(sanitizedImageId, imageSha, build.getId(), severityCounts);
+
+            String csvContent = converter.convert(sanitizedArchiveName, imageSha, build.getId(), severityCounts);
             csvFile.write(csvContent, "UTF-8");
 
-            String[] splitName = sanitizedImageId.split(":");
+            String[] splitName = sanitizedArchiveName.split(":");
             String tag = null;
             if (splitName.length > 1) {
                 tag = splitName[1];
@@ -316,7 +324,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             }
         }
 
-        return "No Sha Found";
+        return "N/A";
     }
 
 
