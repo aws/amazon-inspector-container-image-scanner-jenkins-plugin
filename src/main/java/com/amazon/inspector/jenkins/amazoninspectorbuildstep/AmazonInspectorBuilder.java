@@ -324,7 +324,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             }
         }
 
-        return "No Sha Found";
+        return "N/A";
     }
 
 
