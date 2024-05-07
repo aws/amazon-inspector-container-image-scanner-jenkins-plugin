@@ -230,21 +230,21 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             SbomOutputParser parser = new SbomOutputParser(sbomData);
             SeverityCounts severityCounts = parser.parseSbom();
 
-            String sanitizedImageId = null;
+            String sanitizedArchiveName = null;
             String componentName = component.get("name").getAsString();
 
             if (componentName.endsWith(".tar")) {
-                sanitizedImageId = sanitizeFilePath("file://" + componentName);
-            } else if (archiveType != null && archiveType.toLowerCase(Locale.ROOT) != "container") {
-                sanitizedImageId = archivePath;
+                sanitizedArchiveName = sanitizeFilePath("file://" + componentName);
+            } else if (archiveType != null && !archiveType.toLowerCase(Locale.ROOT).equals("container")) {
+                sanitizedArchiveName = archivePath;
             } else {
-                sanitizedImageId = sanitizeText(componentName);
+                sanitizedArchiveName = sanitizeText(componentName);
             }
 
-            String csvContent = converter.convert(sanitizedImageId, imageSha, build.getId(), severityCounts);
+            String csvContent = converter.convert(sanitizedArchiveName, imageSha, build.getId(), severityCounts);
             csvFile.write(csvContent, "UTF-8");
 
-            String[] splitName = sanitizedImageId.split(":");
+            String[] splitName = sanitizedArchiveName.split(":");
             String tag = null;
             if (splitName.length > 1) {
                 tag = splitName[1];
