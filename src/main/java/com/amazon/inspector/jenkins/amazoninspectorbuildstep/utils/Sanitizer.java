@@ -13,12 +13,12 @@ public class Sanitizer {
         return uri.toASCIIString();
     }
 
-    public static String sanitizeFilePath(String rawUrl) throws URISyntaxException {
+    public static String sanitizeFilePath(String rawUrl) {
         try {
             String[] splitUrl = rawUrl.split(":");
             URI uri = new URI(splitUrl[0], splitUrl[1], null);
             return uri.toASCIIString();
-        } catch(ArrayIndexOutOfBoundsException e) {
+        } catch(Exception e) {
             AmazonInspectorBuilder.logger.printf("%s in invalid format, using it as the path.", rawUrl);
             return rawUrl;
         }

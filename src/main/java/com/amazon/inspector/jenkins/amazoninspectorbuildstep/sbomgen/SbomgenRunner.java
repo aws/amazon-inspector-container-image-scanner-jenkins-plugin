@@ -63,7 +63,7 @@ public class SbomgenRunner {
             option = "--path";
         }
         String[] command = new String[] {
-                sbomgenPath, archiveType, option, archivePath
+                sbomgenPath, archiveType, option, archivePath, "--scanners", "dockerfile", "--scan-sbom"
         };
         AmazonInspectorBuilder.logger.println(Arrays.toString(command));
         ProcessBuilder builder = new ProcessBuilder(command);
@@ -93,7 +93,7 @@ public class SbomgenRunner {
             if (line == null) { break; }
         }
 
-        return stripProperties(processSbomgenOutput(sb.toString()));
+        return processSbomgenOutput(sb.toString());
     }
 
     @VisibleForTesting

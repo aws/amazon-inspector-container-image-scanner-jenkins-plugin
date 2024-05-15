@@ -185,8 +185,11 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                 sbom = new SbomgenRunner(activeSbomgenPath, activeArchiveType, archivePath, null, null).run();
             }
 
-            JsonObject component = JsonParser.parseString(sbom).getAsJsonObject().get("metadata").getAsJsonObject()
-                    .get("component").getAsJsonObject();
+            JsonElement metadata = JsonParser.parseString(sbom).getAsJsonObject().get("metadata");
+            JsonObject component = null;
+            if (metadata != null && metadata.getAsJsonObject().get("component") != null) {
+                component = metadata.getAsJsonObject().get("component").getAsJsonObject();
+            }
 
             Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
             String imageSha = getImageSha(sbom);
@@ -208,9 +211,9 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             IdTokenFileCredentials oidcFile = CredentialsProvider.findCredentialById(workingOidcCredentialId, IdTokenFileCredentials.class, build);
             String oidcToken = getOidcToken(oidcStr, oidcFile);
 
-            String responseData = new SdkRequests(awsRegion, awsCredential, oidcToken, awsProfileName, iamRole).requestSbom(sbom);
-
-            SbomData sbomData = SbomData.builder().sbom(gson.fromJson(responseData, Sbom.class)).build();
+//            String responseData = new SdkRequests(awsRegion, awsCredential, oidcToken, awsProfileName, iamRole).requestSbom(sbom);
+//            AmazonInspectorBuilder.logger.println(responseData);
+            SbomData sbomData = SbomData.builder().sbom(gson.fromJson(sbom, Sbom.class)).build();
 
             String sbomFileName = String.format("%s-%s-sbom.json", build.getParent().getDisplayName(),
                     build.getDisplayName()).replaceAll("[ #]", "");
@@ -231,14 +234,15 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             SeverityCounts severityCounts = parser.parseSbom();
 
             String sanitizedArchiveName = null;
-            String componentName = component.get("name").getAsString();
+            String componentName = null;
+            if (component != null && component.get("name") != null) {
+                componentName = component.get("name").getAsString();
+            }
 
-            if (componentName.endsWith(".tar")) {
+            if (componentName != null && componentName.endsWith(".tar")) {
                 sanitizedArchiveName = sanitizeFilePath("file://" + componentName);
-            } else if (archiveType != null && !archiveType.toLowerCase(Locale.ROOT).equals("container")) {
-                sanitizedArchiveName = archivePath;
             } else {
-                sanitizedArchiveName = sanitizeText(componentName);
+                sanitizedArchiveName = archivePath;
             }
 
             String csvContent = converter.convert(sanitizedArchiveName, imageSha, build.getId(), severityCounts);
@@ -259,11 +263,14 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                             .tags(tag)
                             .sha(imageSha)
                             .build())
+                    .docker(HtmlConversionUtils.convertDocker(sbomData.getSbom().getMetadata(), sbomData.getSbom().getVulnerabilities(),
+                            sbomData.getSbom().getComponents()))
                     .vulnerabilities(HtmlConversionUtils.convertVulnerabilities(sbomData.getSbom().getVulnerabilities(),
                             sbomData.getSbom().getComponents()))
                     .build();
 
-            String reportData = new Gson().toJson(htmlData);
+            String reportData = gson.toJson(htmlData);
+
             String htmlJarPath = String.valueOf(new FilePath(new File(HtmlJarHandler.class.getProtectionDomain().getCodeSource().getLocation()
                     .toURI())));
 
@@ -312,19 +319,25 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     }
 
     public static String getImageSha(String sbom) {
-        JsonElement jsonElement = JsonParser.parseString(sbom);
-        JsonArray properties = jsonElement.getAsJsonObject().get("metadata")
-                .getAsJsonObject().get("component")
-                .getAsJsonObject().get("properties")
-                .getAsJsonArray();
+        try {
+            JsonElement jsonElement = JsonParser.parseString(sbom);
+            JsonArray properties = jsonElement.getAsJsonObject().get("metadata")
+                    .getAsJsonObject().get("component")
+                    .getAsJsonObject().get("properties")
+                    .getAsJsonArray();
 
-        for (JsonElement property : properties) {
-            if (property.getAsJsonObject().get("name").getAsString().equals("amazon:inspector:sbom_generator:image_id")) {
-                return property.getAsJsonObject().get("value").getAsString();
+            for (JsonElement property : properties) {
+                if (property.getAsJsonObject().get("name").getAsString().equals("amazon:inspector:sbom_generator:image_id")) {
+                    return property.getAsJsonObject().get("value").getAsString();
+                }
             }
+
+        } catch (Exception e) {
+            AmazonInspectorBuilder.logger.println("An exception occurred when getting image sha.");
+        } finally {
+            return "N/A";
         }
 
-        return "N/A";
     }
 
 

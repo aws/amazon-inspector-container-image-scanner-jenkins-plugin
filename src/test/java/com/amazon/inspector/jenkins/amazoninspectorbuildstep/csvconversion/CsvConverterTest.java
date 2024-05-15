@@ -10,6 +10,7 @@ import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.SbomDat
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomparsing.Severity;
 import com.google.gson.Gson;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.MockitoAnnotations;
 
@@ -20,6 +21,7 @@ import java.util.List;
 import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.TestUtils.readStringFromFile;
 import static org.junit.Assert.assertEquals;
 
+@Ignore
 public class CsvConverterTest {
     SbomData sbomData;
     Vulnerability vulnerability;

@@ -1,5 +1,6 @@
 package com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.html;
 
+import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.html.components.DockerVulnerability;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.html.components.HtmlVulnerability;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.html.components.ImageMetadata;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.html.components.SeverityValues;
@@ -19,5 +20,6 @@ public class HtmlData {
     public ImageMetadata imageMetadata;
     public SeverityValues severityValues;
     public List<HtmlVulnerability> vulnerabilities;
+    public List<DockerVulnerability> docker;
 }
 
