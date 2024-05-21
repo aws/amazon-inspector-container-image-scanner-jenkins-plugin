@@ -20,4 +20,6 @@ public class CsvData {
     private String cwes;
     private String exploitAvailable;
     private String exploitLastSeen;
+    private String file;
+    private String lines;
 }

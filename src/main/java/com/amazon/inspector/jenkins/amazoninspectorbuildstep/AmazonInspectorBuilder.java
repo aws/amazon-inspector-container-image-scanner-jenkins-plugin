@@ -1,5 +1,6 @@
 package com.amazon.inspector.jenkins.amazoninspectorbuildstep;
 
+import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.requests.SdkRequests;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomgen.SbomgenDownloader;
 import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
@@ -34,7 +35,6 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomgen.SbomgenRunner;
@@ -42,10 +42,8 @@ import com.amazon.inspector.jenkins.amazoninspectorbuildstep.csvconversion.CsvCo
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.html.HtmlJarHandler;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.html.HtmlData;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.html.components.ImageMetadata;
-import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.html.components.SeverityValues;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Sbom;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.SbomData;
-import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.requests.SdkRequests;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomparsing.SbomOutputParser;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomparsing.Severity;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomparsing.SeverityCounts;
@@ -65,7 +63,6 @@ import org.kohsuke.stapler.verb.POST;
 
 import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.utils.InspectorRegions.INSPECTOR_REGIONS;
 import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.utils.Sanitizer.sanitizeFilePath;
-import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.utils.Sanitizer.sanitizeText;
 import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.utils.Sanitizer.sanitizeUrl;
 import static hudson.security.Permission.READ;
 
@@ -207,13 +204,13 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             if (workingOidcCredentialId == null) {
                 workingOidcCredentialId = "";
             }
+
             IdTokenStringCredentials oidcStr = CredentialsProvider.findCredentialById(workingOidcCredentialId, IdTokenStringCredentials.class, build);
             IdTokenFileCredentials oidcFile = CredentialsProvider.findCredentialById(workingOidcCredentialId, IdTokenFileCredentials.class, build);
             String oidcToken = getOidcToken(oidcStr, oidcFile);
 
-//            String responseData = new SdkRequests(awsRegion, awsCredential, oidcToken, awsProfileName, iamRole).requestSbom(sbom);
-//            AmazonInspectorBuilder.logger.println(responseData);
-            SbomData sbomData = SbomData.builder().sbom(gson.fromJson(sbom, Sbom.class)).build();
+            String responseData = new SdkRequests(awsRegion, awsCredential, oidcToken, awsProfileName, iamRole).requestSbom(sbom);
+            SbomData sbomData = SbomData.builder().sbom(gson.fromJson(responseData, Sbom.class)).build();
 
             String sbomFileName = String.format("%s-%s-sbom.json", build.getParent().getDisplayName(),
                     build.getDisplayName()).replaceAll("[ #]", "");
@@ -223,11 +220,17 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             sbomFile.write(gson.toJson(sbomData.getSbom()), "UTF-8");
 
             CsvConverter converter = new CsvConverter(sbomData);
-            String csvFileName = String.format("%s-%s.csv", build.getParent().getDisplayName(),
+            String csvVulnFileName = String.format("%s-%s-vuln.csv", build.getParent().getDisplayName(),
                     build.getDisplayName()).replaceAll("[ #]", "");
-            String csvWorkspacePath = String.format("%s/%s", build.getId(), csvFileName);
-            artifactMap.put(csvFileName, csvWorkspacePath);
-            FilePath csvFile = workspace.child(csvWorkspacePath);
+            String csvVulnWorkspacePath = String.format("%s/%s", build.getId(), csvVulnFileName);
+            artifactMap.put(csvVulnFileName, csvVulnWorkspacePath);
+            FilePath csvVulnFile = workspace.child(csvVulnWorkspacePath);
+
+            String csvDockerFileName = String.format("%s-%s-docker.csv", build.getParent().getDisplayName(),
+                    build.getDisplayName()).replaceAll("[ #]", "");
+            String csvDockerWorkspacePath = String.format("%s/%s", build.getId(), csvDockerFileName);
+            artifactMap.put(csvDockerFileName, csvDockerWorkspacePath);
+            FilePath csvDockerFile = workspace.child(csvDockerWorkspacePath);
             logger.println("Converting SBOM Results to CSV.");
 
             SbomOutputParser parser = new SbomOutputParser(sbomData);
@@ -245,8 +248,13 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                 sanitizedArchiveName = archivePath;
             }
 
-            String csvContent = converter.convert(sanitizedArchiveName, imageSha, build.getId(), severityCounts);
-            csvFile.write(csvContent, "UTF-8");
+
+            converter.routeVulnerabilities();
+            String csvVulnContent = converter.convertVulnerabilities(sanitizedArchiveName, imageSha, build.getId(), severityCounts);
+            csvVulnFile.write(csvVulnContent, "UTF-8");
+
+            String csvDockerContent = converter.convertDocker(sanitizedArchiveName, imageSha, build.getId(), severityCounts);
+            csvDockerFile.write(csvDockerContent, "UTF-8");
 
             String[] splitName = sanitizedArchiveName.split(":");
             String tag = null;
@@ -321,23 +329,21 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     public static String getImageSha(String sbom) {
         try {
             JsonElement jsonElement = JsonParser.parseString(sbom);
-            JsonArray properties = jsonElement.getAsJsonObject().get("metadata")
-                    .getAsJsonObject().get("component")
-                    .getAsJsonObject().get("properties")
-                    .getAsJsonArray();
+            JsonObject metadata = jsonElement.getAsJsonObject().get("metadata").getAsJsonObject();
+            JsonObject component = metadata.get("component").getAsJsonObject();
+            JsonArray properties = component.getAsJsonObject().get("properties").getAsJsonArray();
 
             for (JsonElement property : properties) {
-                if (property.getAsJsonObject().get("name").getAsString().equals("amazon:inspector:sbom_generator:image_id")) {
+                if (property.getAsJsonObject().get("name").getAsString().contains("image_id")) {
                     return property.getAsJsonObject().get("value").getAsString();
                 }
             }
-
         } catch (Exception e) {
             AmazonInspectorBuilder.logger.println("An exception occurred when getting image sha.");
-        } finally {
-            return "N/A";
+            AmazonInspectorBuilder.logger.println(e);
         }
-
+        
+        return "N/A";
     }
 
 

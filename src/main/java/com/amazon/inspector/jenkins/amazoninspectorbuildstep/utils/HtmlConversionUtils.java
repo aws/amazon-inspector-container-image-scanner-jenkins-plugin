@@ -70,20 +70,21 @@ public class HtmlConversionUtils {
         return "N/A";
     }
 
-    public static Component getLineComponent(String bomRef, List<Component> components) {
+    public static List<Component> getLineComponents(List<Component> components) {
+        List<Component> lineComponents = new ArrayList<>();
         for (Component component : components) {
-            if (component.getName().contains(bomRef)) {
-                return component;
+            if (component.getName().contains("dockerfile")) {
+                lineComponents.add(component);
             }
         }
 
-        return null;
+        return lineComponents;
     }
 
     public static List<DockerVulnerability> convertDocker(Metadata metadata, List<Vulnerability> vulnerabilities,
                                                                    List<Component> components) {
         List<DockerVulnerability> dockerVulnerabilities = new ArrayList<>();
-
+        List<Component> lineComponents = getLineComponents(components);
         for (Vulnerability vulnerability : vulnerabilities) {
 
             if (!vulnerability.getId().contains("IN-DOCKER")) {
@@ -96,32 +97,26 @@ public class HtmlConversionUtils {
             }
 
             String description = vulnerability.getDescription();
-//            int descriptionLen = 30;
-//            if (vulnerability.getDescription().length() > descriptionLen) {
-//                description = vulnerability.getDescription().substring(0, descriptionLen) + "...";
-//            } else {
-//                description = vulnerability.getDescription();
-//            }
 
-            Component lineComponent = getLineComponent("comp-1", components);
+            String filename = "N/A";
             String lines = "N/A";
-            if (lineComponent != null) {
-                lines = getLines(vulnerability.getId(), lineComponent.getProperties());
-                if (lineComponent.getName().equals("dockerfile:comp-1.Dockerfile")) {
-                    lines += " (D - N/A)";
+
+            for (Component lineComponent : lineComponents) {
+                if (lineComponent != null && !lineComponent.getName().equals("dockerfile:comp-1.Dockerfile"))  {
+                    lines = getLines(vulnerability.getId(), lineComponent.getProperties());
+                    filename = lineComponent.getName();
                 }
             }
 
-            for (Affect affect : vulnerability.getAffects()) {
-                DockerVulnerability dockerVulnerability = DockerVulnerability.builder()
-                        .id(vulnerability.getId())
-                        .severity(severity)
-                        .description(description)
-                        .file("will-test-tarball.tar")
-                        .lines(lines)
-                        .build();
-                dockerVulnerabilities.add(dockerVulnerability);
-            }
+            DockerVulnerability dockerVulnerability = DockerVulnerability.builder()
+                    .id(vulnerability.getId())
+                    .severity(severity)
+                    .description(description)
+                    .file(filename)
+                    .lines(lines)
+                    .build();
+            dockerVulnerabilities.add(dockerVulnerability);
+
         }
 
         return dockerVulnerabilities;

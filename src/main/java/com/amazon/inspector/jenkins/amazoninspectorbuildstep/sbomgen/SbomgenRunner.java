@@ -63,7 +63,7 @@ public class SbomgenRunner {
             option = "--path";
         }
         String[] command = new String[] {
-                sbomgenPath, archiveType, option, archivePath, "--scanners", "dockerfile", "--scan-sbom"
+                sbomgenPath, archiveType, option, archivePath
         };
         AmazonInspectorBuilder.logger.println(Arrays.toString(command));
         ProcessBuilder builder = new ProcessBuilder(command);

@@ -33,7 +33,6 @@ public class HtmlJarHandler {
         String trimmedJson = StringEscapeUtils.unescapeJava(htmlData).replace("\n", "")
                 .replace("\t", "");
 
-        AmazonInspectorBuilder.logger.println(trimmedJson);
         htmlContent = htmlContent.replaceAll(scriptStart,
                 scriptStart + "\n\t\t\tconst txt = `" + trimmedJson + "`");
         return htmlContent;
