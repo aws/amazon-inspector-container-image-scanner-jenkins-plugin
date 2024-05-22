@@ -93,7 +93,7 @@ public class SbomgenRunner {
             if (line == null) { break; }
         }
 
-        return stripProperties(processSbomgenOutput(sb.toString()));
+        return processSbomgenOutput(sb.toString());
     }
 
     @VisibleForTesting

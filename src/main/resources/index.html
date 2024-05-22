@@ -444,6 +444,7 @@
   }
 
   if (docker_total) {
+    document.getElementById("docker").style.display = "block";
     const docker_body = document.getElementById("dockerfindings");
 
     result.docker.forEach((finding) => {
@@ -457,7 +458,6 @@
     });
 
     set_text("docker-total", `(${docker_total})`);
-    document.getElementById("docker").style.display = "block";
   }
 
   set_text("critical", counts.critical);
