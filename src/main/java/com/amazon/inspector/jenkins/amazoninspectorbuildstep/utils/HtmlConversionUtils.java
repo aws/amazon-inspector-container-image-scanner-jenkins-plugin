@@ -85,8 +85,12 @@ public class HtmlConversionUtils {
                                                                    List<Component> components) {
         List<DockerVulnerability> dockerVulnerabilities = new ArrayList<>();
         List<Component> lineComponents = getLineComponents(components);
-        for (Vulnerability vulnerability : vulnerabilities) {
 
+        if (vulnerabilities == null) {
+            return dockerVulnerabilities;
+        }
+
+        for (Vulnerability vulnerability : vulnerabilities) {
             if (!vulnerability.getId().contains("IN-DOCKER")) {
                 continue;
             }

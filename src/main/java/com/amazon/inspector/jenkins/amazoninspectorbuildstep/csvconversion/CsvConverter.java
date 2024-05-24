@@ -11,6 +11,7 @@ import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Compone
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Components.Rating;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Components.Vulnerability;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.SbomData;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.apache.commons.lang.StringUtils;
 
 import java.io.File;
@@ -30,7 +31,9 @@ import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.utils.HtmlCo
 public class CsvConverter {
     private SbomData sbomData;
     private Map<String, Component> componentMap;
+    @SuppressFBWarnings
     private static List<CsvData> dockerData;
+    @SuppressFBWarnings
     private static List<CsvData> vulnData;
 
     public CsvConverter(SbomData sbomData) {
@@ -160,6 +163,9 @@ public class CsvConverter {
 
     public void routeVulnerabilities() {
         List<Vulnerability> vulnerabilities = sbomData.getSbom().getVulnerabilities();
+        if (vulnerabilities == null) {
+            return;
+        }
 
         for (Vulnerability vulnerability : vulnerabilities) {
             for (Affect componentRef : vulnerability.getAffects()) {
