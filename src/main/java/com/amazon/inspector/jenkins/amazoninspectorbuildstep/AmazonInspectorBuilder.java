@@ -234,7 +234,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             logger.println("Converting SBOM Results to CSV.");
 
             SbomOutputParser parser = new SbomOutputParser(sbomData);
-            SeverityCounts severityCounts = parser.parseSbom();
+            parser.parseVulnCounts();
 
             String sanitizedArchiveName = null;
             String componentName = null;
@@ -248,13 +248,16 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                 sanitizedArchiveName = archivePath;
             }
 
-
             converter.routeVulnerabilities();
-            String csvVulnContent = converter.convertVulnerabilities(sanitizedArchiveName, imageSha, build.getId(), severityCounts);
-            csvVulnFile.write(csvVulnContent, "UTF-8");
+            String csvVulnContent = converter.convertVulnerabilities(sanitizedArchiveName, imageSha, build.getId(), SbomOutputParser.vulnCounts);
+            if (csvVulnContent != null) {
+                csvVulnFile.write(csvVulnContent, "UTF-8");
+            }
 
-            String csvDockerContent = converter.convertDocker(sanitizedArchiveName, imageSha, build.getId(), severityCounts);
-            csvDockerFile.write(csvDockerContent, "UTF-8");
+            String csvDockerContent = converter.convertDocker(sanitizedArchiveName, imageSha, build.getId(), SbomOutputParser.dockerCounts);
+            if (csvDockerContent != null) {
+                csvDockerFile.write(csvDockerContent, "UTF-8");
+            }
 
             String[] splitName = sanitizedArchiveName.split(":");
             String tag = null;
@@ -289,7 +292,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
             listener.getLogger().println("Build Artifacts: " + env.get("RUN_ARTIFACTS_DISPLAY_URL"));
 
-            boolean doesBuildPass = !doesBuildFail(severityCounts.getCounts());
+            boolean doesBuildPass = !doesBuildFail(SbomOutputParser.aggregateCounts.getCounts());
 
             if (!isThresholdEnabled) {
                 build.setResult(Result.SUCCESS);
@@ -300,7 +303,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                 build.setResult(Result.FAILURE);
             }
 
-            listener.getLogger().println("Results: " + severityCounts);
+            listener.getLogger().println("Results: " + SbomOutputParser.aggregateCounts.toString());
             if (!isThresholdEnabled) {
                 listener.getLogger().println("Ignoring results due to thresholds being disabled.");
             }
