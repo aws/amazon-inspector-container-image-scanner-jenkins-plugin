@@ -40,11 +40,15 @@ public class HtmlConversionUtils {
             }
 
             for (Affect affect : vulnerability.getAffects()) {
-                String component = StringEscapeUtils.unescapeJava(getComponent(components, affect.getRef()));
+                String component = getComponent(components, affect.getRef());
+                if (component == null) {
+                    continue;
+                }
+
                 HtmlVulnerability htmlVulnerability = HtmlVulnerability.builder()
                         .title(vulnerability.getId())
                         .severity(StringUtils.capitalize(severity))
-                        .component(component)
+                        .component(StringEscapeUtils.unescapeJava(component))
                         .build();
                 htmlVulnerabilities.add(htmlVulnerability);
             }
@@ -106,9 +110,13 @@ public class HtmlConversionUtils {
             String lines = "N/A";
 
             for (Component lineComponent : lineComponents) {
-                if (lineComponent != null && !lineComponent.getName().equals("dockerfile:comp-1.Dockerfile"))  {
+                if (lineComponent != null)  {
                     lines = getLines(vulnerability.getId(), lineComponent.getProperties());
                     filename = lineComponent.getName();
+                }
+
+                if (lineComponent.getName().equals("dockerfile:comp-1.Dockerfile")) {
+                    lines += " - Derived";
                 }
             }
 
@@ -120,9 +128,9 @@ public class HtmlConversionUtils {
                     .lines(lines)
                     .build();
             dockerVulnerabilities.add(dockerVulnerability);
-
         }
 
+        Collections.sort(dockerVulnerabilities, (v1, v2) -> sortVulnerabilitiesBySeverity(v1.severity, v2.severity));
         return dockerVulnerabilities;
     }
 
@@ -140,7 +148,7 @@ public class HtmlConversionUtils {
             }
         }
 
-        return "None Found";
+        return null;
     }
 
     private static String getSeverity(List<Rating> ratings) {

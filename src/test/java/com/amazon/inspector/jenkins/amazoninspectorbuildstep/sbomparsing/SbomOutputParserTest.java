@@ -39,6 +39,6 @@ public class SbomOutputParserTest {
         SeverityCounts severityCounts = new SeverityCounts();
         severityCounts.increment(Severity.CRITICAL);
         SbomOutputParser parser = new SbomOutputParser(sbomData);
-        assertEquals(parser.parseSbom().getCounts(), severityCounts.getCounts());
+        assertEquals(SbomOutputParser.aggregateCounts.getCounts(), severityCounts.getCounts());
     }
 }

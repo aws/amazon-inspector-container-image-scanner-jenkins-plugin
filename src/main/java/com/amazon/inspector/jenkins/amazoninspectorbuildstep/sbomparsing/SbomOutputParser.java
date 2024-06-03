@@ -11,28 +11,35 @@ import java.util.List;
 public class SbomOutputParser {
     @Getter
     private SbomData sbom;
+    public static SeverityCounts vulnCounts = new SeverityCounts();
+    public static SeverityCounts dockerCounts = new SeverityCounts();
+    public static SeverityCounts aggregateCounts = new SeverityCounts();
 
     public SbomOutputParser(SbomData sbomData) {
         this.sbom = sbomData;
     }
 
-    public SeverityCounts parseSbom() {
-        SeverityCounts severityCounts = new SeverityCounts();
+    public void parseVulnCounts() {
         List<Vulnerability> vulnerabilities = sbom.getSbom().getVulnerabilities();
 
         if (vulnerabilities == null) {
-            return severityCounts;
+            return;
         }
 
         for (Vulnerability vulnerability : vulnerabilities) {
             List<Rating> ratings = vulnerability.getRatings();
 
             Severity severity = getHighestRatingFromList(ratings);
-            severityCounts.increment(severity);
-        }
 
-        return severityCounts;
+            if (vulnerability.getId().contains("IN-DOCKER")) {
+                dockerCounts.increment(severity);
+            } else {
+                vulnCounts.increment(severity);
+            }
+            aggregateCounts.increment(severity);
+        }
     }
+
 
     @VisibleForTesting
     protected Severity getHighestRatingFromList(List<Rating> ratings) {
