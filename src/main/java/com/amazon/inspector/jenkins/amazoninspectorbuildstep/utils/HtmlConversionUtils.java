@@ -9,6 +9,7 @@ import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Compone
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Components.Rating;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Components.Vulnerability;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomparsing.Severity;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -85,6 +86,7 @@ public class HtmlConversionUtils {
         return lineComponents;
     }
 
+    @SuppressFBWarnings
     public static List<DockerVulnerability> convertDocker(Metadata metadata, List<Vulnerability> vulnerabilities,
                                                                    List<Component> components) {
         List<DockerVulnerability> dockerVulnerabilities = new ArrayList<>();

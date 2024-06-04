@@ -32,14 +32,14 @@ import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.utils.HtmlCo
 public class CsvConverter {
     private SbomData sbomData;
     private Map<String, Component> componentMap;
-    @SuppressFBWarnings
-    private static List<CsvData> dockerData = new ArrayList<>();
-    @SuppressFBWarnings
-    private static List<CsvData> vulnData = new ArrayList<>();
+    private static List<CsvData> dockerData;
+    private static List<CsvData> vulnData;
 
     public CsvConverter(SbomData sbomData) {
         this.sbomData = sbomData;
         this.componentMap = populateComponentMap(sbomData);
+        dockerData = new ArrayList<>();
+        vulnData = new ArrayList<>();
     }
 
     private Map<String, Component> populateComponentMap(SbomData sbomData) {
@@ -176,6 +176,7 @@ public class CsvConverter {
         }
     }
 
+    @SuppressFBWarnings
     public void routeDockerCsvData(Vulnerability vulnerability, Component component) {
         String installedVersion = component.getPurl();
         String fixedVersion = getPropertyValueFromKey(vulnerability,
