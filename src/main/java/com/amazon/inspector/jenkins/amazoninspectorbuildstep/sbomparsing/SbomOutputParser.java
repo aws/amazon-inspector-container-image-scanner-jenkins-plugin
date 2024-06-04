@@ -11,9 +11,9 @@ import java.util.List;
 public class SbomOutputParser {
     @Getter
     private SbomData sbom;
-    public static SeverityCounts vulnCounts = new SeverityCounts();
-    public static SeverityCounts dockerCounts = new SeverityCounts();
-    public static SeverityCounts aggregateCounts = new SeverityCounts();
+    public static final SeverityCounts vulnCounts = new SeverityCounts();
+    public static final SeverityCounts dockerCounts = new SeverityCounts();
+    public static final SeverityCounts aggregateCounts = new SeverityCounts();
 
     public SbomOutputParser(SbomData sbomData) {
         this.sbom = sbomData;

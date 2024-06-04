@@ -176,6 +176,7 @@ public class CsvConverter {
         }
     }
 
+    @SuppressFBWarnings
     public void routeDockerCsvData(Vulnerability vulnerability, Component component) {
         String installedVersion = component.getPurl();
         String fixedVersion = getPropertyValueFromKey(vulnerability,
