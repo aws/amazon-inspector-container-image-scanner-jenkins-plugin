@@ -29,7 +29,7 @@ public class SbomOutputParserTest {
     @Test
     public void testParseSbom_Successful() {
         SbomData sbomData = SbomData.builder().sbom(Sbom.builder().vulnerabilities(
-                List.of(Vulnerability.builder().ratings(
+                List.of(Vulnerability.builder().id("CVE").ratings(
                         List.of(
                                 Rating.builder().severity(Severity.CRITICAL.name()).build(),
                                 Rating.builder().severity(Severity.LOW.name()).build()
@@ -39,6 +39,7 @@ public class SbomOutputParserTest {
         SeverityCounts severityCounts = new SeverityCounts();
         severityCounts.increment(Severity.CRITICAL);
         SbomOutputParser parser = new SbomOutputParser(sbomData);
-        assertEquals(parser.parseSbom().getCounts(), severityCounts.getCounts());
+        parser.parseVulnCounts();
+        assertEquals(SbomOutputParser.aggregateCounts.getCounts(), severityCounts.getCounts());
     }
 }

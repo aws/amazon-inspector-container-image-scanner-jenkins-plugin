@@ -1,5 +1,6 @@
 package com.amazon.inspector.jenkins.amazoninspectorbuildstep.html;
 
+import com.amazon.inspector.jenkins.amazoninspectorbuildstep.AmazonInspectorBuilder;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.FilePath;
 import lombok.AllArgsConstructor;
@@ -20,6 +21,7 @@ public class HtmlJarHandler {
     public FilePath copyHtmlToDir(FilePath workspace, String buildId) throws IOException, InterruptedException {
         String htmlFileName = "index.html";
         String htmlStr = readStringFromJarEntry(htmlFileName);
+
         String injectedHtmlStr = injectHtmlData(htmlStr);
         FilePath htmlFile = workspace.child(String.format("%s/%s", buildId, htmlFileName));
         htmlFile.write(injectedHtmlStr, "UTF-8");
@@ -30,9 +32,9 @@ public class HtmlJarHandler {
         String scriptStart = "<script type=\"text/javascript\">";
         String trimmedJson = StringEscapeUtils.unescapeJava(htmlData).replace("\n", "")
                 .replace("\t", "");
-        htmlContent = htmlContent.replaceAll(scriptStart,
-                scriptStart + "\n\t\t\tconst txt = '" + trimmedJson + "'");
 
+        htmlContent = htmlContent.replaceAll(scriptStart,
+                scriptStart + "\n\t\t\tconst txt = `" + trimmedJson + "`");
         return htmlContent;
     }
 
