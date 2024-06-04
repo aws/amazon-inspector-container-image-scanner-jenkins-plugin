@@ -29,6 +29,7 @@ import java.util.Map;
 
 import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.utils.HtmlConversionUtils.getLineComponents;
 
+@SuppressFBWarnings
 public class CsvConverter {
     private SbomData sbomData;
     private Map<String, Component> componentMap;
