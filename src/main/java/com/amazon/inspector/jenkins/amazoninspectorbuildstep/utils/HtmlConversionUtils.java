@@ -1,6 +1,5 @@
 package com.amazon.inspector.jenkins.amazoninspectorbuildstep.utils;
 
-import com.amazon.inspector.jenkins.amazoninspectorbuildstep.AmazonInspectorBuilder;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.html.components.DockerVulnerability;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.html.components.HtmlVulnerability;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Components.Affect;
@@ -16,9 +15,6 @@ import org.apache.commons.lang3.StringUtils;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-
 
 public class HtmlConversionUtils {
 
@@ -59,6 +55,10 @@ public class HtmlConversionUtils {
     }
 
     public static String getLines(String id, List<Property> properties) {
+        if (properties == null) {
+            return "N/A";
+        }
+
         for (Property property : properties) {
             if (property.getName().contains(id)) {
                 String lines = property.getValue().split(":")[1];
