@@ -1,9 +1,8 @@
 package com.amazon.inspector.jenkins.amazoninspectorbuildstep.csvconversion;
 
-import com.amazon.inspector.jenkins.amazoninspectorbuildstep.AmazonInspectorBuilder;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomparsing.Severity;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomparsing.SeverityCounts;
-import com.amazon.inspector.jenkins.amazoninspectorbuildstep.utils.HtmlConversionUtils;
+import com.amazon.inspector.jenkins.amazoninspectorbuildstep.html.HtmlConversionUtils;
 import com.google.common.annotations.VisibleForTesting;
 import com.opencsv.CSVWriter;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Components.Affect;
@@ -27,14 +26,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.utils.HtmlConversionUtils.getLineComponents;
+import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.html.HtmlConversionUtils.getLineComponents;
 
 @SuppressFBWarnings
 public class CsvConverter {
     private SbomData sbomData;
     private Map<String, Component> componentMap;
-    private static List<CsvData> dockerData;
-    private static List<CsvData> vulnData;
+    static List<CsvData> dockerData;
+    static List<CsvData> vulnData;
 
     public CsvConverter(SbomData sbomData) {
         this.sbomData = sbomData;
@@ -43,7 +42,7 @@ public class CsvConverter {
         vulnData = new ArrayList<>();
     }
 
-    private Map<String, Component> populateComponentMap(SbomData sbomData) {
+    Map<String, Component> populateComponentMap(SbomData sbomData) {
         Map<String, Component> componentMap = new HashMap<>();
 
         if (sbomData == null || sbomData.getSbom() == null || sbomData.getSbom().getComponents() == null) {
@@ -75,16 +74,11 @@ public class CsvConverter {
         dataLineArray.addAll(dataLines);
         File file = new File(tmpdir + "/temp.csv");
 
-        try {
-            FileWriter outputfile = new FileWriter(file, Charset.forName("UTF-8"));
-            CSVWriter writer = new CSVWriter(outputfile);
+        FileWriter outputfile = new FileWriter(file, Charset.forName("UTF-8"));
+        CSVWriter writer = new CSVWriter(outputfile);
 
-            writer.writeAll(dataLineArray);
-            writer.close();
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-        }
+        writer.writeAll(dataLineArray);
+        writer.close();
 
         return new String(Files.readAllBytes(Paths.get(file.getAbsolutePath())), StandardCharsets.UTF_8);
     }
@@ -109,16 +103,11 @@ public class CsvConverter {
 
         File file = new File(tmpdir + "/temp.csv");
 
-        try {
-            FileWriter outputfile = new FileWriter(file, Charset.forName("UTF-8"));
-            CSVWriter writer = new CSVWriter(outputfile);
+        FileWriter outputfile = new FileWriter(file, Charset.forName("UTF-8"));
+        CSVWriter writer = new CSVWriter(outputfile);
 
-            writer.writeAll(dataLineArray);
-            writer.close();
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-        }
+        writer.writeAll(dataLineArray);
+        writer.close();
 
         return new String(Files.readAllBytes(Paths.get(file.getAbsolutePath())), StandardCharsets.UTF_8);
     }
