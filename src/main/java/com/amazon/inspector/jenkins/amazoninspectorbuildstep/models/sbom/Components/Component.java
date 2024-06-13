@@ -10,6 +10,7 @@ import java.util.List;
 @Getter
 @Setter
 @Builder
+
 public class Component {
     @SerializedName("bom-ref")
     private String bomRef;

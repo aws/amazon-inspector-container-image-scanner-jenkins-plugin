@@ -46,8 +46,7 @@ import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Sbom;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.SbomData;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomparsing.SbomOutputParser;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomparsing.Severity;
-import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomparsing.SeverityCounts;
-import com.amazon.inspector.jenkins.amazoninspectorbuildstep.utils.HtmlConversionUtils;
+import com.amazon.inspector.jenkins.amazoninspectorbuildstep.html.HtmlConversionUtils;
 import io.jenkins.plugins.oidc_provider.IdTokenFileCredentials;
 import io.jenkins.plugins.oidc_provider.IdTokenStringCredentials;
 
@@ -274,7 +273,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                             .tags(tag)
                             .sha(imageSha)
                             .build())
-                    .docker(HtmlConversionUtils.convertDocker(sbomData.getSbom().getMetadata(), sbomData.getSbom().getVulnerabilities(),
+                    .docker(HtmlConversionUtils.convertDocker(sbomData.getSbom().getVulnerabilities(),
                             sbomData.getSbom().getComponents()))
                     .vulnerabilities(HtmlConversionUtils.convertVulnerabilities(sbomData.getSbom().getVulnerabilities(),
                             sbomData.getSbom().getComponents()))

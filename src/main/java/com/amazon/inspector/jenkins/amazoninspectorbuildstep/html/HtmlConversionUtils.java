@@ -1,10 +1,9 @@
-package com.amazon.inspector.jenkins.amazoninspectorbuildstep.utils;
+package com.amazon.inspector.jenkins.amazoninspectorbuildstep.html;
 
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.html.components.DockerVulnerability;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.html.components.HtmlVulnerability;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Components.Affect;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Components.Component;
-import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Components.Metadata;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Components.Property;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Components.Rating;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Components.Vulnerability;
@@ -77,6 +76,11 @@ public class HtmlConversionUtils {
 
     public static List<Component> getLineComponents(List<Component> components) {
         List<Component> lineComponents = new ArrayList<>();
+
+        if (components == null) {
+            return lineComponents;
+        }
+
         for (Component component : components) {
             if (component.getName().contains("dockerfile")) {
                 lineComponents.add(component);
@@ -87,7 +91,7 @@ public class HtmlConversionUtils {
     }
 
     @SuppressFBWarnings
-    public static List<DockerVulnerability> convertDocker(Metadata metadata, List<Vulnerability> vulnerabilities,
+    public static List<DockerVulnerability> convertDocker(List<Vulnerability> vulnerabilities,
                                                                    List<Component> components) {
         List<DockerVulnerability> dockerVulnerabilities = new ArrayList<>();
         List<Component> lineComponents = getLineComponents(components);
@@ -136,7 +140,7 @@ public class HtmlConversionUtils {
         return dockerVulnerabilities;
     }
 
-    private static int sortVulnerabilitiesBySeverity(String s1, String s2) {
+    static int sortVulnerabilitiesBySeverity(String s1, String s2) {
         Severity sev1 = Severity.getSeverityFromString(s1);
         Severity sev2 = Severity.getSeverityFromString(s2);
 
@@ -153,7 +157,7 @@ public class HtmlConversionUtils {
         return null;
     }
 
-    private static String getSeverity(List<Rating> ratings) {
+    static String getSeverity(List<Rating> ratings) {
         if (ratings == null || ratings.size() == 0) {
             return null;
         }
