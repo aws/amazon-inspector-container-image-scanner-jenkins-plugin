@@ -22,7 +22,7 @@ jobs:
 
      - name: Scan project with Inspector
        id: inspector
-       uses: aws-actions/vulnerability-scan-github-action-for-amazon-inspector@v1.0.0
+       uses: aws-actions/vulnerability-scan-github-action-for-amazon-inspector@v1.1.2
        with:
          artifact_type: 'repository'
          artifact_path: './'
