@@ -82,7 +82,7 @@ public class HtmlConversionUtils {
         }
 
         for (Component component : components) {
-            if (component.getName().contains("dockerfile")) {
+            if (component.getName() != null && component.getName().contains("dockerfile")) {
                 lineComponents.add(component);
             }
         }
