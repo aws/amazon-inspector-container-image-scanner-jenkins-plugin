@@ -77,6 +77,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     private final String credentialId;
     private final String oidcCredentialId;
     private final boolean isThresholdEnabled;
+    private final boolean thresholdEquals;
     private final String sbomgenPath;
     private final String sbomgenSource;
     private final boolean osArch;
@@ -91,8 +92,8 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     @DataBoundConstructor
     public AmazonInspectorBuilder(String archivePath, String artifactPath, String archiveType, String sbomgenPath, boolean osArch, String iamRole,
                                   String awsRegion, String credentialId, String awsProfileName, String awsCredentialId,
-                                  String sbomgenMethod, String sbomgenSource, boolean isThresholdEnabled, int countCritical,
-                                  int countHigh, int countMedium, int countLow, String oidcCredentialId) {
+                                  String sbomgenMethod, String sbomgenSource, boolean isThresholdEnabled, boolean thresholdEquals,
+                                  int countCritical, int countHigh, int countMedium, int countLow, String oidcCredentialId) {
         if (artifactPath != null && !artifactPath.isEmpty()) {
             this.archivePath = artifactPath;
         } else {
@@ -110,6 +111,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         this.iamRole = iamRole;
         this.awsRegion = awsRegion;
         this.isThresholdEnabled = isThresholdEnabled;
+        this.thresholdEquals = thresholdEquals;
         this.countCritical = countCritical;
         this.countHigh = countHigh;
         this.countMedium = countMedium;
@@ -122,6 +124,15 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         boolean mediumExceedsLimit = counts.get(Severity.MEDIUM) > countMedium;
         boolean lowExceedsLimit = counts.get(Severity.LOW) > countLow;
 
+        boolean criticalEqualsLimit = counts.get(Severity.CRITICAL) == countCritical;
+        boolean highEqualsLimit = counts.get(Severity.HIGH) == countHigh;
+        boolean mediumEqualsLimit = counts.get(Severity.MEDIUM) == countMedium;
+        boolean lowEqualsLimit = counts.get(Severity.LOW) == countLow;
+
+        if (this.thresholdEquals) {
+            logger.println("Threshold should equal vulnerabilites, regression testing.");
+            return !(criticalEqualsLimit && highEqualsLimit && mediumEqualsLimit && lowEqualsLimit);
+        }
         return criticalExceedsLimit || highExceedsLimit || mediumExceedsLimit || lowExceedsLimit;
     }
 
