@@ -85,6 +85,7 @@ jobs:
         run: python .github/workflows/GHATest.py -l admin -p 33018 -a 54.159.142.179 -n test
 
       - name: Revoke EC2 Access
+        if: always()
         run: |
           IP=$(curl -s http://whatismyip.akamai.com/)
           aws ec2 revoke-security-group-ingress --group-name "launch-wizard-3" --protocol -1 --port -1 --cidr $IP/32 --profile default --output text
