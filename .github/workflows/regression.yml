@@ -79,7 +79,7 @@ jobs:
         run: sleep 1m
         
       - name: Run Script
-        run: python .github/workflows/GHATest.py -l admin -p 33018 -a 54.159.142.179
+        run: python .github/workflows/GHATest.py -l admin -p 33018 -a 54.159.142.179 -n Regression_Lab
 
       - name: Revoke EC2 Access
         run: |
