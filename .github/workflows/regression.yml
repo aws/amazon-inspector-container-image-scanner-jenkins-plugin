@@ -69,10 +69,12 @@ jobs:
           script: restart
 
       - name: Init SSH
+        env: 
+          ID_RSA: ${{secrets.ID_RSA}}
         run: |
           mkdir -p ~/.ssh/
           chmod 700 ~/.ssh/
-          cp .github/workflows/id_rsa ~/.ssh/id_rsa
+          echo "$ID_RSA" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           
       - name: Wait For Restart
