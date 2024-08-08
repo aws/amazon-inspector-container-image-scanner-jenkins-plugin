@@ -35,7 +35,7 @@
         <revision>1.0</revision>
         <changelist>999999-SNAPSHOT</changelist>
         <!-- https://www.jenkins.io/doc/developer/plugin-development/choosing-jenkins-baseline/ -->
-        <jenkins.version>2.387.3</jenkins.version>
+        <jenkins.version>2.427</jenkins.version>
         <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
     </properties>
 
@@ -147,8 +147,14 @@
 
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>structs</artifactId>
+            <version>337.v1b_04ea_4df7c8</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>credentials</artifactId>
-            <version>1319.v7eb_51b_3a_c97b_</version>
+            <version>1344.v5a_3f65a_1e173</version>
         </dependency>
 
         <dependency>
@@ -167,6 +173,12 @@
             <groupId>io.jenkins.plugins</groupId>
             <artifactId>javax-activation-api</artifactId>
             <version>1.2.0-6</version>
+        </dependency>
+
+        <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+            <version>1.17.1</version>
         </dependency>
     </dependencies>
 
