@@ -16,6 +16,7 @@ import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
+import hudson.Proc;
 import hudson.model.AbstractProject;
 import hudson.model.Job;
 import hudson.model.Result;
@@ -24,10 +25,12 @@ import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.tasks.Builder;
 import hudson.tasks.BuildStepDescriptor;
+import hudson.util.ArgumentListBuilder;
 import hudson.util.ListBoxModel;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
@@ -77,6 +80,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     private final String credentialId;
     private final String oidcCredentialId;
     private final boolean isThresholdEnabled;
+    private final boolean thresholdEquals;
     private final String sbomgenPath;
     private final String sbomgenSource;
     private final boolean osArch;
@@ -91,8 +95,8 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     @DataBoundConstructor
     public AmazonInspectorBuilder(String archivePath, String artifactPath, String archiveType, String sbomgenPath, boolean osArch, String iamRole,
                                   String awsRegion, String credentialId, String awsProfileName, String awsCredentialId,
-                                  String sbomgenMethod, String sbomgenSource, boolean isThresholdEnabled, int countCritical,
-                                  int countHigh, int countMedium, int countLow, String oidcCredentialId) {
+                                  String sbomgenMethod, String sbomgenSource, boolean isThresholdEnabled, boolean thresholdEquals,
+                                  int countCritical, int countHigh, int countMedium, int countLow, String oidcCredentialId) {
         if (artifactPath != null && !artifactPath.isEmpty()) {
             this.archivePath = artifactPath;
         } else {
@@ -110,6 +114,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         this.iamRole = iamRole;
         this.awsRegion = awsRegion;
         this.isThresholdEnabled = isThresholdEnabled;
+        this.thresholdEquals = thresholdEquals;
         this.countCritical = countCritical;
         this.countHigh = countHigh;
         this.countMedium = countMedium;
@@ -122,6 +127,15 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         boolean mediumExceedsLimit = counts.get(Severity.MEDIUM) > countMedium;
         boolean lowExceedsLimit = counts.get(Severity.LOW) > countLow;
 
+        boolean criticalEqualsLimit = counts.get(Severity.CRITICAL) == countCritical;
+        boolean highEqualsLimit = counts.get(Severity.HIGH) == countHigh;
+        boolean mediumEqualsLimit = counts.get(Severity.MEDIUM) == countMedium;
+        boolean lowEqualsLimit = counts.get(Severity.LOW) == countLow;
+
+        if (this.thresholdEquals) {
+            logger.println("Threshold should equal vulnerabilites, regression testing.");
+            return !(criticalEqualsLimit && highEqualsLimit && mediumEqualsLimit && lowEqualsLimit);
+        }
         return criticalExceedsLimit || highExceedsLimit || mediumExceedsLimit || lowExceedsLimit;
     }
 
@@ -135,7 +149,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
     @Override
     public void perform(Run<?, ?> build, FilePath workspace, EnvVars env, Launcher launcher, TaskListener listener)
-            throws IOException {
+            throws IOException, InterruptedException {
         logger = listener.getLogger();
 
         File outFile = new File(build.getRootDir(), "out");
@@ -157,7 +171,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             String activeSbomgenPath = sbomgenPath;
             if (sbomgenSource != null && !sbomgenSource.isEmpty()) {
                 logger.println("Automatic SBOMGen Sourcing selected, downloading now...");
-                activeSbomgenPath = SbomgenDownloader.getBinary(sbomgenSource);
+                activeSbomgenPath = SbomgenDownloader.getBinary(sbomgenSource, workspace);
             } else {
                 build.getEnvironment(listener).put("sbomgenPath", activeSbomgenPath);
             }
@@ -174,11 +188,11 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             String sbom;
             if (credential != null) {
                 logger.println("Running inspector-sbomgen with docker credential: " + credential.getId());
-                sbom = new SbomgenRunner(activeSbomgenPath, activeArchiveType, archivePath, credential.getUsername(),
+                sbom = new SbomgenRunner(launcher, activeSbomgenPath, activeArchiveType, archivePath, credential.getUsername(),
                         credential.getPassword().getPlainText()).run();
             } else {
                 logger.println("No credential provided, running without.");
-                sbom = new SbomgenRunner(activeSbomgenPath, activeArchiveType, archivePath, null, null).run();
+                sbom = new SbomgenRunner(launcher, activeSbomgenPath, activeArchiveType, archivePath, null, null).run();
             }
 
             JsonElement metadata = JsonParser.parseString(sbom).getAsJsonObject().get("metadata");
@@ -222,13 +236,12 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             String csvVulnFileName = String.format("%s-%s-vuln.csv", build.getParent().getDisplayName(),
                     build.getDisplayName()).replaceAll("[ #]", "");
             String csvVulnWorkspacePath = String.format("%s/%s", build.getId(), csvVulnFileName);
-            artifactMap.put(csvVulnFileName, csvVulnWorkspacePath);
+
             FilePath csvVulnFile = workspace.child(csvVulnWorkspacePath);
 
             String csvDockerFileName = String.format("%s-%s-docker.csv", build.getParent().getDisplayName(),
                     build.getDisplayName()).replaceAll("[ #]", "");
             String csvDockerWorkspacePath = String.format("%s/%s", build.getId(), csvDockerFileName);
-            artifactMap.put(csvDockerFileName, csvDockerWorkspacePath);
             FilePath csvDockerFile = workspace.child(csvDockerWorkspacePath);
             logger.println("Converting SBOM Results to CSV.");
 
@@ -250,11 +263,13 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             converter.routeVulnerabilities();
             String csvVulnContent = converter.convertVulnerabilities(sanitizedArchiveName, imageSha, build.getId(), SbomOutputParser.vulnCounts);
             if (csvVulnContent != null) {
+                artifactMap.put(csvVulnFileName, csvVulnWorkspacePath);
                 csvVulnFile.write(csvVulnContent, "UTF-8");
             }
 
             String csvDockerContent = converter.convertDocker(sanitizedArchiveName, imageSha, build.getId(), SbomOutputParser.dockerCounts);
             if (csvDockerContent != null) {
+                artifactMap.put(csvDockerFileName, csvDockerWorkspacePath);
                 csvDockerFile.write(csvDockerContent, "UTF-8");
             }
 
@@ -344,7 +359,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             AmazonInspectorBuilder.logger.println("An exception occurred when getting image sha.");
             AmazonInspectorBuilder.logger.println(e);
         }
-        
+
         return "N/A";
     }
 
