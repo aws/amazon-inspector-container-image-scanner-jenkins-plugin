@@ -62,7 +62,7 @@ jobs:
       - name: Get Jenkins Commands
         uses: appleboy/ssh-action@v1.0.3
         with:
-          key_path: ${{ secrets.ID_RSA }}
+          key: ${{ secrets.ID_RSA }}
           host: 54.159.142.179
           username: admin
           port: 33018
