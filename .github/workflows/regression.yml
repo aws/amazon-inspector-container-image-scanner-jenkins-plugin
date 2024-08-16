@@ -54,6 +54,15 @@ jobs:
           host: 54.159.142.179
           username: ec2-user
           script: cp "/home/ec2-user/target/amazon-inspector-image-scanner.hpi" "/home/ec2-user/.jenkins/plugins"
+
+      - name: Init SSH
+        env: 
+          ID_RSA: ${{secrets.ID_RSA}}
+        run: |
+          mkdir -p ~/.ssh/
+          chmod 700 ~/.ssh/
+          echo "$ID_RSA" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
           
       - name: find files
         run: |
