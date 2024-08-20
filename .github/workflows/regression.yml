@@ -1,0 +1,93 @@
+# This is a basic workflow to help you get started with Actions
+
+name: Jenkins
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the "main" branch
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  auth:
+    runs-on: ubuntu-latest
+    outputs:
+      ssh-output: ${{ steps.ssh.outputs.output }}
+
+    steps:
+      - name: Checkout repository content
+        uses: actions/checkout@v2 # Checkout the repository content to github runner.
+
+      - name: AWS Auth
+        run: |
+          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws configure set region us-east-1
+      - name: Enable EC2 Access
+        run: |  
+          IP=$(curl -s http://whatismyip.akamai.com/)
+          echo "::set-output name=ip::$IP"
+          aws ec2 authorize-security-group-ingress --group-name "launch-wizard-3" --protocol -1 --port -1 --cidr $IP/32 --profile default --output text
+      
+      - name: Build plugin
+        run: mvn -U clean package
+        
+      - name: Copy Built Plugin
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          key: ${{ secrets.EC2_INSTANCE }}
+          host: 54.159.142.179
+          username: ec2-user
+          source: "target/amazon-inspector-image-scanner.hpi"
+          target: "/home/ec2-user"
+          
+      - name: Copy file
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          key: ${{ secrets.EC2_INSTANCE }}
+          host: 54.159.142.179
+          username: ec2-user
+          script: cp "/home/ec2-user/target/amazon-inspector-image-scanner.hpi" "/home/ec2-user/.jenkins/plugins"
+
+      - name: Init SSH
+        env: 
+          ID_RSA: ${{secrets.ID_RSA}}
+        run: |
+          mkdir -p ~/.ssh/
+          chmod 700 ~/.ssh/
+          echo "$ID_RSA" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          
+      - name: find files
+        run: |
+          ls
+          ls target
+      - name: Get Jenkins Commands
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          key: ${{ secrets.ID_RSA }}
+          host: 54.159.142.179
+          username: admin
+          port: 33018
+          script: restart
+
+      - name: Wait For Restart
+        run: sleep 1m
+        
+      - name: Run Script
+        run: python .github/workflows/GHATest.py -l admin -p 33018 -a 54.159.142.179 -n Regression_Lab
+
+      - name: Run Script With Failure
+        run: python .github/workflows/GHATest.py -l admin -p 33018 -a 54.159.142.179 -n test
+
+      - name: Revoke EC2 Access
+        if: always()
+        run: |
+          IP=$(curl -s http://whatismyip.akamai.com/)
+          aws ec2 revoke-security-group-ingress --group-name "launch-wizard-3" --protocol -1 --port -1 --cidr $IP/32 --profile default --output text
