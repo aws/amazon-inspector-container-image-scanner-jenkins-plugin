@@ -42,7 +42,7 @@ jobs:
         uses: appleboy/scp-action@v0.1.7
         with:
           key: ${{ secrets.ID_RSA }}
-          host: 54.159.142.179
+          host: ${{ secrets.EC2_INSTANCE }}
           username: ec2-user
           source: "target/amazon-inspector-image-scanner.hpi"
           target: "/home/ec2-user"
@@ -51,7 +51,7 @@ jobs:
         uses: appleboy/ssh-action@v1.0.3
         with:
           key: ${{ secrets.ID_RSA }}
-          host: 54.159.142.179
+          host: ${{ secrets.EC2_INSTANCE }}
           username: ec2-user
           script: cp "/home/ec2-user/target/amazon-inspector-image-scanner.hpi" "/home/ec2-user/.jenkins/plugins"
 
@@ -72,19 +72,16 @@ jobs:
         uses: appleboy/ssh-action@v1.0.3
         with:
           key: ${{ secrets.ID_RSA }}
-          host: 54.159.142.179
+          host: ${{ secrets.EC2_INSTANCE }}
           username: admin
-          port: 33018
+          port: ${{ secrets.JENKINS_PORT }}
           script: restart
 
       - name: Wait For Restart
         run: sleep 1m
         
       - name: Run Script
-        run: python .github/workflows/GHATest.py -l admin -p 33018 -a 54.159.142.179 -n Regression_Lab
-
-      - name: Run Script With Failure
-        run: python .github/workflows/GHATest.py -l admin -p 33018 -a 54.159.142.179 -n test
+        run: python .github/workflows/GHATest.py -l admin -p ${{ secrets.JENKINS_PORT }} -a 54.159.142.179 -n Regression_Lab
 
       - name: Revoke EC2 Access
         if: always()
