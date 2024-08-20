@@ -42,7 +42,7 @@ jobs:
         uses: appleboy/scp-action@v0.1.7
         with:
           key: ${{ secrets.ID_RSA }}
-          host: ${{ secrets.EC2_INSTANCE }}
+          host: 54.159.142.179
           username: ec2-user
           source: "target/amazon-inspector-image-scanner.hpi"
           target: "/home/ec2-user"
@@ -51,7 +51,7 @@ jobs:
         uses: appleboy/ssh-action@v1.0.3
         with:
           key: ${{ secrets.ID_RSA }}
-          host: ${{ secrets.EC2_INSTANCE }}
+          host: 54.159.142.179
           username: ec2-user
           script: cp "/home/ec2-user/target/amazon-inspector-image-scanner.hpi" "/home/ec2-user/.jenkins/plugins"
 
