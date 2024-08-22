@@ -41,23 +41,23 @@ jobs:
       - name: Copy Built Plugin
         uses: appleboy/scp-action@v0.1.7
         with:
-          key: ${{ secrets.ED_KEY }}
-          host: ${{ secrets.EC2_INSTANCE }}
-          username: ${{ secrets.INSTANCE_USERNAME }}
+          key: ${{ secrets.ID_RSA }}
+          host: 54.159.142.179
+          username: ec2_user
           source: "target/amazon-inspector-image-scanner.hpi"
           target: "/home/ec2-user"
           
       - name: Copy file
         uses: appleboy/ssh-action@v1.0.3
         with:
-          key: ${{ secrets.ED_KEY }}
-          host: ${{ secrets.EC2_INSTANCE }}
-          username: ${{ secrets.INSTANCE_USERNAME }}
+          key: ${{ secrets.ID_RSA }}
+          host: 54.159.142.179
+          username: ec2_user
           script: cp "/home/ec2-user/target/amazon-inspector-image-scanner.hpi" "/home/ec2-user/.jenkins/plugins"
 
       - name: Init SSH
         env: 
-          ID_RSA: ${{secrets.ED_KEY}}
+          ID_RSA: ${{ secrets.ID_RSA }}
         run: |
           mkdir -p ~/.ssh/
           chmod 700 ~/.ssh/
