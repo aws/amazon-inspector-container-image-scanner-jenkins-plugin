@@ -43,7 +43,7 @@ jobs:
         with:
           key: ${{ secrets.ID_RSA }}
           host: ${{ secrets.EC2_INSTANCE }}
-          username: ${{ secrets.INSTANCE_USERNAME }}
+          username: ec2-user
           source: "target/amazon-inspector-image-scanner.hpi"
           target: "/home/ec2-user"
           
