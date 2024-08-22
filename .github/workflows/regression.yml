@@ -43,17 +43,17 @@ jobs:
         with:
           key: ${{ secrets.ID_RSA }}
           host: ${{ secrets.EC2_INSTANCE }}
-          username: ec2-user
+          username: ${{ secrets.INSTANCE_USERNAME }}
           source: "target/amazon-inspector-image-scanner.hpi"
-          target: "/home/ec2-user"
+          target: /home/${{ secrets.INSTANCE_USERNAME }}
           
       - name: Copy file
         uses: appleboy/ssh-action@v1.0.3
         with:
           key: ${{ secrets.ID_RSA }}
           host: ${{ secrets.EC2_INSTANCE }}
-          username: ec2-user
-          script: cp "/home/ec2-user/target/amazon-inspector-image-scanner.hpi" "/home/ec2-user/.jenkins/plugins"
+          username: ${{ secrets.INSTANCE_USERNAME }}
+          script: cp "~/target/amazon-inspector-image-scanner.hpi" "~/.jenkins/plugins"
 
       - name: Init SSH
         env: 
@@ -73,7 +73,7 @@ jobs:
         with:
           key: ${{ secrets.ID_RSA }}
           host: ${{ secrets.EC2_INSTANCE }}
-          username: admin
+          username: ${{ secrets.JENKINS_USERNAME }} 
           port: ${{ secrets.JENKINS_PORT }}
           script: restart
 
