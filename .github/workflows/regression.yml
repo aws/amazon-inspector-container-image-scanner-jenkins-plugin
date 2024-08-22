@@ -43,7 +43,7 @@ jobs:
         with:
           key: ${{ secrets.ID_RSA }}
           host: ${{ secrets.EC2_INSTANCE }}
-          username: ec2-user
+          username: ${{ secrets.INSTANCE_USERNAME }}
           source: "target/amazon-inspector-image-scanner.hpi"
           target: "/home/ec2-user"
           
@@ -52,7 +52,7 @@ jobs:
         with:
           key: ${{ secrets.ID_RSA }}
           host: ${{ secrets.EC2_INSTANCE }}
-          username: ec2-user
+          username: ${{ secrets.INSTANCE_USERNAME }}
           script: cp "/home/ec2-user/target/amazon-inspector-image-scanner.hpi" "/home/ec2-user/.jenkins/plugins"
 
       - name: Init SSH
