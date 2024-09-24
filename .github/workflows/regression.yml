@@ -22,7 +22,7 @@ jobs:
 
     steps:
       - name: Checkout repository content
-        uses: actions/checkout@v2 # Checkout the repository content to github runner.
+        uses: actions/checkout@v4 # Checkout the repository content to github runner.
 
       - name: AWS Auth
         run: |
