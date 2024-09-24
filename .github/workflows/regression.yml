@@ -64,11 +64,7 @@ jobs:
           echo "$ID_RSA" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           
-      - name: find files
-        run: |
-          ls
-          ls target
-      - name: Get Jenkins Commands
+      - name: Restart Jenkins Server
         uses: appleboy/ssh-action@v1.0.3
         with:
           key: ${{ secrets.ID_RSA }}
