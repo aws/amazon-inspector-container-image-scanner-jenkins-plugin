@@ -15,8 +15,11 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  auth:
+  lab:
     runs-on: ubuntu-latest
+    environment:
+     name: RegressionLab
+     
     outputs:
       ssh-output: ${{ steps.ssh.outputs.output }}
 
