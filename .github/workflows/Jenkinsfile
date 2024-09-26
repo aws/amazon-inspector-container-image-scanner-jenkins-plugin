@@ -1,0 +1,181 @@
+pipeline {
+  agent any
+  stages {
+    stage('Validate Explicit Credentials') {
+      steps {
+        script {
+          step([
+            $class: 'com.amazon.inspector.jenkins.amazoninspectorbuildstep.AmazonInspectorBuilder',
+            sbomgenMethod: 'automatic',
+            sbomgenSource: 'linuxAmd64',
+            artifactPath: 'alpine:3.20',
+            archiveType: 'container',
+            awsRegion: 'us-east-1',
+            credentialId: null,
+            awsCredentialId: 'aws-creds',
+            iamRole: 'arn:aws:iam::414879708742:role/CICDScan',
+            oicdCredentialId: '',
+            awsProfileName: 'default',
+            isThresholdEnabled: true,
+            thresholdEquals: true,
+            countCritical: 0,
+            countHigh: 0,
+            countLow: 0,
+            countMedium: 0,
+          ])
+        }
+      }
+    }
+    stage('Validate Profile Name') {
+      steps {
+        script {
+          step([
+            $class: 'com.amazon.inspector.jenkins.amazoninspectorbuildstep.AmazonInspectorBuilder',
+            sbomgenMethod: 'automatic',
+            sbomgenSource: 'linuxAmd64',
+            artifactPath: 'alpine:3.20',
+            archiveType: 'container',
+            awsRegion: 'us-east-1',
+            credentialId: null,
+            awsCredentialId: 'aws-creds',
+            iamRole: 'arn:aws:iam::414879708742:role/CICDScan',
+            oicdCredentialId: '',
+            awsProfileName: 'test',
+            isThresholdEnabled: true,
+            thresholdEquals: true,
+            countCritical: 0,
+            countHigh: 0,
+            countLow: 0,
+            countMedium: 0,
+          ])
+        }
+      }
+    }
+    stage('Validate Default Profile') {
+      steps {
+        script {
+          step([
+            $class: 'com.amazon.inspector.jenkins.amazoninspectorbuildstep.AmazonInspectorBuilder',
+            sbomgenMethod: 'automatic',
+            sbomgenSource: 'linuxAmd64',
+            artifactPath: 'alpine:3.20',
+            archiveType: 'container',
+            awsRegion: 'us-east-1',
+            credentialId: null,
+            awsCredentialId: 'aws-creds',
+            iamRole: 'arn:aws:iam::414879708742:role/CICDScan',
+            oicdCredentialId: '',
+            awsProfileName: 'default',
+            isThresholdEnabled: true,
+            thresholdEquals: true,
+            countCritical: 0,
+            countHigh: 0,
+            countLow: 0,
+            countMedium: 0,
+          ])
+        }
+      }
+    }
+    stage('Validate No Vulns') {
+      steps {
+        script {
+          step([
+            $class: 'com.amazon.inspector.jenkins.amazoninspectorbuildstep.AmazonInspectorBuilder',
+            sbomgenMethod: 'automatic',
+            sbomgenSource: 'linuxAmd64',
+            artifactPath: 'alpine:3.20',
+            archiveType: 'container',
+            awsRegion: 'us-east-1',
+            credentialId: null,
+            awsCredentialId: 'aws-creds',
+            iamRole: 'arn:aws:iam::414879708742:role/CICDScan',
+            oicdCredentialId: '',
+            awsProfileName: 'default',
+            isThresholdEnabled: true,
+            thresholdEquals: true,
+            countCritical: 0,
+            countHigh: 0,
+            countLow: 0,
+            countMedium: 0,
+          ])
+        }
+      }
+    }
+    stage('Validate Package Vulns') {
+      steps {
+        script {
+          step([
+            $class: 'com.amazon.inspector.jenkins.amazoninspectorbuildstep.AmazonInspectorBuilder',
+            sbomgenMethod: 'automatic',
+            sbomgenSource: 'linuxAmd64',
+            artifactPath: 'ubuntu:14.04',
+            archiveType: 'container',
+            awsRegion: 'us-east-1',
+            credentialId: null,
+            awsCredentialId: 'aws-creds',
+            iamRole: 'arn:aws:iam::414879708742:role/CICDScan',
+            oicdCredentialId: '',
+            awsProfileName: 'default',
+            isThresholdEnabled: true,
+            thresholdEquals: true,
+            countCritical: 48,
+            countHigh: 224,
+            countLow: 7,
+            countMedium: 103,
+          ])
+        }
+      }
+    }
+    stage('Validate Docker and Package Vulns') {
+      steps {
+        script {
+          step([
+            $class: 'com.amazon.inspector.jenkins.amazoninspectorbuildstep.AmazonInspectorBuilder',
+            sbomgenMethod: 'automatic',
+            sbomgenSource: 'linuxAmd64',
+            artifactPath: 'waltwilo/test:latest',
+            archiveType: 'container',
+            awsRegion: 'us-east-1',
+            credentialId: null,
+            awsCredentialId: 'aws-creds',
+            iamRole: 'arn:aws:iam::414879708742:role/CICDScan',
+            oicdCredentialId: '',
+            awsProfileName: 'default',
+            isThresholdEnabled: true,
+            thresholdEquals: true,
+            countCritical: 49,
+            countHigh: 227,
+            countLow: 7,
+            countMedium: 103,
+          ])
+        }
+      }
+    }
+    stage('Validate ECR') {
+      steps {
+        script {
+          sh '/usr/bin/aws ecr get-login-password --region us-east-1 | /usr/bin/docker login --username AWS --password-stdin 099560195162.dkr.ecr.us-east-1.amazonaws.com'
+          step([
+            $class: 'com.amazon.inspector.jenkins.amazoninspectorbuildstep.AmazonInspectorBuilder',
+            sbomgenMethod: 'automatic',
+            sbomgenSource: 'linuxAmd64',
+            artifactPath: '099560195162.dkr.ecr.us-east-1.amazonaws.com/plugin-lab:alpine315',
+            archiveType: 'container',
+            awsRegion: 'us-east-1',
+            credentialId: null,
+            awsCredentialId: 'e56ee141-117e-4ded-96bf-567c1ab3fb1c',
+            iamRole: 'arn:aws:iam::099560195162:role/CICDScan',
+            oicdCredentialId: '',
+            awsProfileName: 'default',
+            isThresholdEnabled: true,
+            thresholdEquals: true,
+            countCritical: 1,
+            countHigh: 0,
+            countLow: 0,
+            countMedium: 1,
+          ])
+        }
+      }
+    }
+  }
+}
