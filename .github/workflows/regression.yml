@@ -61,8 +61,8 @@ jobs:
         run: |
           mkdir -p ~/.ssh/
           chmod 700 ~/.ssh/
-          echo "$ID_RSA" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
+          echo "$ID_RSA" > ~/.ssh/jenkins_regression_lab
+          chmod 600 ~/.ssh/jenkins_regression_lab
           
       # - name: Restart Jenkins Server
       #   uses: appleboy/ssh-action@v1.0.3
@@ -74,7 +74,7 @@ jobs:
       #     script: restart
 
       - name: Restart Jenkins Server
-        run: ssh -oStrictHostKeyChecking=no -p ${{ secrets.JENKINS_PORT }} -i ~/.ssh/id_rsa -l ${{ secrets.JENKINS_USERNAME }} ${{ secrets.EC2_INSTANCE }} restart
+        run: ssh -oStrictHostKeyChecking=no -p ${{ secrets.JENKINS_PORT }} -i ~/.ssh/jenkins_regression_lab -l ${{ secrets.JENKINS_USERNAME }} ${{ secrets.EC2_INSTANCE }} restart
 
 
       - name: Wait For Restart
