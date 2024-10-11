@@ -151,6 +151,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     public void perform(Run<?, ?> build, FilePath workspace, EnvVars env, Launcher launcher, TaskListener listener)
             throws IOException, InterruptedException {
         logger = listener.getLogger();
+        logger.println("Example Commit");
 
         File outFile = new File(build.getRootDir(), "out");
         this.job = build.getParent();
