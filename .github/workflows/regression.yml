@@ -71,21 +71,11 @@ jobs:
       - name: Restart Jenkins Server
         run: ssh -oStrictHostKeyChecking=no -p ${{ secrets.JENKINS_PORT }} -i ~/.ssh/jenkins_regression_lab -l ${{ secrets.JENKINS_USERNAME }} ${{ secrets.EC2_INSTANCE }} restart
 
-
       - name: Wait For Restart
         run: sleep 1m
         
       - name: Run Script
-        run: |
-          output=$(python .github/workflows/GHATest.py -l ${{ secrets.JENKINS_USERNAME }} -p ${{ secrets.JENKINS_PORT }} -a ${{ secrets.EC2_INSTANCE }} -n Regression_Lab)
-          output="${output//'%'/'%25'}"
-          output="${output//$'\n'/'%0A'}"
-          output="${output//$'\r'/'%0D'}" 
-          echo "::set-output name=changelog::$output"
-        id: step1
-
-      - name: Print changelog
-        run: echo "${{ steps.step1.outputs.changelog }}"
+        run: python .github/workflows/GHATest.py -l ${{ secrets.JENKINS_USERNAME }} -p ${{ secrets.JENKINS_PORT }} -a ${{ secrets.EC2_INSTANCE }} -n Regression_Lab
 
       - name: Revoke EC2 Access
         if: always()
