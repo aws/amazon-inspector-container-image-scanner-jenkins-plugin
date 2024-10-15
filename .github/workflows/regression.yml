@@ -19,7 +19,6 @@ jobs:
     runs-on: ubuntu-latest
     environment:
      name: RegressionLab
-     
     outputs:
       ssh-output: ${{ steps.ssh.outputs.output }}
 
