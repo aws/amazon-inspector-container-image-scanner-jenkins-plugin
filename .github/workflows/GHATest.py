@@ -9,11 +9,10 @@ parser.add_argument('-p')
 parser.add_argument('-l') 
 parser.add_argument('-n')
 
+print("RUNNING")
 args = parser.parse_args()
-print(args)
+print(args)            
 
-test = subprocess.run(["ssh", "-o", "StrictHostKeyChecking=no", "-i", "~/.ssh/id_rsa", "-l", args.l, "-p", args.p, args.a, "build", args.n, "-s"], capture_output=True, text=True) 
-print(test.stdout)
-
-if "SUCCESS" not in test.stdout:
-  sys.exit(1)
+test = subprocess.run(f"ssh -o StrictHostKeyChecking=no -i ~/.ssh/jenkins_regression_lab -l {args.l} -p {args.p} {args.a} build {args.n} -s -v", shell=True)
+print(f"Ending test with exit code {test.returncode}")
+exit(test.returncode)

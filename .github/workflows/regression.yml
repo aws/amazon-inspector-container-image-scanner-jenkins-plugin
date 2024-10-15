@@ -19,6 +19,8 @@ jobs:
     runs-on: ubuntu-latest
     environment:
      name: RegressionLab
+    outputs:
+      ssh-output: ${{ steps.ssh.outputs.output }}
 
     steps:
       - name: Checkout repository content
@@ -63,15 +65,7 @@ jobs:
           chmod 700 ~/.ssh/
           echo "$ID_RSA" > ~/.ssh/jenkins_regression_lab
           chmod 600 ~/.ssh/jenkins_regression_lab
-          
-      # - name: Restart Jenkins Server
-      #   uses: appleboy/ssh-action@v1.0.3
-      #   with:
-      #     key: ${{ secrets.ID_RSA }}
-      #     host: ${{ secrets.EC2_INSTANCE }}
-      #     username: admin
-      #     port: ${{ secrets.JENKINS_PORT }}
-      #     script: restart
+        
 
       - name: Restart Jenkins Server
         run: ssh -oStrictHostKeyChecking=no -p ${{ secrets.JENKINS_PORT }} -i ~/.ssh/jenkins_regression_lab -l ${{ secrets.JENKINS_USERNAME }} ${{ secrets.EC2_INSTANCE }} restart
@@ -81,7 +75,16 @@ jobs:
         run: sleep 1m
         
       - name: Run Script
-        run: python .github/workflows/GHATest.py -l admin -p ${{ secrets.JENKINS_PORT }} -a 54.159.142.179 -n Regression_Lab
+        run: |
+          output=$(python .github/workflows/GHATest.py -l ${{ secrets.JENKINS_USERNAME }} -p ${{ secrets.JENKINS_PORT }} -a ${{ secrets.EC2_INSTANCE }} -n Regression_Lab)
+          output="${output//'%'/'%25'}"
+          output="${output//$'\n'/'%0A'}"
+          output="${output//$'\r'/'%0D'}" 
+          echo "::set-output name=changelog::$output"
+        id: step1
+
+      - name: Print changelog
+        run: echo "${{ steps.step1.outputs.changelog }}"
 
       - name: Revoke EC2 Access
         if: always()
