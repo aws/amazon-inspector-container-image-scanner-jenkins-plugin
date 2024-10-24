@@ -8,37 +8,26 @@ import java.util.concurrent.ExecutionException;
 
 public class SbomgenDownloader {
 
-    private static final String BASE_URL = "https://amazon-inspector-sbomgen.s3.amazonaws.com/latest/linux/%s/inspector-sbomgen.zip";
+    private static final String BASE_URL = "https://amazon-inspector-" +
+            "sbomgen.s3.amazonaws.com/latest/linux/%s/inspector-sbomgen.zip";
 
-    public static String getBinary(String configInput, FilePath workspace) throws IOException, InterruptedException, ExecutionException {
-        String url = getUrl(configInput);
+    public static String getBinary(FilePath workspace) throws IOException, InterruptedException, ExecutionException {
+        String url = getUrl();
         FilePath zipPath = downloadFile(url, workspace);
         return unzipFile(zipPath);
     }
 
-    private static String getUrl(String configInput) {
+    private static String getUrl() {
         String osName = System.getProperty("os.name").toLowerCase();
         if (!osName.contains("linux")) {
             throw new UnsupportedOperationException("Unsupported OS: " + osName);
         }
-
         String architecture = "amd64";
-
         String osArch = System.getProperty("os.arch").toLowerCase();
         if (osArch.contains("arm64") || osArch.contains("aarch64")) {
             architecture = "arm64";
         } else if (!osArch.contains("amd64") && !osArch.contains("x86_64")) {
             throw new UnsupportedOperationException("Unsupported architecture: " + osArch);
-        }
-
-        if (configInput != null && !configInput.isEmpty()) {
-            if (configInput.equalsIgnoreCase("linuxAmd64")) {
-                architecture = "amd64";
-            } else if (configInput.equalsIgnoreCase("linuxArm64")) {
-                architecture = "arm64";
-            } else {
-                throw new IllegalArgumentException("Invalid configInput: " + configInput);
-            }
         }
         return String.format(BASE_URL, architecture);
     }
