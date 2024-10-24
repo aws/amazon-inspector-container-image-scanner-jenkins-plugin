@@ -155,6 +155,8 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         File outFile = new File(build.getRootDir(), "out");
         this.job = build.getParent();
 
+        breakingchange123
+                
         PrintStream printStream = new PrintStream(outFile, StandardCharsets.UTF_8);
         try {
             Map<String, String> artifactMap = new HashMap<>();
