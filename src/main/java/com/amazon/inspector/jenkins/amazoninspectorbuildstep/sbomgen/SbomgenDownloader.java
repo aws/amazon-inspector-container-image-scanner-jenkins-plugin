@@ -1,41 +1,35 @@
 package com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomgen;
-
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.FilePath;
-
-import javax.management.openmbean.InvalidKeyException;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.net.URL;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
 public class SbomgenDownloader {
-    public static String getBinary(String configInput, FilePath workspace) throws IOException, InterruptedException, ExecutionException {
-        String url = getUrl(configInput);
+
+    private static final String BASE_URL = "https://amazon-inspector-" +
+            "sbomgen.s3.amazonaws.com/latest/linux/%s/inspector-sbomgen.zip";
+
+    public static String getBinary(FilePath workspace) throws IOException, InterruptedException, ExecutionException {
+        String url = getUrl();
         FilePath zipPath = downloadFile(url, workspace);
         return unzipFile(zipPath);
     }
 
-    private static String getUrl(String configInput) {
-        final String linuxAmd64Url = "https://amazon-inspector-sbomgen.s3.amazonaws.com/latest/linux/amd64/inspector-sbomgen.zip";
-        final String linuxArm64Url = "https://amazon-inspector-sbomgen.s3.amazonaws.com/latest/linux/arm64/inspector-sbomgen.zip";
-
-        switch (configInput) {
-            case "linuxAmd64":
-                return linuxAmd64Url;
-            case "linuxArm64":
-                return linuxArm64Url;
+    private static String getUrl() {
+        String osName = System.getProperty("os.name").toLowerCase();
+        if (!osName.contains("linux")) {
+            throw new UnsupportedOperationException("Unsupported OS: " + osName);
         }
-        if ("linuxAmd64Url".equals(configInput)) {
-            return linuxAmd64Url;
+        String architecture = "amd64";
+        String osArch = System.getProperty("os.arch").toLowerCase();
+        if (osArch.contains("arm64") || osArch.contains("aarch64")) {
+            architecture = "arm64";
+        } else if (!osArch.contains("amd64") && !osArch.contains("x86_64")) {
+            throw new UnsupportedOperationException("Unsupported architecture: " + osArch);
         }
-        if ("linuxArm64Url".equals(configInput)) {
-            return linuxArm64Url;
-        }
-
-
-        throw new InvalidKeyException("No url corresponding to " + configInput);
+        return String.format(BASE_URL, architecture);
     }
 
     private static FilePath downloadFile(String url, FilePath workspace) throws IOException, InterruptedException {
@@ -44,12 +38,12 @@ public class SbomgenDownloader {
         return sbomgenZip;
     }
 
-
-    @SuppressFBWarnings()
-    private static String unzipFile(FilePath zip) throws IOException, InterruptedException, ExecutionException {
-        FilePath destination = zip.getParent().child(zip.getRemote().replace(".zip", ""));
-        Future<String> callable = zip.actAsync(new DownloaderCallable(destination.getRemote()));
-
-        return callable.get();
+    @SuppressFBWarnings
+    private static String unzipFile(FilePath zip) throws IOException, InterruptedException {
+        FilePath destination = zip.getParent();
+        zip.unzip(destination);
+        FilePath binaryPath = destination.child("inspector-sbomgen");
+        binaryPath.chmod(0755);
+        return binaryPath.getRemote();
     }
 }

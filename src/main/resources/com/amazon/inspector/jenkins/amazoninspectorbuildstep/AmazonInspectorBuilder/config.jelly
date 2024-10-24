@@ -30,23 +30,6 @@
         }
     </style>
 
-    <f:entry field="sbomgenSelectionWrapper" title="Inspector-sbomgen Installation Method"></f:entry>
-
-    <f:radioBlock title="Automatic" name="sbomgenSelection" checked="${instance.isSource('automatic')}" value="automatic">
-        <f:radioBlock name="sbomgenSource" title="Linux, AMD64" value="linuxAmd64" checked="${instance.isOs('linuxAmd64')}">
-        </f:radioBlock>
-        <f:radioBlock name="sbomgenSource" title="Linux, ARM64" value="linuxArm64" checked="${instance.isOs('linuxArm64')}">
-        </f:radioBlock>
-    </f:radioBlock>
-
-    <f:radioBlock title="Manual" name="sbomgenSelection" checked="${instance.isSource('manual')}"
-                  value="manual">
-        <p>Path to inspector-sbomgen</p>
-        <f:entry field="sbomgenPath">
-            <f:textbox placeholder="/Users/user/Downloads/inspector-sbomgen"/>
-        </f:entry>
-    </f:radioBlock>
-
     <p class="required-field">Image Id</p>
     <f:entry field="archivePath">
         <f:textbox placeholder="/Users/user/Downloads/alpine.tar or alpine:latest" />

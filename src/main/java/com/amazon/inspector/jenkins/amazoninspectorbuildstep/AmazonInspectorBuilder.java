@@ -16,7 +16,6 @@ import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
-import hudson.Proc;
 import hudson.model.AbstractProject;
 import hudson.model.Job;
 import hudson.model.Result;
@@ -25,12 +24,10 @@ import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.tasks.Builder;
 import hudson.tasks.BuildStepDescriptor;
-import hudson.util.ArgumentListBuilder;
 import hudson.util.ListBoxModel;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
@@ -72,7 +69,6 @@ import static hudson.security.Permission.READ;
 public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     @SuppressFBWarnings()
     public static PrintStream logger;
-    private final String sbomgenMethod;
     private final String archivePath;
     private final String archiveType;
     private final String iamRole;
@@ -81,8 +77,6 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     private final String oidcCredentialId;
     private final boolean isThresholdEnabled;
     private final boolean thresholdEquals;
-    private final String sbomgenPath;
-    private final String sbomgenSource;
     private final boolean osArch;
     private final int countCritical;
     private final int countHigh;
@@ -93,9 +87,9 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     private Job<?, ?> job;
 
     @DataBoundConstructor
-    public AmazonInspectorBuilder(String archivePath, String artifactPath, String archiveType, String sbomgenPath, boolean osArch, String iamRole,
+    public AmazonInspectorBuilder(String archivePath, String artifactPath, String archiveType, boolean osArch, String iamRole,
                                   String awsRegion, String credentialId, String awsProfileName, String awsCredentialId,
-                                  String sbomgenMethod, String sbomgenSource, boolean isThresholdEnabled, boolean thresholdEquals,
+                                  boolean isThresholdEnabled, boolean thresholdEquals,
                                   int countCritical, int countHigh, int countMedium, int countLow, String oidcCredentialId) {
         if (artifactPath != null && !artifactPath.isEmpty()) {
             this.archivePath = artifactPath;
@@ -107,9 +101,6 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         this.awsCredentialId = awsCredentialId;
         this.oidcCredentialId = oidcCredentialId;
         this.awsProfileName = awsProfileName;
-        this.sbomgenSource = sbomgenSource;
-        this.sbomgenPath = sbomgenPath;
-        this.sbomgenMethod = sbomgenMethod;
         this.osArch = osArch;
         this.iamRole = iamRole;
         this.awsRegion = awsRegion;
@@ -139,13 +130,6 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         return criticalExceedsLimit || highExceedsLimit || mediumExceedsLimit || lowExceedsLimit;
     }
 
-    public String isSource(String value) {
-        return Boolean.toString(sbomgenMethod.equals(value));
-    }
-
-    public String isOs(String value) {
-        return Boolean.toString(sbomgenMethod.equals("automatic") && sbomgenSource.equals(value));
-    }
 
     @Override
     public void perform(Run<?, ?> build, FilePath workspace, EnvVars env, Launcher launcher, TaskListener listener)
@@ -168,13 +152,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                 activeArchiveType = "container";
             }
 
-            String activeSbomgenPath = sbomgenPath;
-            if (sbomgenSource != null && !sbomgenSource.isEmpty()) {
-                logger.println("Automatic SBOMGen Sourcing selected, downloading now...");
-                activeSbomgenPath = SbomgenDownloader.getBinary(sbomgenSource, workspace);
-            } else {
-                build.getEnvironment(listener).put("sbomgenPath", activeSbomgenPath);
-            }
+            String activeSbomgenPath = SbomgenDownloader.getBinary(workspace);
 
             StandardUsernamePasswordCredentials credential = null;
             if (credentialId == null) {
