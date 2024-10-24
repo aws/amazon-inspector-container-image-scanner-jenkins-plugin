@@ -1,8 +1,6 @@
 package com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomgen;
-
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.FilePath;
-
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.net.URL;
