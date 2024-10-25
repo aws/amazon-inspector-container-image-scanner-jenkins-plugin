@@ -5,12 +5,11 @@ import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.net.URL;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 public class SbomgenDownloader {
-
     private static final String BASE_URL = "https://amazon-inspector-" +
             "sbomgen.s3.amazonaws.com/latest/linux/%s/inspector-sbomgen.zip";
-
     public static String getBinary(FilePath workspace) throws IOException, InterruptedException, ExecutionException {
         String url = getUrl();
         FilePath zipPath = downloadFile(url, workspace);
@@ -19,11 +18,15 @@ public class SbomgenDownloader {
 
     private static String getUrl() {
         String osName = System.getProperty("os.name").toLowerCase();
+        System.out.println("Detected OS Name: " + osName);
         if (!osName.contains("linux")) {
             throw new UnsupportedOperationException("Unsupported OS: " + osName);
         }
+
         String architecture = "amd64";
+
         String osArch = System.getProperty("os.arch").toLowerCase();
+        System.out.println("Detected OS Architecture: " + osArch);
         if (osArch.contains("arm64") || osArch.contains("aarch64")) {
             architecture = "arm64";
         } else if (!osArch.contains("amd64") && !osArch.contains("x86_64")) {
@@ -38,12 +41,10 @@ public class SbomgenDownloader {
         return sbomgenZip;
     }
 
-    @SuppressFBWarnings
-    private static String unzipFile(FilePath zip) throws IOException, InterruptedException {
-        FilePath destination = zip.getParent();
-        zip.unzip(destination);
-        FilePath binaryPath = destination.child("inspector-sbomgen");
-        binaryPath.chmod(0755);
-        return binaryPath.getRemote();
+    @SuppressFBWarnings()
+    private static String unzipFile(FilePath zip) throws IOException, InterruptedException, ExecutionException {
+        FilePath destination = zip.getParent().child(zip.getRemote().replace(".zip", ""));
+        Future<String> callable = zip.actAsync(new DownloaderCallable(destination.getRemote()));
+        return callable.get();
     }
 }

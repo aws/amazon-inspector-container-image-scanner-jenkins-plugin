@@ -84,12 +84,14 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     private final int countLow;
     private final String awsCredentialId;
     private final String awsProfileName;
+    private final String sbomgenSelection;
+    private final String sbomgenPath;
     private Job<?, ?> job;
 
     @DataBoundConstructor
     public AmazonInspectorBuilder(String archivePath, String artifactPath, String archiveType, boolean osArch, String iamRole,
                                   String awsRegion, String credentialId, String awsProfileName, String awsCredentialId,
-                                  boolean isThresholdEnabled, boolean thresholdEquals,
+                                  String sbomgenSelection, String sbomgenPath, boolean isThresholdEnabled, boolean thresholdEquals,
                                   int countCritical, int countHigh, int countMedium, int countLow, String oidcCredentialId) {
         if (artifactPath != null && !artifactPath.isEmpty()) {
             this.archivePath = artifactPath;
@@ -104,6 +106,8 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         this.osArch = osArch;
         this.iamRole = iamRole;
         this.awsRegion = awsRegion;
+        this.sbomgenSelection = sbomgenSelection;
+        this.sbomgenPath = sbomgenPath;
         this.isThresholdEnabled = isThresholdEnabled;
         this.thresholdEquals = thresholdEquals;
         this.countCritical = countCritical;
@@ -152,7 +156,26 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                 activeArchiveType = "container";
             }
 
-            String activeSbomgenPath = SbomgenDownloader.getBinary(workspace);
+            String sbomgenSelection = this.sbomgenSelection;
+
+            String activeSbomgenPath;
+            if ("automatic".equalsIgnoreCase(sbomgenSelection)) {
+                logger.println("Automatic SBOMGen selected, downloading using default settings...");
+                activeSbomgenPath = SbomgenDownloader.getBinary(workspace);
+            } else if ("manual".equalsIgnoreCase(sbomgenSelection)) {
+                if (sbomgenPath == null || sbomgenPath.isEmpty()) {
+                    throw new IllegalArgumentException("Manual SBOMGen selected but no path provided.");
+                }
+                File sbomgenFile = new File(sbomgenPath);
+                if (!sbomgenFile.exists() || !sbomgenFile.canExecute()) {
+                    throw new IllegalArgumentException("Provided SBOMgen path is invalid or not executable: " + sbomgenPath);
+                }
+                logger.println("Manual SBOMGen selected, using provided path: " + sbomgenPath);
+                activeSbomgenPath = sbomgenPath;
+            } else {
+                logger.println("Invalid SBOMGen selection. Defaulting to Automatic.");
+                activeSbomgenPath = SbomgenDownloader.getBinary(workspace);
+            }
 
             StandardUsernamePasswordCredentials credential = null;
             if (credentialId == null) {
@@ -162,14 +185,11 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                 credential = CredentialsProvider.findCredentialById(credentialId,
                         StandardUsernamePasswordCredentials.class, build);
             }
-
             String sbom;
             if (credential != null) {
-                logger.println("Running inspector-sbomgen with docker credential: " + credential.getId());
                 sbom = new SbomgenRunner(launcher, activeSbomgenPath, activeArchiveType, archivePath, credential.getUsername(),
                         credential.getPassword().getPlainText()).run();
             } else {
-                logger.println("No credential provided, running without.");
                 sbom = new SbomgenRunner(launcher, activeSbomgenPath, activeArchiveType, archivePath, null, null).run();
             }
 
