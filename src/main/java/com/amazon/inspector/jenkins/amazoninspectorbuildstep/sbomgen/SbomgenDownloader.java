@@ -7,6 +7,8 @@ import java.net.URL;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
+import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.AmazonInspectorBuilder.logger;
+
 public class SbomgenDownloader {
     private static final String BASE_URL = "https://amazon-inspector-" +
             "sbomgen.s3.amazonaws.com/latest/linux/%s/inspector-sbomgen.zip";
@@ -18,7 +20,7 @@ public class SbomgenDownloader {
 
     private static String getUrl() {
         String osName = System.getProperty("os.name").toLowerCase();
-        System.out.println("Detected OS Name: " + osName);
+        logger.println("Detected OS Name: " + osName);
         if (!osName.contains("linux")) {
             throw new UnsupportedOperationException("Unsupported OS: " + osName);
         }
@@ -26,8 +28,8 @@ public class SbomgenDownloader {
         String architecture = "amd64";
 
         String osArch = System.getProperty("os.arch").toLowerCase();
-        System.out.println("Detected OS Architecture: " + osArch);
-        if (osArch.contains("arm64") || osArch.contains("aarch64")) {
+        logger.println("Detected OS Architecture: " + osArch);
+        if (osArch.contains("arm64") || osArch.contains("aarch64"))
             architecture = "arm64";
         } else if (!osArch.contains("amd64") && !osArch.contains("x86_64")) {
             throw new UnsupportedOperationException("Unsupported architecture: " + osArch);
