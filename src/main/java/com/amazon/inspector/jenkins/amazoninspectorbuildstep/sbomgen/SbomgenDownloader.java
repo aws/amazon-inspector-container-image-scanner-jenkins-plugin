@@ -29,7 +29,7 @@ public class SbomgenDownloader {
 
         String osArch = System.getProperty("os.arch").toLowerCase();
         logger.println("Detected OS Architecture: " + osArch);
-        if (osArch.contains("arm64") || osArch.contains("aarch64"))
+        if (osArch.contains("arm64") || osArch.contains("aarch64")) {
             architecture = "arm64";
         } else if (!osArch.contains("amd64") && !osArch.contains("x86_64")) {
             throw new UnsupportedOperationException("Unsupported architecture: " + osArch);
