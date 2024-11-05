@@ -1,5 +1,4 @@
 package com.amazon.inspector.jenkins.amazoninspectorbuildstep;
-
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.requests.SdkRequests;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomgen.SbomgenDownloader;
 import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;
@@ -25,7 +24,6 @@ import hudson.model.TaskListener;
 import hudson.tasks.Builder;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.util.ListBoxModel;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -36,7 +34,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomgen.SbomgenRunner;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.csvconversion.CsvConverter;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.html.HtmlJarHandler;
@@ -49,7 +46,6 @@ import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomparsing.Severit
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.html.HtmlConversionUtils;
 import io.jenkins.plugins.oidc_provider.IdTokenFileCredentials;
 import io.jenkins.plugins.oidc_provider.IdTokenStringCredentials;
-
 import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildStep;
 import jenkins.util.BuildListenerAdapter;
@@ -59,7 +55,6 @@ import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.verb.POST;
-
 import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.utils.InspectorRegions.INSPECTOR_REGIONS;
 import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.utils.Sanitizer.sanitizeFilePath;
 import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.utils.Sanitizer.sanitizeUrl;
@@ -371,16 +366,16 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
         @Override
         public AmazonInspectorBuilder newInstance(StaplerRequest req, JSONObject formData) throws FormException {
-            String value = JSONObject.fromObject(formData.get("sbomgenSelection")).get("value").toString();
-            formData.put("isAutomaticSbomgen", value.equals("automatic"));
-            formData.put("sbomgenMethod", value);
-
-            if (value.equals("manual")) {
-                formData.put("sbomgenPath", JSONObject.fromObject(formData.get("sbomgenSelection")).get("sbomgenPath"));
-            } else if (value.equals("automatic")) {
-                formData.put("sbomgenSource", JSONObject.fromObject(JSONObject.fromObject(formData.get("sbomgenSelection")).get("sbomgenSource")).get("value"));
+            JSONObject sbomgenSelection = formData.getJSONObject("sbomgenSelection");
+            if (sbomgenSelection != null) {
+                String installationMethod = sbomgenSelection.getString("value");
+                formData.put("installationMethod", installationMethod);
+                if ("manual".equalsIgnoreCase(installationMethod)) {
+                    String sbomgenPath = sbomgenSelection.getString("sbomgenPath");
+                    formData.put("sbomgenPath", sbomgenPath);
+                }
             }
-
+            formData.remove("sbomgenSelection");
             return req.bindJSON(AmazonInspectorBuilder.class, formData);
         }
 
