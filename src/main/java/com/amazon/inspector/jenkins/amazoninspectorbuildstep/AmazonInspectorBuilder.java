@@ -366,16 +366,14 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
         @Override
         public AmazonInspectorBuilder newInstance(StaplerRequest req, JSONObject formData) throws FormException {
-            JSONObject sbomgenSelection = formData.getJSONObject("sbomgenSelection");
-            if (sbomgenSelection != null) {
-                String installationMethod = sbomgenSelection.getString("value");
-                formData.put("installationMethod", installationMethod);
-                if ("manual".equalsIgnoreCase(installationMethod)) {
-                    String sbomgenPath = sbomgenSelection.getString("sbomgenPath");
-                    formData.put("sbomgenPath", sbomgenPath);
-                }
+            String value = JSONObject.fromObject(formData.get("sbomgenSelection")).get("value").toString();
+
+            if (value.equals("manual")) {
+                formData.put("sbomgenPath", JSONObject.fromObject(formData.get("sbomgenSelection")).get("sbomgenPath"));
             }
-            formData.remove("sbomgenSelection");
+
+            formData.put("sbomgenSelection", value);
+
             return req.bindJSON(AmazonInspectorBuilder.class, formData);
         }
 
