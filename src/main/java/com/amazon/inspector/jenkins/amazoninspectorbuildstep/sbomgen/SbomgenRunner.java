@@ -18,9 +18,7 @@ import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomgen.SbomgenUtils.processSbomgenOutput;
 
@@ -34,8 +32,6 @@ public class SbomgenRunner {
     public String dockerUsername;
     @Setter
     public String dockerPassword;
-    @Setter
-    private String sbomgenSkipFiles;
 
     public SbomgenRunner(Launcher launcher, String sbomgenPath, String archivePath, String dockerUsername) {
         this.sbomgenPath = sbomgenPath;
@@ -61,9 +57,6 @@ public class SbomgenRunner {
         this.launcher = launcher;
     }
 
-    public SbomgenRunner(Launcher launcher, String activeSbomgenPath, String activeArchiveType, String archivePath, String username, String plainText, String sbomgenSkipFiles) {
-    }
-
     public String run() throws Exception {
         return runSbomgen(sbomgenPath, archivePath);
     }
@@ -86,21 +79,6 @@ public class SbomgenRunner {
         SbomgenUtils.runCommand(new String[]{"chmod", "+x", sbomgenFilePath.getRemote()}, launcher, environment);
 
         AmazonInspectorBuilder.logger.println("Running command...");
-
-        String skipFilesArg = "";
-        List<String> validPatterns = null;
-        if (sbomgenSkipFiles != null && !sbomgenSkipFiles.trim().isEmpty()) {
-            String[] skipFilesArray = sbomgenSkipFiles.split("\\r?\\n");
-            validPatterns = Arrays.stream(skipFilesArray)
-                    .map(String::trim)
-                    .filter(pattern -> !pattern.isEmpty())
-                    .collect(Collectors.toList());
-            if (!validPatterns.isEmpty()) {
-                String skipFilesJoined = String.join(",", validPatterns);
-                skipFilesArg = "--skip-files " + skipFilesJoined;
-                AmazonInspectorBuilder.logger.println("DEBUG: --skip-files argument: " + skipFilesArg);
-            }
-        }
         String option = "--image";
         if (!archiveType.equals("container")) {
             option = "--path";
@@ -109,18 +87,8 @@ public class SbomgenRunner {
                 sbomgenFilePath.getRemote(), archiveType, option, archivePath
         };
         AmazonInspectorBuilder.logger.println(Arrays.toString(commandList));
+        String output = SbomgenUtils.runCommand(commandList, launcher, environment);
 
-        ArgumentListBuilder args = new ArgumentListBuilder();
-        args.add(sbomgenFilePath.getRemote());
-        args.add(archiveType);
-        args.add(option);
-        args.add(archivePath);
-        if (!skipFilesArg.isEmpty()) {
-            args.add("--skip-files");
-            args.add(String.join(",", validPatterns));
-        }
-        AmazonInspectorBuilder.logger.println("Executing SBOMGen with command: " + args);
-        String output = SbomgenUtils.runCommand(args.toCommandArray(), launcher, environment);
         return SbomgenUtils.processSbomgenOutput(output);
     }
 
