@@ -1,4 +1,5 @@
 package com.amazon.inspector.jenkins.amazoninspectorbuildstep;
+
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.requests.SdkRequests;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomgen.SbomgenDownloader;
 import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;
@@ -15,6 +16,7 @@ import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
+import hudson.Proc;
 import hudson.model.AbstractProject;
 import hudson.model.Job;
 import hudson.model.Result;
@@ -23,20 +25,20 @@ import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.tasks.Builder;
 import hudson.tasks.BuildStepDescriptor;
+import hudson.util.ArgumentListBuilder;
 import hudson.util.ListBoxModel;
+
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomgen.SbomgenRunner;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.csvconversion.CsvConverter;
@@ -50,6 +52,7 @@ import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomparsing.Severit
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.html.HtmlConversionUtils;
 import io.jenkins.plugins.oidc_provider.IdTokenFileCredentials;
 import io.jenkins.plugins.oidc_provider.IdTokenStringCredentials;
+
 import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildStep;
 import jenkins.util.BuildListenerAdapter;
@@ -59,6 +62,7 @@ import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.verb.POST;
+
 import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.utils.InspectorRegions.INSPECTOR_REGIONS;
 import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.utils.Sanitizer.sanitizeFilePath;
 import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.utils.Sanitizer.sanitizeUrl;
@@ -68,6 +72,7 @@ import static hudson.security.Permission.READ;
 public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     @SuppressFBWarnings()
     public static PrintStream logger;
+    private final String sbomgenMethod;
     private final String archivePath;
     private final String archiveType;
     private final String iamRole;
@@ -76,6 +81,8 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     private final String oidcCredentialId;
     private final boolean isThresholdEnabled;
     private final boolean thresholdEquals;
+    private final String sbomgenPath;
+    private final String sbomgenSource;
     private final boolean osArch;
     private final int countCritical;
     private final int countHigh;
@@ -83,16 +90,13 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     private final int countLow;
     private final String awsCredentialId;
     private final String awsProfileName;
-    private final String sbomgenSelection;
-    private final String sbomgenPath;
-    private final String sbomgenSkipFiles;
     private Job<?, ?> job;
 
     @DataBoundConstructor
-    public AmazonInspectorBuilder(String archivePath, String artifactPath, String archiveType, boolean osArch, String iamRole,
+    public AmazonInspectorBuilder(String archivePath, String artifactPath, String archiveType, String sbomgenPath, boolean osArch, String iamRole,
                                   String awsRegion, String credentialId, String awsProfileName, String awsCredentialId,
-                                  String sbomgenSelection, String sbomgenPath, boolean isThresholdEnabled, boolean thresholdEquals,
-                                  int countCritical, int countHigh, int countMedium, int countLow, String oidcCredentialId, String sbomgenSkipFiles) {
+                                  String sbomgenMethod, String sbomgenSource, boolean isThresholdEnabled, boolean thresholdEquals,
+                                  int countCritical, int countHigh, int countMedium, int countLow, String oidcCredentialId) {
         if (artifactPath != null && !artifactPath.isEmpty()) {
             this.archivePath = artifactPath;
         } else {
@@ -103,12 +107,12 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         this.awsCredentialId = awsCredentialId;
         this.oidcCredentialId = oidcCredentialId;
         this.awsProfileName = awsProfileName;
+        this.sbomgenSource = sbomgenSource;
+        this.sbomgenPath = sbomgenPath;
+        this.sbomgenMethod = sbomgenMethod;
         this.osArch = osArch;
         this.iamRole = iamRole;
         this.awsRegion = awsRegion;
-        this.sbomgenSelection = sbomgenSelection;
-        this.sbomgenPath = sbomgenPath;
-        this.sbomgenSkipFiles = sbomgenSkipFiles;
         this.isThresholdEnabled = isThresholdEnabled;
         this.thresholdEquals = thresholdEquals;
         this.countCritical = countCritical;
@@ -135,6 +139,13 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         return criticalExceedsLimit || highExceedsLimit || mediumExceedsLimit || lowExceedsLimit;
     }
 
+    public String isSource(String value) {
+        return Boolean.toString(sbomgenMethod.equals(value));
+    }
+
+    public String isOs(String value) {
+        return Boolean.toString(sbomgenMethod.equals("automatic") && sbomgenSource.equals(value));
+    }
 
     @Override
     public void perform(Run<?, ?> build, FilePath workspace, EnvVars env, Launcher launcher, TaskListener listener)
@@ -157,43 +168,13 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                 activeArchiveType = "container";
             }
 
-            String sbomgenSelection = this.sbomgenSelection;
-
-            String activeSbomgenPath;
-            if ("automatic".equalsIgnoreCase(sbomgenSelection)) {
-                logger.println("Automatic SBOMGen selected, downloading using default settings...");
-                activeSbomgenPath = SbomgenDownloader.getBinary(workspace);
-            } else if ("manual".equalsIgnoreCase(sbomgenSelection)) {
-                if (sbomgenPath == null || sbomgenPath.isEmpty()) {
-                    throw new IllegalArgumentException("Manual SBOMGen selected but no path provided.");
-                }
-                File sbomgenFile = new File(sbomgenPath);
-                if (!sbomgenFile.exists() || !sbomgenFile.canExecute()) {
-                    throw new IllegalArgumentException("Provided SBOMgen path is invalid or not executable: " + sbomgenPath);
-                }
-                logger.println("Manual SBOMGen selected, using provided path: " + sbomgenPath);
-                activeSbomgenPath = sbomgenPath;
+            String activeSbomgenPath = sbomgenPath;
+            if (sbomgenSource != null && !sbomgenSource.isEmpty()) {
+                logger.println("Automatic SBOMGen Sourcing selected, downloading now...");
+                activeSbomgenPath = SbomgenDownloader.getBinary(sbomgenSource, workspace);
             } else {
-                logger.println("Invalid SBOMGen selection. Defaulting to Automatic.");
-                activeSbomgenPath = SbomgenDownloader.getBinary(workspace);
+                build.getEnvironment(listener).put("sbomgenPath", activeSbomgenPath);
             }
-
-            if (sbomgenSkipFiles != null && !sbomgenSkipFiles.trim().isEmpty()) {
-                String[] patterns = sbomgenSkipFiles.split("\\r?\\n");
-                List<String> validPatterns = Arrays.stream(patterns)
-                        .map(String::trim)
-                        .filter(p -> !p.isEmpty())
-                        .collect(Collectors.toList());
-                if (!validPatterns.isEmpty()) {
-                    logger.println("SBOMGen Skip Files Patterns:");
-                    for (String pattern : validPatterns) {
-                        logger.println(" - " + pattern);
-                    }
-                }
-            } else {
-                logger.println("No SBOMGen Skip Files patterns provided.");
-            }
-
 
             StandardUsernamePasswordCredentials credential = null;
             if (credentialId == null) {
@@ -203,11 +184,14 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                 credential = CredentialsProvider.findCredentialById(credentialId,
                         StandardUsernamePasswordCredentials.class, build);
             }
+
             String sbom;
             if (credential != null) {
+                logger.println("Running inspector-sbomgen with docker credential: " + credential.getId());
                 sbom = new SbomgenRunner(launcher, activeSbomgenPath, activeArchiveType, archivePath, credential.getUsername(),
-                        credential.getPassword().getPlainText(),sbomgenSkipFiles).run();
+                        credential.getPassword().getPlainText()).run();
             } else {
+                logger.println("No credential provided, running without.");
                 sbom = new SbomgenRunner(launcher, activeSbomgenPath, activeArchiveType, archivePath, null, null).run();
             }
 
@@ -390,12 +374,14 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         @Override
         public AmazonInspectorBuilder newInstance(StaplerRequest req, JSONObject formData) throws FormException {
             String value = JSONObject.fromObject(formData.get("sbomgenSelection")).get("value").toString();
+            formData.put("isAutomaticSbomgen", value.equals("automatic"));
+            formData.put("sbomgenMethod", value);
 
             if (value.equals("manual")) {
                 formData.put("sbomgenPath", JSONObject.fromObject(formData.get("sbomgenSelection")).get("sbomgenPath"));
+            } else if (value.equals("automatic")) {
+                formData.put("sbomgenSource", JSONObject.fromObject(JSONObject.fromObject(formData.get("sbomgenSelection")).get("sbomgenSource")).get("value"));
             }
-
-            formData.put("sbomgenSelection", value);
 
             return req.bindJSON(AmazonInspectorBuilder.class, formData);
         }
