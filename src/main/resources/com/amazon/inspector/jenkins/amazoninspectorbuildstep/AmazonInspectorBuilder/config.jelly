@@ -41,6 +41,10 @@
         </f:radioBlock>
     </f:entry>
 
+    <f:entry field="sbomgenSkipFiles" title="SBOMGen Skip Files" description="Specify file patterns to exclude from SBOM generation. Enter one pattern per line, e.g., *.tmp, build/, node_modules/">
+        <f:textarea name="sbomgenSkipFiles"/>
+    </f:entry>
+
     <p class="required-field">Image Id</p>
     <f:entry field="archivePath">
         <f:textbox placeholder="/Users/user/Downloads/alpine.tar or alpine:latest" />
