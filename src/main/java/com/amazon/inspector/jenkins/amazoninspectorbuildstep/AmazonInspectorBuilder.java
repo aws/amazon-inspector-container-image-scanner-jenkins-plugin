@@ -29,14 +29,11 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomgen.SbomgenRunner;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.csvconversion.CsvConverter;
@@ -178,23 +175,6 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                 activeSbomgenPath = SbomgenDownloader.getBinary(workspace);
             }
 
-            if (sbomgenSkipFiles != null && !sbomgenSkipFiles.trim().isEmpty()) {
-                String[] patterns = sbomgenSkipFiles.split("\\r?\\n");
-                List<String> validPatterns = Arrays.stream(patterns)
-                        .map(String::trim)
-                        .filter(p -> !p.isEmpty())
-                        .collect(Collectors.toList());
-                if (!validPatterns.isEmpty()) {
-                    logger.println("SBOMGen Skip Files Patterns:");
-                    for (String pattern : validPatterns) {
-                        logger.println(" - " + pattern);
-                    }
-                }
-            } else {
-                logger.println("No SBOMGen Skip Files patterns provided.");
-            }
-
-
             StandardUsernamePasswordCredentials credential = null;
             if (credentialId == null) {
                 logger.println("Credential ID is null, this is not normal, please check your config. " +
@@ -203,12 +183,13 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                 credential = CredentialsProvider.findCredentialById(credentialId,
                         StandardUsernamePasswordCredentials.class, build);
             }
+            String skipfiles = (sbomgenSkipFiles != null) ? sbomgenSkipFiles : "";
             String sbom;
             if (credential != null) {
                 sbom = new SbomgenRunner(launcher, activeSbomgenPath, activeArchiveType, archivePath, credential.getUsername(),
-                        credential.getPassword().getPlainText(),sbomgenSkipFiles).run();
+                        credential.getPassword().getPlainText(),skipfiles).run();
             } else {
-                sbom = new SbomgenRunner(launcher, activeSbomgenPath, activeArchiveType, archivePath, null, null).run();
+                sbom = new SbomgenRunner(launcher, activeSbomgenPath, activeArchiveType, archivePath, null, null, skipfiles).run();
             }
 
             JsonElement metadata = JsonParser.parseString(sbom).getAsJsonObject().get("metadata");

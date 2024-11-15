@@ -41,7 +41,7 @@
         </f:radioBlock>
     </f:entry>
 
-    <f:entry field="sbomgenSkipFiles" title="SBOMGen Skip Files" description="Specify file patterns to exclude from SBOM generation. Enter one pattern per line, e.g., *.tmp, build/, node_modules/">
+    <f:entry field="sbomgenSkipFiles" title="SBOMGen Skip Files" description="Specify file patterns to exclude from SBOM generation. Enter one pattern per line, e.g., *.tmp, build/, node_modules/, tests/">
         <f:textarea name="sbomgenSkipFiles"/>
     </f:entry>
 
