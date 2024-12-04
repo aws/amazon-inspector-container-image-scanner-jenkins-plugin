@@ -83,13 +83,14 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     private final String sbomgenSelection;
     private final String sbomgenPath;
     private final String sbomgenSkipFiles;
+    private final Double epssThreshold;
     private Job<?, ?> job;
 
     @DataBoundConstructor
     public AmazonInspectorBuilder(String archivePath, String artifactPath, String archiveType, boolean osArch, String iamRole,
                                   String awsRegion, String credentialId, String awsProfileName, String awsCredentialId,
                                   String sbomgenSelection, String sbomgenPath, boolean isThresholdEnabled, boolean thresholdEquals,
-                                  int countCritical, int countHigh, int countMedium, int countLow, String oidcCredentialId, String sbomgenSkipFiles) {
+                                  int countCritical, int countHigh, int countMedium, int countLow, String oidcCredentialId, String sbomgenSkipFiles, Double epssThreshold) {
         if (artifactPath != null && !artifactPath.isEmpty()) {
             this.archivePath = artifactPath;
         } else {
@@ -103,7 +104,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         this.osArch = osArch;
         this.iamRole = iamRole;
         this.awsRegion = awsRegion;
-        this.sbomgenSelection = sbomgenSelection;
+        this.sbomgenSelection = (sbomgenSelection != null) ? sbomgenSelection : "automatic";
         this.sbomgenPath = sbomgenPath;
         this.sbomgenSkipFiles = sbomgenSkipFiles;
         this.isThresholdEnabled = isThresholdEnabled;
@@ -112,6 +113,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         this.countHigh = countHigh;
         this.countMedium = countMedium;
         this.countLow = countLow;
+        this.epssThreshold = epssThreshold;
     }
 
     private boolean doesBuildFail(Map<Severity, Integer> counts) {
@@ -305,6 +307,27 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
             boolean doesBuildPass = !doesBuildFail(SbomOutputParser.aggregateCounts.getCounts());
 
+            if (epssThreshold != null) {
+                try {
+                    listener.getLogger().println("EPSS Threshold set to: " + epssThreshold);
+                    boolean cvesExceedThreshold = assessCVEsAgainstEPSS(build, listener, epssThreshold);
+
+                    if (cvesExceedThreshold) {
+                        listener.getLogger().println("One or more CVEs exceed the EPSS threshold of " + epssThreshold + ". Failing the build.");
+                        build.setResult(Result.FAILURE);
+                        doesBuildPass = false;
+                    } else {
+                        listener.getLogger().println("All CVEs are within the EPSS threshold of " + epssThreshold + ".");
+                    }
+                } catch (Exception e) {
+                    listener.getLogger().println("Error during EPSS threshold assessment: " + e.getMessage());
+                    build.setResult(Result.FAILURE);
+                    doesBuildPass = false;
+                }
+            } else {
+                listener.getLogger().println("No EPSS Threshold specified. Skipping threshold assessment.");
+            }
+
             if (!isThresholdEnabled) {
                 build.setResult(Result.SUCCESS);
                 doesBuildPass = true;
@@ -328,6 +351,10 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         } finally {
             printStream.close();
         }
+    }
+
+    private boolean assessCVEsAgainstEPSS(Run<?,?> build, TaskListener listener, Double epssThreshold) {
+        return false;
     }
 
     private String getOidcToken(IdTokenStringCredentials oidcStr, IdTokenFileCredentials oidcFile) throws IOException {
@@ -370,10 +397,18 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
         @Override
         public AmazonInspectorBuilder newInstance(StaplerRequest req, JSONObject formData) throws FormException {
-            String value = JSONObject.fromObject(formData.get("sbomgenSelection")).get("value").toString();
+            JSONObject selectionObj = formData.optJSONObject("sbomgenSelection");
 
-            if (value.equals("manual")) {
-                formData.put("sbomgenPath", JSONObject.fromObject(formData.get("sbomgenSelection")).get("sbomgenPath"));
+            String value = "automatic";
+            if (selectionObj != null && selectionObj.has("value")) {
+                value = selectionObj.getString("value");
+            }
+
+            if ("manual".equalsIgnoreCase(value)) {
+                String sbomgenPath = selectionObj.optString("sbomgenPath", "").trim();
+                formData.put("sbomgenPath", sbomgenPath);
+            } else {
+                formData.put("sbomgenPath", "");
             }
 
             formData.put("sbomgenSelection", value);

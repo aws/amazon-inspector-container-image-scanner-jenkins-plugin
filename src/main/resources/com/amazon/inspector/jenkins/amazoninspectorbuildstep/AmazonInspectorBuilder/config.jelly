@@ -31,7 +31,9 @@
     </style>
 
     <f:entry field="sbomgenSelectionWrapper" title="Inspector-sbomgen Installation Method">
-        <f:radioBlock title="Automatic" name="sbomgenSelection" checked="${instance.isSource('automatic')}" value="automatic">
+        <f:radioBlock title="Automatic" name="sbomgenSelection"
+                      checked="${instance.getSbomgenSelection() == null || instance.getSbomgenSelection().equals('automatic')}"
+                      value="automatic">
         </f:radioBlock>
         <f:radioBlock title="Manual" name="sbomgenSelection" checked="${instance.isSource('manual')}" value="manual">
             <p>Path to inspector-sbomgen</p>
@@ -43,6 +45,10 @@
 
     <f:entry field="sbomgenSkipFiles" title="Skip Files">
         <f:textbox placeholder="Specify files to exclude from scanning." />
+    </f:entry>
+
+    <f:entry title="EPSS Threshold" field="epssThreshold">
+    <f:textbox name="epssThreshold" placeholder="Enter a value between 0 and 1 (e.g., 0.6)" />
     </f:entry>
 
     <p class="required-field">Image Id</p>
