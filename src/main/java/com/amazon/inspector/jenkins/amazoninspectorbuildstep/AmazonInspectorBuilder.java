@@ -1,5 +1,7 @@
 package com.amazon.inspector.jenkins.amazoninspectorbuildstep;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.requests.SdkRequests;
+import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Sbom;
+import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Components.Vulnerability;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomgen.SbomgenDownloader;
 import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
@@ -9,6 +11,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.EnvVars;
@@ -29,6 +32,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
@@ -40,7 +44,6 @@ import com.amazon.inspector.jenkins.amazoninspectorbuildstep.csvconversion.CsvCo
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.html.HtmlJarHandler;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.html.HtmlData;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.html.components.ImageMetadata;
-import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Sbom;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.SbomData;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomparsing.SbomOutputParser;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomparsing.Severity;
@@ -308,21 +311,14 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             boolean doesBuildPass = !doesBuildFail(SbomOutputParser.aggregateCounts.getCounts());
 
             if (epssThreshold != null) {
-                try {
-                    listener.getLogger().println("EPSS Threshold set to: " + epssThreshold);
-                    boolean cvesExceedThreshold = assessCVEsAgainstEPSS(build, listener, epssThreshold);
-
-                    if (cvesExceedThreshold) {
-                        listener.getLogger().println("One or more CVEs exceed the EPSS threshold of " + epssThreshold + ". Failing the build.");
-                        build.setResult(Result.FAILURE);
-                        doesBuildPass = false;
-                    } else {
-                        listener.getLogger().println("All CVEs are within the EPSS threshold of " + epssThreshold + ".");
-                    }
-                } catch (Exception e) {
-                    listener.getLogger().println("Error during EPSS threshold assessment: " + e.getMessage());
+                listener.getLogger().println("EPSS Threshold set to: " + epssThreshold);
+                boolean cvesExceedThreshold = assessCVEsAgainstEPSS(build, workspace, listener, epssThreshold, sbomWorkspacePath);
+                if (cvesExceedThreshold) {
+                    listener.getLogger().println("One or more CVEs exceed the EPSS threshold of " + epssThreshold + ". Failing the build.");
                     build.setResult(Result.FAILURE);
-                    doesBuildPass = false;
+                    return;
+                } else {
+                    listener.getLogger().println("All CVEs are within the EPSS threshold of " + epssThreshold + ".");
                 }
             } else {
                 listener.getLogger().println("No EPSS Threshold specified. Skipping threshold assessment.");
@@ -353,8 +349,55 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         }
     }
 
-    private boolean assessCVEsAgainstEPSS(Run<?,?> build, TaskListener listener, Double epssThreshold) {
-        return false;
+    private boolean assessCVEsAgainstEPSS(Run<?, ?> build, FilePath workspace, TaskListener listener, Double epssThreshold, String sbomPath)
+            throws IOException, InterruptedException {
+        FilePath sbomFile = workspace.child(sbomPath);
+        if (!sbomFile.exists()) {
+            listener.getLogger().println("SBOM file not found at: " + sbomFile.getRemote());
+            return true;
+        }
+        try {
+            String sbomContent = sbomFile.readToString();
+            listener.getLogger().println("SBOM file read successfully.");
+            Gson gson = new Gson();
+            Sbom sbom = gson.fromJson(sbomContent, Sbom.class);
+            listener.getLogger().println("SBOM JSON parsed successfully.");
+            List<Vulnerability> vulnerabilities = sbom.getVulnerabilities();
+            if (vulnerabilities == null || vulnerabilities.isEmpty()) {
+                listener.getLogger().println("No vulnerabilities found in the SBOM.");
+                return false;
+            }
+            listener.getLogger().println("Starting EPSS assessment for vulnerabilities...");
+            boolean exceedsThreshold = false;
+            List<String> exceedingCVEs = new ArrayList<>();
+            for (Vulnerability vulnerability : vulnerabilities) {
+                String cveId = vulnerability.getId();
+                Double epssScore = vulnerability.getEpssScore();
+                if (epssScore == null) {
+                    continue;
+                }
+                if (epssScore >= epssThreshold) {
+                    exceedsThreshold = true;
+                    exceedingCVEs.add(cveId);
+                }
+            }
+            if (exceedsThreshold) {
+                listener.getLogger().println("The following CVEs exceed the EPSS threshold of " + epssThreshold + ":");
+                for (String cveId : exceedingCVEs) {
+                    listener.getLogger().println(" - " + cveId);
+                }
+                listener.getLogger().println("Failing the build due to EPSS threshold breach.");
+            } else {
+                listener.getLogger().println("All assessed CVEs are within the EPSS threshold of " + epssThreshold + ".");
+            }
+            return exceedsThreshold;
+        } catch (JsonParseException e) {
+            listener.getLogger().println("Invalid JSON structure in SBOM file: " + e.getMessage());
+            return true;
+        } catch (IOException e) {
+            listener.getLogger().println("Error reading SBOM file: " + e.getMessage());
+            return true;
+        }
     }
 
     private String getOidcToken(IdTokenStringCredentials oidcStr, IdTokenFileCredentials oidcFile) throws IOException {
