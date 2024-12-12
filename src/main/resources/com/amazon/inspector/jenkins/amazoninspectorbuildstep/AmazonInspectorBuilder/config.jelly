@@ -31,6 +31,9 @@
     </style>
 
     <f:entry field="sbomgenSelectionWrapper" title="Inspector-sbomgen Installation Method">
+        <f:helpArea>
+
+        </f:helpArea>
         <f:radioBlock title="Automatic" name="sbomgenSelection"
                       checked="${instance.getSbomgenSelection() == null || instance.getSbomgenSelection().equals('automatic')}"
                       value="automatic">
@@ -45,10 +48,6 @@
 
     <f:entry field="sbomgenSkipFiles" title="Skip Files">
         <f:textbox placeholder="Specify files to exclude from scanning." />
-    </f:entry>
-
-    <f:entry title="EPSS Threshold" field="epssThreshold">
-    <f:textbox name="epssThreshold" placeholder="Enter a value between 0 and 1 (e.g., 0.6)" />
     </f:entry>
 
     <p class="required-field">Image Id</p>
@@ -87,7 +86,7 @@
     <f:entry field="isThresholdEnabled">
         <f:checkbox id="isThresholdEnabled" class="bold" checked="false"
                     title="Enable Vulnerability Thresholds"
-                    tooltip="Specifies whether scanned vulnerabilities exceeding a value will cause a build failure."
+                    tooltip="Specifies whether the build should fail when scanned vulnerabilities exceed specified thresholds. For EPSS threshold, enter a value between 0 and 1 (e.g., 0.6)."
                     onclick='document.getElementById("isThresholdEnabled").checked ?
             document.getElementById("thresholds").style.display = "block" :
             document.getElementById("thresholds").style.display = "none"'/>
@@ -116,6 +115,12 @@
                 <label class="vulnLabel  required-field" for="countLow">Low:</label>
                 <div class="resizedTextbox">
                     <f:textbox default="10" name="countLow" field="countLow" />
+                </div>
+            </div>
+            <div class="vulnWrapper">
+                <label class="vulnLabel" for="epssThreshold" title="EPSS scores range from 0-1, enter a value between 0 and 1 (e.g., 0.6).">EPSS:</label>
+                <div class="resizedTextbox">
+                    <f:textbox name="epssThreshold" field="epssThreshold" />
                 </div>
             </div>
         </div>

@@ -314,7 +314,6 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                 listener.getLogger().println("EPSS Threshold set to: " + epssThreshold);
                 boolean cvesExceedThreshold = assessCVEsAgainstEPSS(build, workspace, listener, epssThreshold, sbomWorkspacePath);
                 if (cvesExceedThreshold) {
-                    listener.getLogger().println("One or more CVEs exceed the EPSS threshold of " + epssThreshold + ". Failing the build.");
                     build.setResult(Result.FAILURE);
                     return;
                 } else {
