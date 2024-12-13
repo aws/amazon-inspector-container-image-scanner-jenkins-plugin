@@ -26,6 +26,7 @@ import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.tasks.Builder;
 import hudson.tasks.BuildStepDescriptor;
+import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import java.io.File;
 import java.io.IOException;
@@ -57,6 +58,7 @@ import lombok.Getter;
 import net.sf.json.JSONObject;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.verb.POST;
 import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.utils.InspectorRegions.INSPECTOR_REGIONS;
@@ -529,6 +531,75 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                 return getCredentialIdModels();
             }
             return new ListBoxModel();
+        }
+
+        @POST
+        public FormValidation doCheckEpssThreshold(@QueryParameter String value) {
+            if (value == null || value.trim().isEmpty()) {
+                return FormValidation.ok();
+            }
+            try {
+                double d = Double.parseDouble(value);
+                if (d < 0.0 || d > 1.0) {
+                    return FormValidation.error("EPSS threshold must be between 0.0 and 1.0.");
+                }
+            } catch (NumberFormatException e) {
+                return FormValidation.error("EPSS threshold must be a numeric value between 0.0 and 1.0.");
+            }
+            return FormValidation.ok();
+        }
+
+        @POST
+        public FormValidation doCheckCountCritical(@QueryParameter String value) {
+            return validateNumericThreshold(value, "Critical");
+        }
+        @POST
+        public FormValidation doCheckCountHigh(@QueryParameter String value) {
+            return validateNumericThreshold(value, "High");
+        }
+        @POST
+        public FormValidation doCheckCountMedium(@QueryParameter String value) {
+            return validateNumericThreshold(value, "Medium");
+        }
+        @POST
+        public FormValidation doCheckCountLow(@QueryParameter String value) {
+            return validateNumericThreshold(value, "Low");
+        }
+
+        private FormValidation validateNumericThreshold(String value, String fieldName) {
+            if (value == null || value.trim().isEmpty()) {
+                return FormValidation.error(fieldName + " threshold cannot be empty.");
+            }
+            try {
+                int intValue = Integer.parseInt(value);
+                if (intValue < 0) {
+                    return FormValidation.error(fieldName + " threshold must be a non-negative integer.");
+                }
+            } catch (NumberFormatException e) {
+                return FormValidation.error(fieldName + " threshold must be a numeric value.");
+            }
+            return FormValidation.ok();
+        }
+
+        @POST
+        public FormValidation doCheckAwsRegion(@QueryParameter String value) {
+            if (value == null || value.trim().isEmpty()) {
+                return FormValidation.error("You must select an AWS Region.");
+            }
+            if ("Select AWS Region".equals(value)) {
+                return FormValidation.error("Please select a AWS Region from the list.");
+            }
+            boolean isValid = false;
+            for (String region : INSPECTOR_REGIONS) {
+                if (region.equals(value)) {
+                    isValid = true;
+                    break;
+                }
+            }
+            if (!isValid) {
+                return FormValidation.error("Please pick one from the list.");
+            }
+            return FormValidation.ok();
         }
 
         @SuppressFBWarnings()

@@ -46,13 +46,13 @@
         </f:radioBlock>
     </f:entry>
 
-    <f:entry field="sbomgenSkipFiles" title="Skip Files">
-        <f:textbox placeholder="Specify files to exclude from scanning." />
-    </f:entry>
-
     <p class="required-field">Image Id</p>
     <f:entry field="archivePath">
         <f:textbox placeholder="/Users/user/Downloads/alpine.tar or alpine:latest" />
+    </f:entry>
+
+    <f:entry field="sbomgenSkipFiles" title="Skip Files">
+        <f:textbox placeholder="Specify files to exclude from scanning." />
     </f:entry>
 
     <f:entry field="credentialId" title="Docker Credentials">
