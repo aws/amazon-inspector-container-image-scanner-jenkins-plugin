@@ -535,6 +535,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
         @POST
         public FormValidation doCheckEpssThreshold(@QueryParameter String value) {
+            Jenkins.get().checkPermission(Job.CONFIGURE);
             if (value == null || value.trim().isEmpty()) {
                 return FormValidation.ok();
             }
@@ -551,22 +552,27 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
         @POST
         public FormValidation doCheckCountCritical(@QueryParameter String value) {
+            Jenkins.get().checkPermission(Job.CONFIGURE);
             return validateNumericThreshold(value, "Critical");
         }
         @POST
         public FormValidation doCheckCountHigh(@QueryParameter String value) {
+            Jenkins.get().checkPermission(Job.CONFIGURE);
             return validateNumericThreshold(value, "High");
         }
         @POST
         public FormValidation doCheckCountMedium(@QueryParameter String value) {
+            Jenkins.get().checkPermission(Job.CONFIGURE);
             return validateNumericThreshold(value, "Medium");
         }
         @POST
         public FormValidation doCheckCountLow(@QueryParameter String value) {
+            Jenkins.get().checkPermission(Job.CONFIGURE);
             return validateNumericThreshold(value, "Low");
         }
 
         private FormValidation validateNumericThreshold(String value, String fieldName) {
+            Jenkins.get().checkPermission(Job.CONFIGURE);
             if (value == null || value.trim().isEmpty()) {
                 return FormValidation.error(fieldName + " threshold cannot be empty.");
             }
@@ -583,6 +589,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
         @POST
         public FormValidation doCheckArchivePath(@QueryParameter String value) {
+            Jenkins.get().checkPermission(Job.CONFIGURE);
             if (value == null || value.trim().isEmpty()) {
                 return FormValidation.error("Image Id is required. Provide a valid local/remote image name or path to an image tar file.");
             }
@@ -594,6 +601,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
         @POST
         public FormValidation doCheckAwsRegion(@QueryParameter String value) {
+            Jenkins.get().checkPermission(Job.CONFIGURE);
             if (value == null || value.trim().isEmpty()) {
                 return FormValidation.error("You must select an AWS Region.");
             }
