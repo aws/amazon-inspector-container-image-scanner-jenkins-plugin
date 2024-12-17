@@ -1,5 +1,7 @@
 package com.amazon.inspector.jenkins.amazoninspectorbuildstep;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.requests.SdkRequests;
+import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Sbom;
+import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Components.Vulnerability;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomgen.SbomgenDownloader;
 import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
@@ -9,6 +11,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.EnvVars;
@@ -23,6 +26,7 @@ import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.tasks.Builder;
 import hudson.tasks.BuildStepDescriptor;
+import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import java.io.File;
 import java.io.IOException;
@@ -30,20 +34,17 @@ import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomgen.SbomgenRunner;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.csvconversion.CsvConverter;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.html.HtmlJarHandler;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.html.HtmlData;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.html.components.ImageMetadata;
-import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Sbom;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.SbomData;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomparsing.SbomOutputParser;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomparsing.Severity;
@@ -57,6 +58,7 @@ import lombok.Getter;
 import net.sf.json.JSONObject;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.verb.POST;
 import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.utils.InspectorRegions.INSPECTOR_REGIONS;
@@ -86,13 +88,14 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     private final String sbomgenSelection;
     private final String sbomgenPath;
     private final String sbomgenSkipFiles;
+    private final Double epssThreshold;
     private Job<?, ?> job;
 
     @DataBoundConstructor
     public AmazonInspectorBuilder(String archivePath, String artifactPath, String archiveType, boolean osArch, String iamRole,
                                   String awsRegion, String credentialId, String awsProfileName, String awsCredentialId,
                                   String sbomgenSelection, String sbomgenPath, boolean isThresholdEnabled, boolean thresholdEquals,
-                                  int countCritical, int countHigh, int countMedium, int countLow, String oidcCredentialId, String sbomgenSkipFiles) {
+                                  int countCritical, int countHigh, int countMedium, int countLow, String oidcCredentialId, String sbomgenSkipFiles, Double epssThreshold) {
         if (artifactPath != null && !artifactPath.isEmpty()) {
             this.archivePath = artifactPath;
         } else {
@@ -106,7 +109,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         this.osArch = osArch;
         this.iamRole = iamRole;
         this.awsRegion = awsRegion;
-        this.sbomgenSelection = sbomgenSelection;
+        this.sbomgenSelection = (sbomgenSelection != null) ? sbomgenSelection : "automatic";
         this.sbomgenPath = sbomgenPath;
         this.sbomgenSkipFiles = sbomgenSkipFiles;
         this.isThresholdEnabled = isThresholdEnabled;
@@ -115,6 +118,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         this.countHigh = countHigh;
         this.countMedium = countMedium;
         this.countLow = countLow;
+        this.epssThreshold = epssThreshold;
     }
 
     private boolean doesBuildFail(Map<Severity, Integer> counts) {
@@ -178,23 +182,6 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                 activeSbomgenPath = SbomgenDownloader.getBinary(workspace);
             }
 
-            if (sbomgenSkipFiles != null && !sbomgenSkipFiles.trim().isEmpty()) {
-                String[] patterns = sbomgenSkipFiles.split("\\r?\\n");
-                List<String> validPatterns = Arrays.stream(patterns)
-                        .map(String::trim)
-                        .filter(p -> !p.isEmpty())
-                        .collect(Collectors.toList());
-                if (!validPatterns.isEmpty()) {
-                    logger.println("SBOMGen Skip Files Patterns:");
-                    for (String pattern : validPatterns) {
-                        logger.println(" - " + pattern);
-                    }
-                }
-            } else {
-                logger.println("No SBOMGen Skip Files patterns provided.");
-            }
-
-
             StandardUsernamePasswordCredentials credential = null;
             if (credentialId == null) {
                 logger.println("Credential ID is null, this is not normal, please check your config. " +
@@ -203,12 +190,13 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                 credential = CredentialsProvider.findCredentialById(credentialId,
                         StandardUsernamePasswordCredentials.class, build);
             }
+            String skipfiles = (sbomgenSkipFiles != null) ? sbomgenSkipFiles : "";
             String sbom;
             if (credential != null) {
                 sbom = new SbomgenRunner(launcher, activeSbomgenPath, activeArchiveType, archivePath, credential.getUsername(),
-                        credential.getPassword().getPlainText(),sbomgenSkipFiles).run();
+                        credential.getPassword().getPlainText(),skipfiles).run();
             } else {
-                sbom = new SbomgenRunner(launcher, activeSbomgenPath, activeArchiveType, archivePath, null, null).run();
+                sbom = new SbomgenRunner(launcher, activeSbomgenPath, activeArchiveType, archivePath, null, null, skipfiles).run();
             }
 
             JsonElement metadata = JsonParser.parseString(sbom).getAsJsonObject().get("metadata");
@@ -324,6 +312,19 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
             boolean doesBuildPass = !doesBuildFail(SbomOutputParser.aggregateCounts.getCounts());
 
+            if (epssThreshold != null) {
+                listener.getLogger().println("EPSS Threshold set to: " + epssThreshold);
+                boolean cvesExceedThreshold = assessCVEsAgainstEPSS(build, workspace, listener, epssThreshold, sbomWorkspacePath);
+                if (cvesExceedThreshold) {
+                    build.setResult(Result.FAILURE);
+                    return;
+                } else {
+                    listener.getLogger().println("All CVEs are within the EPSS threshold of " + epssThreshold + ".");
+                }
+            } else {
+                listener.getLogger().println("No EPSS Threshold specified. Skipping threshold assessment.");
+            }
+
             if (!isThresholdEnabled) {
                 build.setResult(Result.SUCCESS);
                 doesBuildPass = true;
@@ -346,6 +347,57 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             e.printStackTrace(listener.getLogger());
         } finally {
             printStream.close();
+        }
+    }
+
+    private boolean assessCVEsAgainstEPSS(Run<?, ?> build, FilePath workspace, TaskListener listener, Double epssThreshold, String sbomPath)
+            throws IOException, InterruptedException {
+        FilePath sbomFile = workspace.child(sbomPath);
+        if (!sbomFile.exists()) {
+            listener.getLogger().println("SBOM file not found at: " + sbomFile.getRemote());
+            return true;
+        }
+        try {
+            String sbomContent = sbomFile.readToString();
+            listener.getLogger().println("SBOM file read successfully.");
+            Gson gson = new Gson();
+            Sbom sbom = gson.fromJson(sbomContent, Sbom.class);
+            listener.getLogger().println("SBOM JSON parsed successfully.");
+            List<Vulnerability> vulnerabilities = sbom.getVulnerabilities();
+            if (vulnerabilities == null || vulnerabilities.isEmpty()) {
+                listener.getLogger().println("No vulnerabilities found in the SBOM.");
+                return false;
+            }
+            listener.getLogger().println("Starting EPSS assessment for vulnerabilities...");
+            boolean exceedsThreshold = false;
+            List<String> exceedingCVEs = new ArrayList<>();
+            for (Vulnerability vulnerability : vulnerabilities) {
+                String cveId = vulnerability.getId();
+                Double epssScore = vulnerability.getEpssScore();
+                if (epssScore == null) {
+                    continue;
+                }
+                if (epssScore >= epssThreshold) {
+                    exceedsThreshold = true;
+                    exceedingCVEs.add(cveId);
+                }
+            }
+            if (exceedsThreshold) {
+                listener.getLogger().println("The following CVEs exceed the EPSS threshold of " + epssThreshold + ":");
+                for (String cveId : exceedingCVEs) {
+                    listener.getLogger().println(" - " + cveId);
+                }
+                listener.getLogger().println("Failing the build due to EPSS threshold breach.");
+            } else {
+                listener.getLogger().println("All assessed CVEs are within the EPSS threshold of " + epssThreshold + ".");
+            }
+            return exceedsThreshold;
+        } catch (JsonParseException e) {
+            listener.getLogger().println("Invalid JSON structure in SBOM file: " + e.getMessage());
+            return true;
+        } catch (IOException e) {
+            listener.getLogger().println("Error reading SBOM file: " + e.getMessage());
+            return true;
         }
     }
 
@@ -389,10 +441,18 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
         @Override
         public AmazonInspectorBuilder newInstance(StaplerRequest req, JSONObject formData) throws FormException {
-            String value = JSONObject.fromObject(formData.get("sbomgenSelection")).get("value").toString();
+            JSONObject selectionObj = formData.optJSONObject("sbomgenSelection");
 
-            if (value.equals("manual")) {
-                formData.put("sbomgenPath", JSONObject.fromObject(formData.get("sbomgenSelection")).get("sbomgenPath"));
+            String value = "automatic";
+            if (selectionObj != null && selectionObj.has("value")) {
+                value = selectionObj.getString("value");
+            }
+
+            if ("manual".equalsIgnoreCase(value)) {
+                String sbomgenPath = selectionObj.optString("sbomgenPath", "").trim();
+                formData.put("sbomgenPath", sbomgenPath);
+            } else {
+                formData.put("sbomgenPath", "");
             }
 
             formData.put("sbomgenSelection", value);
@@ -471,6 +531,94 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                 return getCredentialIdModels();
             }
             return new ListBoxModel();
+        }
+
+        @POST
+        public FormValidation doCheckEpssThreshold(@QueryParameter String value) {
+            Jenkins.get().checkPermission(Job.CONFIGURE);
+            if (value == null || value.trim().isEmpty()) {
+                return FormValidation.ok();
+            }
+            try {
+                double d = Double.parseDouble(value);
+                if (d < 0.0 || d > 1.0) {
+                    return FormValidation.error("EPSS threshold must be between 0.0 and 1.0.");
+                }
+            } catch (NumberFormatException e) {
+                return FormValidation.error("EPSS threshold must be a numeric value between 0.0 and 1.0.");
+            }
+            return FormValidation.ok();
+        }
+
+        @POST
+        public FormValidation doCheckCountCritical(@QueryParameter String value) {
+            Jenkins.get().checkPermission(Job.CONFIGURE);
+            return validateNumericThreshold(value, "Critical");
+        }
+        @POST
+        public FormValidation doCheckCountHigh(@QueryParameter String value) {
+            Jenkins.get().checkPermission(Job.CONFIGURE);
+            return validateNumericThreshold(value, "High");
+        }
+        @POST
+        public FormValidation doCheckCountMedium(@QueryParameter String value) {
+            Jenkins.get().checkPermission(Job.CONFIGURE);
+            return validateNumericThreshold(value, "Medium");
+        }
+        @POST
+        public FormValidation doCheckCountLow(@QueryParameter String value) {
+            Jenkins.get().checkPermission(Job.CONFIGURE);
+            return validateNumericThreshold(value, "Low");
+        }
+
+        private FormValidation validateNumericThreshold(String value, String fieldName) {
+            Jenkins.get().checkPermission(Job.CONFIGURE);
+            if (value == null || value.trim().isEmpty()) {
+                return FormValidation.error(fieldName + " threshold cannot be empty.");
+            }
+            try {
+                int intValue = Integer.parseInt(value);
+                if (intValue < 0) {
+                    return FormValidation.error(fieldName + " threshold must be a non-negative integer.");
+                }
+            } catch (NumberFormatException e) {
+                return FormValidation.error(fieldName + " threshold must be a numeric value.");
+            }
+            return FormValidation.ok();
+        }
+
+        @POST
+        public FormValidation doCheckArchivePath(@QueryParameter String value) {
+            Jenkins.get().checkPermission(Job.CONFIGURE);
+            if (value == null || value.trim().isEmpty()) {
+                return FormValidation.error("Image Id is required. Provide a valid local/remote image name or path to an image tar file.");
+            }
+            if (!value.contains(":") && !value.contains("@") && !value.endsWith(".tar")) {
+                return FormValidation.warning("This doesn't look like a standard Docker image name or a tar file path. Verify it matches the expected format.");
+            }
+            return FormValidation.ok();
+        }
+
+        @POST
+        public FormValidation doCheckAwsRegion(@QueryParameter String value) {
+            Jenkins.get().checkPermission(Job.CONFIGURE);
+            if (value == null || value.trim().isEmpty()) {
+                return FormValidation.error("You must select an AWS Region.");
+            }
+            if ("Select AWS Region".equals(value)) {
+                return FormValidation.error("Please select a AWS Region from the list.");
+            }
+            boolean isValid = false;
+            for (String region : INSPECTOR_REGIONS) {
+                if (region.equals(value)) {
+                    isValid = true;
+                    break;
+                }
+            }
+            if (!isValid) {
+                return FormValidation.error("Please pick one from the list.");
+            }
+            return FormValidation.ok();
         }
 
         @SuppressFBWarnings()
