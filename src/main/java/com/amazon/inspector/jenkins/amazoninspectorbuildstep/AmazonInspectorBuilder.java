@@ -582,6 +582,17 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         }
 
         @POST
+        public FormValidation doCheckArchivePath(@QueryParameter String value) {
+            if (value == null || value.trim().isEmpty()) {
+                return FormValidation.error("Image Id is required. Provide a valid local/remote image name or path to an image tar file.");
+            }
+            if (!value.contains(":") && !value.contains("@") && !value.endsWith(".tar")) {
+                return FormValidation.warning("This doesn't look like a standard Docker image name or a tar file path. Verify it matches the expected format.");
+            }
+            return FormValidation.ok();
+        }
+
+        @POST
         public FormValidation doCheckAwsRegion(@QueryParameter String value) {
             if (value == null || value.trim().isEmpty()) {
                 return FormValidation.error("You must select an AWS Region.");

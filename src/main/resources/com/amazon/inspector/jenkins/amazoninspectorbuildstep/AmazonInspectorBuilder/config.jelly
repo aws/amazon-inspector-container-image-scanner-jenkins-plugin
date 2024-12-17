@@ -46,9 +46,8 @@
         </f:radioBlock>
     </f:entry>
 
-    <p class="required-field">Image Id</p>
-    <f:entry field="archivePath">
-        <f:textbox placeholder="/Users/user/Downloads/alpine.tar or alpine:latest" />
+    <f:entry field="archivePath" title="${%Image ID}" class="required">
+        <f:textbox placeholder="alpine:latest or /Users/user/Downloads/alpine.tar" />
     </f:entry>
 
     <f:entry field="sbomgenSkipFiles" title="Skip Files">
