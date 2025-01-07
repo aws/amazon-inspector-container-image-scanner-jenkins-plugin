@@ -370,7 +370,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             }
             listener.getLogger().println("Starting EPSS assessment for vulnerabilities...");
             boolean exceedsThreshold = false;
-            List<String> exceedingCVEs = new ArrayList<>();
+            Map<String, Double> exceedingCVEsMap = new HashMap<>();
             for (Vulnerability vulnerability : vulnerabilities) {
                 String cveId = vulnerability.getId();
                 Double epssScore = vulnerability.getEpssScore();
@@ -379,13 +379,13 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                 }
                 if (epssScore >= epssThreshold) {
                     exceedsThreshold = true;
-                    exceedingCVEs.add(cveId);
+                    exceedingCVEsMap.put(cveId, epssScore);
                 }
             }
             if (exceedsThreshold) {
                 listener.getLogger().println("The following CVEs exceed the EPSS threshold of " + epssThreshold + ":");
-                for (String cveId : exceedingCVEs) {
-                    listener.getLogger().println(" - " + cveId);
+                for (Map.Entry<String, Double> entry : exceedingCVEsMap.entrySet()) {
+                    listener.getLogger().println(String.format("CVE: %s, EPSS Score: %.4f", entry.getKey(), entry.getValue()));
                 }
                 listener.getLogger().println("Failing the build due to EPSS threshold breach.");
             } else {
