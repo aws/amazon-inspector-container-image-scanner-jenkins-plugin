@@ -30,15 +30,15 @@
         }
     </style>
 
-    <f:entry field="sbomgenSelectionWrapper" title="Inspector-sbomgen Installation Method">
+    <f:entry field="sbomgenSelection" title="Inspector-sbomgen Installation Method">
         <f:helpArea>
 
         </f:helpArea>
         <f:radioBlock title="Automatic" name="sbomgenSelection"
-                      checked="${instance.getSbomgenSelection() == null || instance.getSbomgenSelection().equals('automatic')}"
-                      value="automatic">
+                      value="automatic"
+                      checked="${instance.sbomgenSelection() == null || instance.sbomgenSelection().equals('automatic')}">
         </f:radioBlock>
-        <f:radioBlock title="Manual" name="sbomgenSelection" checked="${instance.isSource('manual')}" value="manual">
+        <f:radioBlock title="Manual" name="sbomgenSelection"  value="manual" checked="${instance.sbomgenSelection == 'manual'}">
             <p>Path to inspector-sbomgen</p>
             <f:entry field="sbomgenPath">
                 <f:textbox placeholder="/Users/user/Downloads/inspector-sbomgen"/>
@@ -83,15 +83,23 @@
     </f:entry>
 
     <f:entry field="isThresholdEnabled">
-        <f:checkbox id="isThresholdEnabled" class="bold" checked="false"
-                    title="Enable Vulnerability Thresholds"
-                    tooltip="Specifies whether the build should fail when scanned vulnerabilities exceed specified thresholds. For EPSS threshold, enter a value between 0 and 1 (e.g., 0.6)."
-                    onclick='document.getElementById("isThresholdEnabled").checked ?
-            document.getElementById("thresholds").style.display = "block" :
-            document.getElementById("thresholds").style.display = "none"'/>
+        <f:checkbox
+                id="isThresholdEnabled"
+                class="bold"
+                checked="${instance.isThresholdEnabled}"
+                title="Enable Vulnerability Thresholds"
+                tooltip="Specifies whether the build should fail when scanned vulnerabilities exceed specified thresholds. For EPSS threshold, enter a value between 0 and 1 (e.g., 0.6)."
+                onclick="
+                if (this.checked) {
+                    document.getElementById('thresholds').style.display = 'block';
+                } else {
+                    document.getElementById('thresholds').style.display = 'none';
+                }
+            "
+        />
     </f:entry>
     <f:entry>
-        <div id="thresholds" class="hidden">
+        <div id="thresholds" style="display: ${instance.isThresholdEnabled ? 'block' : 'none'};">
             <div class="vulnWrapper" >
                 <label class="vulnLabel required-field" for="countCritical">Critical:</label>
                 <div class="resizedTextbox">

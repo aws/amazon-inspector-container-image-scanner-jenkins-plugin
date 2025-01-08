@@ -312,17 +312,21 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
             boolean doesBuildPass = !doesBuildFail(SbomOutputParser.aggregateCounts.getCounts());
 
-            if (epssThreshold != null) {
-                listener.getLogger().println("EPSS Threshold set to: " + epssThreshold);
-                boolean cvesExceedThreshold = assessCVEsAgainstEPSS(build, workspace, listener, epssThreshold, sbomWorkspacePath);
-                if (cvesExceedThreshold) {
-                    build.setResult(Result.FAILURE);
-                    return;
-                } else {
-                    listener.getLogger().println("All CVEs are within the EPSS threshold of " + epssThreshold + ".");
-                }
+            if (!isThresholdEnabled) {
+                listener.getLogger().println("Thresholds disabled. Skipping all threshold/EPSS checks.");
             } else {
-                listener.getLogger().println("No EPSS Threshold specified. Skipping threshold assessment.");
+                if (epssThreshold != null) {
+                    listener.getLogger().println("EPSS Threshold set to: " + epssThreshold);
+                    boolean cvesExceedThreshold = assessCVEsAgainstEPSS(build, workspace, listener, epssThreshold, sbomWorkspacePath);
+                    if (cvesExceedThreshold) {
+                        build.setResult(Result.FAILURE);
+                        return;
+                    } else {
+                        listener.getLogger().println("All CVEs are within the EPSS threshold of " + epssThreshold + ".");
+                    }
+                } else {
+                    listener.getLogger().println("No EPSS Threshold specified. Skipping EPSS assessment.");
+                }
             }
 
             if (!isThresholdEnabled) {
@@ -442,20 +446,23 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         @Override
         public AmazonInspectorBuilder newInstance(StaplerRequest req, JSONObject formData) throws FormException {
             JSONObject selectionObj = formData.optJSONObject("sbomgenSelection");
-
-            String value = "automatic";
+            String sbomValue = "automatic";
             if (selectionObj != null && selectionObj.has("value")) {
-                value = selectionObj.getString("value");
+                sbomValue = selectionObj.getString("value");
             }
-
-            if ("manual".equalsIgnoreCase(value)) {
+            if ("manual".equalsIgnoreCase(sbomValue)) {
                 String sbomgenPath = selectionObj.optString("sbomgenPath", "").trim();
                 formData.put("sbomgenPath", sbomgenPath);
             } else {
                 formData.put("sbomgenPath", "");
             }
+            formData.put("sbomgenSelection", sbomValue);
 
-            formData.put("sbomgenSelection", value);
+            boolean thresholdEnabled = formData.optBoolean("isThresholdEnabled", false);
+            formData.put("isThresholdEnabled", thresholdEnabled);
+
+            boolean thresholdEquals = formData.optBoolean("thresholdEquals", false);
+            formData.put("thresholdEquals", thresholdEquals);
 
             return req.bindJSON(AmazonInspectorBuilder.class, formData);
         }
