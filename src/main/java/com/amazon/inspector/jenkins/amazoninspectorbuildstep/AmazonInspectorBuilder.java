@@ -314,13 +314,13 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
             if (!isThresholdEnabled) {
                 listener.getLogger().println("Thresholds disabled. Skipping all threshold/EPSS checks.");
+                doesBuildPass = true;
             } else {
                 if (epssThreshold != null) {
                     listener.getLogger().println("EPSS Threshold set to: " + epssThreshold);
                     boolean cvesExceedThreshold = assessCVEsAgainstEPSS(build, workspace, listener, epssThreshold, sbomWorkspacePath);
                     if (cvesExceedThreshold) {
-                        build.setResult(Result.FAILURE);
-                        return;
+                        doesBuildPass = false;
                     } else {
                         listener.getLogger().println("All CVEs are within the EPSS threshold of " + epssThreshold + ".");
                     }
@@ -329,10 +329,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                 }
             }
 
-            if (!isThresholdEnabled) {
-                build.setResult(Result.SUCCESS);
-                doesBuildPass = true;
-            } else if (isThresholdEnabled && doesBuildPass) {
+            if (doesBuildPass) {
                 build.setResult(Result.SUCCESS);
             } else {
                 build.setResult(Result.FAILURE);
