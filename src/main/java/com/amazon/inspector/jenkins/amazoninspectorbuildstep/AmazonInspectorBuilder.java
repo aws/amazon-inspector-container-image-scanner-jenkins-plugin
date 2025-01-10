@@ -468,7 +468,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                 }
             }
 
-            boolean thresholdEnabled = formData.optBoolean("isThresholdEnabled", true);
+            boolean thresholdEnabled = formData.optBoolean("isThresholdEnabled", false);
             formData.put("isThresholdEnabled", thresholdEnabled);
 
             boolean thresholdEquals = formData.optBoolean("thresholdEquals", false);
