@@ -37,6 +37,9 @@
         <f:radioBlock title="Automatic" name="sbomgenSelection"
                       value="automatic"
                       checked="${instance.sbomgenSelection() == null || instance.sbomgenSelection().equals('automatic')}">
+            <f:entry field="SbomgenPath" class="hidden">
+                    <f:textbox />
+            </f:entry>
         </f:radioBlock>
         <f:radioBlock title="Manual" name="sbomgenSelection"  value="manual" checked="${instance.sbomgenSelection == 'manual'}">
             <p>Path to inspector-sbomgen</p>

@@ -58,6 +58,7 @@ import lombok.Getter;
 import net.sf.json.JSONObject;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.verb.POST;
@@ -91,6 +92,8 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     private final Double epssThreshold;
     private Job<?, ?> job;
 
+    private String sbomgenSource;
+
     @DataBoundConstructor
     public AmazonInspectorBuilder(String archivePath, String artifactPath, String archiveType, boolean osArch, String iamRole,
                                   String awsRegion, String credentialId, String awsProfileName, String awsCredentialId,
@@ -119,6 +122,10 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         this.countMedium = countMedium;
         this.countLow = countLow;
         this.epssThreshold = epssThreshold;
+    }
+    @DataBoundSetter
+    public void setSbomgenSource(String sbomgenSource) {
+        this.sbomgenSource = sbomgenSource;
     }
 
     private boolean doesBuildFail(Map<Severity, Integer> counts) {
@@ -445,20 +452,23 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
         @Override
         public AmazonInspectorBuilder newInstance(StaplerRequest req, JSONObject formData) throws FormException {
+            String sourceVal = formData.optString("sbomgenSource", null);
+            formData.put("sbomgenSource", sourceVal);
             JSONObject selectionObj = formData.optJSONObject("sbomgenSelection");
-            String sbomValue = "automatic";
             if (selectionObj != null && selectionObj.has("value")) {
-                sbomValue = selectionObj.getString("value");
+                String sbomValue = selectionObj.getString("value");
+                formData.put("sbomgenSelection", sbomValue);
+                if ("manual".equalsIgnoreCase(sbomValue)) {
+                    String manualPath = selectionObj.optString("sbomgenPath", "").trim();
+                    if (manualPath.isEmpty()) {
+                        throw new FormException("Manual SBOMGen selected but no path provided.", "sbomgenPath");
+                    }
+                    // Preserve the path but when running auto again it deletes old manual path and it is not supposed to do that(working on fix)
+                    formData.put("sbomgenPath", manualPath);
+                }
             }
-            if ("manual".equalsIgnoreCase(sbomValue)) {
-                String sbomgenPath = selectionObj.optString("sbomgenPath", "").trim();
-                formData.put("sbomgenPath", sbomgenPath);
-            } else {
-                formData.put("sbomgenPath", "");
-            }
-            formData.put("sbomgenSelection", sbomValue);
 
-            boolean thresholdEnabled = formData.optBoolean("isThresholdEnabled", false);
+            boolean thresholdEnabled = formData.optBoolean("isThresholdEnabled", true);
             formData.put("isThresholdEnabled", thresholdEnabled);
 
             boolean thresholdEquals = formData.optBoolean("thresholdEquals", false);
