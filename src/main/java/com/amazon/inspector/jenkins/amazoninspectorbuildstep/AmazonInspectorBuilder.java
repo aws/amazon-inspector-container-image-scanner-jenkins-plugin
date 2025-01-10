@@ -385,7 +385,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             if (exceedsThreshold) {
                 listener.getLogger().println("The following CVEs exceed the EPSS threshold of " + epssThreshold + ":");
                 for (Map.Entry<String, Double> entry : exceedingCVEsMap.entrySet()) {
-                    listener.getLogger().println(String.format("CVE: %s, EPSS Score: %.4f", entry.getKey(), entry.getValue()));
+                    listener.getLogger().println(String.format("%s, EPSS Score: %.4f", entry.getKey(), entry.getValue()));
                 }
                 listener.getLogger().println("Failing the build due to EPSS threshold breach.");
             } else {
