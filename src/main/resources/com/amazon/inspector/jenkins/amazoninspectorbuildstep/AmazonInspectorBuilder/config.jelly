@@ -83,15 +83,16 @@
     </f:entry>
 
     <f:entry field="isThresholdEnabled">
-        <f:checkbox id="isThresholdEnabled" class="bold" checked="false"
+        <f:checkbox id="isThresholdEnabled"
+                    class="bold"
+                    checked="${instance.isThresholdEnabled}"
                     title="Enable Vulnerability Thresholds"
                     tooltip="Specifies whether the build should fail when scanned vulnerabilities exceed specified thresholds. For EPSS threshold, enter a value between 0 and 1 (e.g., 0.6)."
-                    onclick='document.getElementById("isThresholdEnabled").checked ?
-            document.getElementById("thresholds").style.display = "block" :
-            document.getElementById("thresholds").style.display = "none"'/>
+                    onclick='document.getElementById("thresholds").style.display = this.checked ? "block" : "none";' />
     </f:entry>
+
     <f:entry>
-        <div id="thresholds" class="hidden">
+        <div id="thresholds" class="${instance.isThresholdEnabled ? '' : 'hidden'}">
             <div class="vulnWrapper" >
                 <label class="vulnLabel required-field" for="countCritical">Critical:</label>
                 <div class="resizedTextbox">
