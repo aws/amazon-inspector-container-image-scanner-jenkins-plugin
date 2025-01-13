@@ -312,23 +312,24 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
             boolean doesBuildPass = !doesBuildFail(SbomOutputParser.aggregateCounts.getCounts());
 
-            if (epssThreshold != null) {
-                listener.getLogger().println("EPSS Threshold set to: " + epssThreshold);
-                boolean cvesExceedThreshold = assessCVEsAgainstEPSS(build, workspace, listener, epssThreshold, sbomWorkspacePath);
-                if (cvesExceedThreshold) {
-                    build.setResult(Result.FAILURE);
-                    return;
-                } else {
-                    listener.getLogger().println("All CVEs are within the EPSS threshold of " + epssThreshold + ".");
-                }
+            if (!isThresholdEnabled) {
+                listener.getLogger().println("Thresholds disabled. Skipping all threshold/EPSS checks.");
+                doesBuildPass = true;
             } else {
-                listener.getLogger().println("No EPSS Threshold specified. Skipping threshold assessment.");
+                if (epssThreshold != null) {
+                    listener.getLogger().println("EPSS Threshold set to: " + epssThreshold);
+                    boolean cvesExceedThreshold = assessCVEsAgainstEPSS(build, workspace, listener, epssThreshold, sbomWorkspacePath);
+                    if (cvesExceedThreshold) {
+                        doesBuildPass = false;
+                    } else {
+                        listener.getLogger().println("All CVEs are within the EPSS threshold of " + epssThreshold + ".");
+                    }
+                } else {
+                    listener.getLogger().println("No EPSS Threshold specified. Skipping EPSS assessment.");
+                }
             }
 
-            if (!isThresholdEnabled) {
-                build.setResult(Result.SUCCESS);
-                doesBuildPass = true;
-            } else if (isThresholdEnabled && doesBuildPass) {
+            if (doesBuildPass) {
                 build.setResult(Result.SUCCESS);
             } else {
                 build.setResult(Result.FAILURE);
