@@ -58,6 +58,7 @@ import lombok.Getter;
 import net.sf.json.JSONObject;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.verb.POST;
@@ -76,7 +77,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     private final String awsRegion;
     private final String credentialId;
     private final String oidcCredentialId;
-    private final boolean isThresholdEnabled;
+    private boolean isThresholdEnabled;
     private final boolean thresholdEquals;
     private final boolean osArch;
     private final int countCritical;
@@ -137,6 +138,15 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             return !(criticalEqualsLimit && highEqualsLimit && mediumEqualsLimit && lowEqualsLimit);
         }
         return criticalExceedsLimit || highExceedsLimit || mediumExceedsLimit || lowExceedsLimit;
+    }
+
+    @DataBoundSetter
+    public void setIsThresholdEnabled(boolean isThresholdEnabled) {
+        this.isThresholdEnabled = isThresholdEnabled;
+    }
+
+    public boolean getIsThresholdEnabled() {
+        return this.isThresholdEnabled;
     }
 
 
