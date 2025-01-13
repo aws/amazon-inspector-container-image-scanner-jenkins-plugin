@@ -318,6 +318,19 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                 if (cvesExceedThreshold) {
                     build.setResult(Result.FAILURE);
                     return;
+
+            if (!isThresholdEnabled) {
+                listener.getLogger().println("Thresholds disabled. Skipping all threshold/EPSS checks.");
+                doesBuildPass = true;
+            } else {
+                if (epssThreshold != null) {
+                    listener.getLogger().println("EPSS Threshold set to: " + epssThreshold);
+                    boolean cvesExceedThreshold = assessCVEsAgainstEPSS(build, workspace, listener, epssThreshold, sbomWorkspacePath);
+                    if (cvesExceedThreshold) {
+                        doesBuildPass = false;
+                    } else {
+                        listener.getLogger().println("All CVEs are within the EPSS threshold of " + epssThreshold + ".");
+                    }
                 } else {
                     listener.getLogger().println("All CVEs are within the EPSS threshold of " + epssThreshold + ".");
                 }
@@ -325,10 +338,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                 listener.getLogger().println("No EPSS Threshold specified. Skipping threshold assessment.");
             }
 
-            if (!isThresholdEnabled) {
-                build.setResult(Result.SUCCESS);
-                doesBuildPass = true;
-            } else if (isThresholdEnabled && doesBuildPass) {
+            if (doesBuildPass) {
                 build.setResult(Result.SUCCESS);
             } else {
                 build.setResult(Result.FAILURE);
@@ -385,7 +395,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             if (exceedsThreshold) {
                 listener.getLogger().println("The following CVEs exceed the EPSS threshold of " + epssThreshold + ":");
                 for (Map.Entry<String, Double> entry : exceedingCVEsMap.entrySet()) {
-                    listener.getLogger().println(String.format("CVE: %s, EPSS Score: %.4f", entry.getKey(), entry.getValue()));
+                    listener.getLogger().println(String.format("%s, EPSS Score: %.4f", entry.getKey(), entry.getValue()));
                 }
                 listener.getLogger().println("Failing the build due to EPSS threshold breach.");
             } else {
