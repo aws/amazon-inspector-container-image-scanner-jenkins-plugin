@@ -90,6 +90,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     private final String sbomgenPath;
     private final String sbomgenSkipFiles;
     private final Double epssThreshold;
+    String reportArtifactName;
     private Job<?, ?> job;
 
     @DataBoundConstructor
@@ -120,6 +121,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         this.countMedium = countMedium;
         this.countLow = countLow;
         this.epssThreshold = epssThreshold;
+        this.reportArtifactName = (reportArtifactName != null && !reportArtifactName.isEmpty()) ? reportArtifactName : "default-report";
     }
 
     private boolean doesBuildFail(Map<Severity, Integer> counts) {
@@ -239,12 +241,20 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             String responseData = new SdkRequests(awsRegion, awsCredential, oidcToken, awsProfileName, iamRole).requestSbom(sbom);
             SbomData sbomData = SbomData.builder().sbom(gson.fromJson(responseData, Sbom.class)).build();
 
-            String sbomFileName = String.format("%s-%s-sbom.json", build.getParent().getDisplayName(),
-                    build.getDisplayName()).replaceAll("[ #]", "");
+            String sbomFileName = String.format("%s-%s-sbom.json", reportArtifactName, build.getDisplayName()).replaceAll("[ #]", "");
             String sbomWorkspacePath = String.format("%s/%s", build.getId(), sbomFileName);
-            artifactMap.put(sbomFileName, sbomWorkspacePath);
+
             FilePath sbomFile = workspace.child(sbomWorkspacePath);
+            if (!sbomFile.getParent().exists()) {
+                sbomFile.getParent().mkdirs();
+            }
+
             sbomFile.write(gson.toJson(sbomData.getSbom()), "UTF-8");
+
+            artifactMap.put(sbomFileName, sbomWorkspacePath);
+
+            build.getArtifactManager().archive(workspace, launcher, new BuildListenerAdapter(listener), artifactMap);
+            listener.getLogger().println("Artifact saved: " + sbomFile.getRemote());
 
             CsvConverter converter = new CsvConverter(sbomData);
             String csvVulnFileName = String.format("%s-%s-vuln.csv", build.getParent().getDisplayName(),

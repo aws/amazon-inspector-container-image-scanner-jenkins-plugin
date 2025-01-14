@@ -56,6 +56,10 @@
         <f:textbox placeholder="alpine:latest or /Users/user/Downloads/alpine.tar" />
     </f:entry>
 
+    <f:entry field="reportArtifactName" title="Report Artifact Name">
+        <f:textbox placeholder="Default: default-report" />
+    </f:entry>
+
     <f:entry field="sbomgenSkipFiles" title="Skip Files">
         <f:textbox placeholder="Specify files to exclude from scanning." />
     </f:entry>
