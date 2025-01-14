@@ -30,15 +30,21 @@
         }
     </style>
 
-    <f:entry field="sbomgenSelectionWrapper" title="Inspector-sbomgen Installation Method">
+    <f:entry field="sbomgenSelection" title="Inspector-sbomgen Installation Method">
         <f:helpArea>
 
         </f:helpArea>
-        <f:radioBlock title="Automatic" name="sbomgenSelection"
-                      checked="${instance.getSbomgenSelection() == null || instance.getSbomgenSelection().equals('automatic')}"
-                      value="automatic">
+
+        <f:radioBlock title="Automatic"
+                      name="sbomgenSelection"
+                      value="automatic"
+                      checked="${instance.sbomgenSelection() == null || instance.sbomgenSelection().equals('automatic')}">
         </f:radioBlock>
-        <f:radioBlock title="Manual" name="sbomgenSelection" checked="${instance.isSource('manual')}" value="manual">
+
+        <f:radioBlock title="Manual"
+                      name="sbomgenSelection"
+                      value="manual"
+                      checked="${instance.sbomgenSelection == 'manual'}">
             <p>Path to inspector-sbomgen</p>
             <f:entry field="sbomgenPath">
                 <f:textbox placeholder="/Users/user/Downloads/inspector-sbomgen"/>

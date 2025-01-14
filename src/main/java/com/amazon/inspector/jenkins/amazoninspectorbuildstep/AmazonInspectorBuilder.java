@@ -452,21 +452,21 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
         @Override
         public AmazonInspectorBuilder newInstance(StaplerRequest req, JSONObject formData) throws FormException {
+            String sourceVal = formData.optString("sbomgenSource", null);
+            formData.put("sbomgenSource", sourceVal);
+
             JSONObject selectionObj = formData.optJSONObject("sbomgenSelection");
-
-            String value = "automatic";
             if (selectionObj != null && selectionObj.has("value")) {
-                value = selectionObj.getString("value");
+                String sbomValue = selectionObj.getString("value");
+                formData.put("sbomgenSelection", sbomValue);
+                if ("manual".equalsIgnoreCase(sbomValue)) {
+                    String manualPath = selectionObj.optString("sbomgenPath", "").trim();
+                    if (manualPath.isEmpty()) {
+                        throw new FormException("Manual SBOMGen selected but no path provided.", "sbomgenPath");
+                    }
+                    formData.put("sbomgenPath", manualPath);
+                }
             }
-
-            if ("manual".equalsIgnoreCase(value)) {
-                String sbomgenPath = selectionObj.optString("sbomgenPath", "").trim();
-                formData.put("sbomgenPath", sbomgenPath);
-            } else {
-                formData.put("sbomgenPath", "");
-            }
-
-            formData.put("sbomgenSelection", value);
 
             return req.bindJSON(AmazonInspectorBuilder.class, formData);
         }
