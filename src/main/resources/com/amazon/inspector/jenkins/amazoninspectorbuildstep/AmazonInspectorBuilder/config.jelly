@@ -56,7 +56,7 @@
         <f:textbox placeholder="alpine:latest or /Users/user/Downloads/alpine.tar" />
     </f:entry>
 
-    <f:entry field="reportArtifactName" title="Report Artifact Name">
+    <f:entry field="reportArtifactName" title="Report Artifact Name (Optional)">
         <f:textbox placeholder="Default: default-report" />
     </f:entry>
 
