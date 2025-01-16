@@ -91,6 +91,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     private final String sbomgenSkipFiles;
     private final Double epssThreshold;
     private Job<?, ?> job;
+    private String reportArtifactName = "default-report";
 
     @DataBoundConstructor
     public AmazonInspectorBuilder(String archivePath, String artifactPath, String archiveType, boolean osArch, String iamRole,
@@ -120,6 +121,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         this.countMedium = countMedium;
         this.countLow = countLow;
         this.epssThreshold = epssThreshold;
+        this.reportArtifactName = (reportArtifactName != null && !reportArtifactName.isEmpty()) ? reportArtifactName : "default-report";
     }
 
     private boolean doesBuildFail(Map<Severity, Integer> counts) {
@@ -138,6 +140,30 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             return !(criticalEqualsLimit && highEqualsLimit && mediumEqualsLimit && lowEqualsLimit);
         }
         return criticalExceedsLimit || highExceedsLimit || mediumExceedsLimit || lowExceedsLimit;
+    }
+
+    @DataBoundSetter
+    public void setReportArtifactName(String reportArtifactName) {
+        if (reportArtifactName == null || reportArtifactName.trim().isEmpty()) {
+            this.reportArtifactName = "default-report";
+            return;
+        }
+
+        String sanitizedName = reportArtifactName.trim();
+
+        if (sanitizedName.length() > 255) {
+            throw new IllegalArgumentException("Report artifact name must not exceed 255 characters");
+        }
+
+        if (!sanitizedName.matches("^[a-zA-Z0-9._-]+$")) {
+            throw new IllegalArgumentException("Report artifact name must only contain letters, numbers, dots, underscores, or hyphens");
+        }
+
+        this.reportArtifactName = sanitizedName;
+    }
+
+    public String getReportArtifactName() {
+        return reportArtifactName != null ? reportArtifactName : "default-report";
     }
 
     @DataBoundSetter
@@ -239,12 +265,20 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             String responseData = new SdkRequests(awsRegion, awsCredential, oidcToken, awsProfileName, iamRole).requestSbom(sbom);
             SbomData sbomData = SbomData.builder().sbom(gson.fromJson(responseData, Sbom.class)).build();
 
-            String sbomFileName = String.format("%s-%s-sbom.json", build.getParent().getDisplayName(),
-                    build.getDisplayName()).replaceAll("[ #]", "");
+            String sbomFileName = String.format("%s-%s-sbom.json", reportArtifactName, build.getDisplayName()).replaceAll("[ #]", "");
             String sbomWorkspacePath = String.format("%s/%s", build.getId(), sbomFileName);
-            artifactMap.put(sbomFileName, sbomWorkspacePath);
+
             FilePath sbomFile = workspace.child(sbomWorkspacePath);
+            if (!sbomFile.getParent().exists()) {
+                sbomFile.getParent().mkdirs();
+            }
+
             sbomFile.write(gson.toJson(sbomData.getSbom()), "UTF-8");
+
+            artifactMap.put(sbomFileName, sbomWorkspacePath);
+
+            build.getArtifactManager().archive(workspace, launcher, new BuildListenerAdapter(listener), artifactMap);
+            listener.getLogger().println("Artifact saved: " + sbomFile.getRemote());
 
             CsvConverter converter = new CsvConverter(sbomData);
             String csvVulnFileName = String.format("%s-%s-vuln.csv", build.getParent().getDisplayName(),
