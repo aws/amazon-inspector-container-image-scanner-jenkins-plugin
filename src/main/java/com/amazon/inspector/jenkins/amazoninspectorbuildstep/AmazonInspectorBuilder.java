@@ -90,8 +90,8 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     private final String sbomgenPath;
     private final String sbomgenSkipFiles;
     private final Double epssThreshold;
-    String reportArtifactName;
     private Job<?, ?> job;
+    private String reportArtifactName = "default-report";
 
     @DataBoundConstructor
     public AmazonInspectorBuilder(String archivePath, String artifactPath, String archiveType, boolean osArch, String iamRole,
@@ -140,6 +140,30 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             return !(criticalEqualsLimit && highEqualsLimit && mediumEqualsLimit && lowEqualsLimit);
         }
         return criticalExceedsLimit || highExceedsLimit || mediumExceedsLimit || lowExceedsLimit;
+    }
+
+    @DataBoundSetter
+    public void setReportArtifactName(String reportArtifactName) {
+        if (reportArtifactName == null || reportArtifactName.trim().isEmpty()) {
+            this.reportArtifactName = "default-report";
+            return;
+        }
+
+        String sanitizedName = reportArtifactName.trim();
+
+        if (sanitizedName.length() > 255) {
+            throw new IllegalArgumentException("Report artifact name must not exceed 255 characters");
+        }
+
+        if (!sanitizedName.matches("^[a-zA-Z0-9._-]+$")) {
+            throw new IllegalArgumentException("Report artifact name must only contain letters, numbers, dots, underscores, or hyphens");
+        }
+
+        this.reportArtifactName = sanitizedName;
+    }
+
+    public String getReportArtifactName() {
+        return reportArtifactName != null ? reportArtifactName : "default-report";
     }
 
     @DataBoundSetter
