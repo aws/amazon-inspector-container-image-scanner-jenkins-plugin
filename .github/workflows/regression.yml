@@ -36,7 +36,15 @@ jobs:
           IP=$(curl -s http://whatismyip.akamai.com/)
           echo "::set-output name=ip::$IP"
           aws ec2 authorize-security-group-ingress --group-name "launch-wizard-3" --protocol -1 --port -1 --cidr $IP/32 --profile default --output text
-      
+          
+      - name: Setup Maven Action
+        uses: s4u/setup-maven-action@v1.7.0
+        with:
+          checkout-fetch-depth: 0
+          java-version: 21
+          java-distribution: openjdk
+          maven-version: 3.9.9
+          
       - name: Build plugin
         run: mvn -U clean package
         
