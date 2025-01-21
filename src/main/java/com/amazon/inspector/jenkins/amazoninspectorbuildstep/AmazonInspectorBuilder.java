@@ -33,7 +33,6 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
@@ -78,7 +77,6 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     private final String credentialId;
     private final String oidcCredentialId;
     private boolean isThresholdEnabled;
-    private final boolean thresholdEquals;
     private final boolean osArch;
     private final int countCritical;
     private final int countHigh;
@@ -96,8 +94,9 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     @DataBoundConstructor
     public AmazonInspectorBuilder(String archivePath, String artifactPath, String archiveType, boolean osArch, String iamRole,
                                   String awsRegion, String credentialId, String awsProfileName, String awsCredentialId,
-                                  String sbomgenSelection, String sbomgenPath, boolean isThresholdEnabled, boolean thresholdEquals,
-                                  int countCritical, int countHigh, int countMedium, int countLow, String oidcCredentialId, String sbomgenSkipFiles, Double epssThreshold) {
+                                  String sbomgenSelection, String sbomgenPath, boolean isThresholdEnabled,
+                                  int countCritical, int countHigh, int countMedium, int countLow, String oidcCredentialId,
+                                  String sbomgenSkipFiles, Double epssThreshold) {
         if (artifactPath != null && !artifactPath.isEmpty()) {
             this.archivePath = artifactPath;
         } else {
@@ -115,7 +114,6 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         this.sbomgenPath = sbomgenPath;
         this.sbomgenSkipFiles = sbomgenSkipFiles;
         this.isThresholdEnabled = isThresholdEnabled;
-        this.thresholdEquals = thresholdEquals;
         this.countCritical = countCritical;
         this.countHigh = countHigh;
         this.countMedium = countMedium;
@@ -130,15 +128,6 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         boolean mediumExceedsLimit = counts.get(Severity.MEDIUM) > countMedium;
         boolean lowExceedsLimit = counts.get(Severity.LOW) > countLow;
 
-        boolean criticalEqualsLimit = counts.get(Severity.CRITICAL) == countCritical;
-        boolean highEqualsLimit = counts.get(Severity.HIGH) == countHigh;
-        boolean mediumEqualsLimit = counts.get(Severity.MEDIUM) == countMedium;
-        boolean lowEqualsLimit = counts.get(Severity.LOW) == countLow;
-
-        if (this.thresholdEquals) {
-            logger.println("Threshold should equal vulnerabilites, regression testing.");
-            return !(criticalEqualsLimit && highEqualsLimit && mediumEqualsLimit && lowEqualsLimit);
-        }
         return criticalExceedsLimit || highExceedsLimit || mediumExceedsLimit || lowExceedsLimit;
     }
 
