@@ -38,7 +38,7 @@ jobs:
           aws ec2 authorize-security-group-ingress --group-name "launch-wizard-3" --protocol -1 --port -1 --cidr $IP/32 --profile default --output text
       
       - name: Build plugin
-        run: mvn -U clean package
+        run: mvn -X -U clean package
         
       - name: Copy Built Plugin
         uses: appleboy/scp-action@v0.1.7
