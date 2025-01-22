@@ -258,8 +258,12 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             String sbomWorkspacePath = String.format("%s/%s", build.getId(), sbomFileName);
 
             FilePath sbomFile = workspace.child(sbomWorkspacePath);
-            if (!sbomFile.getParent().exists()) {
-                sbomFile.getParent().mkdirs();
+            FilePath sbomFileParent = sbomFile.getParent();
+            if (sbomFile == null || sbomFileParent == null) {
+                throw new NullPointerException("SbomFile cannot be null.");
+            }
+            if (!sbomFileParent.exists()) {
+                sbomFileParent.mkdirs();
             }
 
             sbomFile.write(gson.toJson(sbomData.getSbom()), "UTF-8");
