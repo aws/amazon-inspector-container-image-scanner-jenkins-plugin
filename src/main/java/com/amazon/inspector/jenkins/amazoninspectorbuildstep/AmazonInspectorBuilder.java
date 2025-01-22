@@ -1,6 +1,7 @@
 package com.amazon.inspector.jenkins.amazoninspectorbuildstep;
-
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.requests.SdkRequests;
+import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Sbom;
+import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Components.Vulnerability;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomgen.SbomgenDownloader;
 import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
@@ -10,13 +11,13 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
-import hudson.Proc;
 import hudson.model.AbstractProject;
 import hudson.model.Job;
 import hudson.model.Result;
@@ -25,12 +26,10 @@ import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.tasks.Builder;
 import hudson.tasks.BuildStepDescriptor;
-import hudson.util.ArgumentListBuilder;
+import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
-
 import java.io.File;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
@@ -45,14 +44,12 @@ import com.amazon.inspector.jenkins.amazoninspectorbuildstep.csvconversion.CsvCo
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.html.HtmlJarHandler;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.html.HtmlData;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.html.components.ImageMetadata;
-import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Sbom;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.SbomData;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomparsing.SbomOutputParser;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomparsing.Severity;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.html.HtmlConversionUtils;
 import io.jenkins.plugins.oidc_provider.IdTokenFileCredentials;
 import io.jenkins.plugins.oidc_provider.IdTokenStringCredentials;
-
 import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildStep;
 import jenkins.util.BuildListenerAdapter;
@@ -60,9 +57,10 @@ import lombok.Getter;
 import net.sf.json.JSONObject;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.verb.POST;
-
 import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.utils.InspectorRegions.INSPECTOR_REGIONS;
 import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.utils.Sanitizer.sanitizeFilePath;
 import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.utils.Sanitizer.sanitizeUrl;
@@ -72,17 +70,13 @@ import static hudson.security.Permission.READ;
 public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     @SuppressFBWarnings()
     public static PrintStream logger;
-    private final String sbomgenMethod;
     private final String archivePath;
     private final String archiveType;
     private final String iamRole;
     private final String awsRegion;
     private final String credentialId;
     private final String oidcCredentialId;
-    private final boolean isThresholdEnabled;
-    private final boolean thresholdEquals;
-    private final String sbomgenPath;
-    private final String sbomgenSource;
+    private boolean isThresholdEnabled;
     private final boolean osArch;
     private final int countCritical;
     private final int countHigh;
@@ -90,13 +84,19 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     private final int countLow;
     private final String awsCredentialId;
     private final String awsProfileName;
+    private final String sbomgenSelection;
+    private final String sbomgenPath;
+    private final String sbomgenSkipFiles;
+    private final Double epssThreshold;
     private Job<?, ?> job;
+    private String reportArtifactName = "default-report";
 
     @DataBoundConstructor
-    public AmazonInspectorBuilder(String archivePath, String artifactPath, String archiveType, String sbomgenPath, boolean osArch, String iamRole,
+    public AmazonInspectorBuilder(String archivePath, String artifactPath, String archiveType, boolean osArch, String iamRole,
                                   String awsRegion, String credentialId, String awsProfileName, String awsCredentialId,
-                                  String sbomgenMethod, String sbomgenSource, boolean isThresholdEnabled, boolean thresholdEquals,
-                                  int countCritical, int countHigh, int countMedium, int countLow, String oidcCredentialId) {
+                                  String sbomgenSelection, String sbomgenPath, boolean isThresholdEnabled,
+                                  int countCritical, int countHigh, int countMedium, int countLow, String oidcCredentialId,
+                                  String sbomgenSkipFiles, Double epssThreshold) {
         if (artifactPath != null && !artifactPath.isEmpty()) {
             this.archivePath = artifactPath;
         } else {
@@ -107,18 +107,19 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         this.awsCredentialId = awsCredentialId;
         this.oidcCredentialId = oidcCredentialId;
         this.awsProfileName = awsProfileName;
-        this.sbomgenSource = sbomgenSource;
-        this.sbomgenPath = sbomgenPath;
-        this.sbomgenMethod = sbomgenMethod;
         this.osArch = osArch;
         this.iamRole = iamRole;
         this.awsRegion = awsRegion;
+        this.sbomgenSelection = (sbomgenSelection != null) ? sbomgenSelection : "automatic";
+        this.sbomgenPath = sbomgenPath;
+        this.sbomgenSkipFiles = sbomgenSkipFiles;
         this.isThresholdEnabled = isThresholdEnabled;
-        this.thresholdEquals = thresholdEquals;
         this.countCritical = countCritical;
         this.countHigh = countHigh;
         this.countMedium = countMedium;
         this.countLow = countLow;
+        this.epssThreshold = epssThreshold;
+        this.reportArtifactName = (reportArtifactName != null && !reportArtifactName.isEmpty()) ? reportArtifactName : "default-report";
     }
 
     private boolean doesBuildFail(Map<Severity, Integer> counts) {
@@ -127,25 +128,42 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         boolean mediumExceedsLimit = counts.get(Severity.MEDIUM) > countMedium;
         boolean lowExceedsLimit = counts.get(Severity.LOW) > countLow;
 
-        boolean criticalEqualsLimit = counts.get(Severity.CRITICAL) == countCritical;
-        boolean highEqualsLimit = counts.get(Severity.HIGH) == countHigh;
-        boolean mediumEqualsLimit = counts.get(Severity.MEDIUM) == countMedium;
-        boolean lowEqualsLimit = counts.get(Severity.LOW) == countLow;
-
-        if (this.thresholdEquals) {
-            logger.println("Threshold should equal vulnerabilites, regression testing.");
-            return !(criticalEqualsLimit && highEqualsLimit && mediumEqualsLimit && lowEqualsLimit);
-        }
         return criticalExceedsLimit || highExceedsLimit || mediumExceedsLimit || lowExceedsLimit;
     }
 
-    public String isSource(String value) {
-        return Boolean.toString(sbomgenMethod.equals(value));
+    @DataBoundSetter
+    public void setReportArtifactName(String reportArtifactName) {
+        if (reportArtifactName == null || reportArtifactName.trim().isEmpty()) {
+            this.reportArtifactName = "default-report";
+            return;
+        }
+
+        String sanitizedName = reportArtifactName.trim();
+
+        if (sanitizedName.length() > 255) {
+            throw new IllegalArgumentException("Report artifact name must not exceed 255 characters");
+        }
+
+        if (!sanitizedName.matches("^[a-zA-Z0-9._-]+$")) {
+            throw new IllegalArgumentException("Report artifact name must only contain letters, numbers, dots, underscores, or hyphens");
+        }
+
+        this.reportArtifactName = sanitizedName;
     }
 
-    public String isOs(String value) {
-        return Boolean.toString(sbomgenMethod.equals("automatic") && sbomgenSource.equals(value));
+    public String getReportArtifactName() {
+        return reportArtifactName != null ? reportArtifactName : "default-report";
     }
+
+    @DataBoundSetter
+    public void setIsThresholdEnabled(boolean isThresholdEnabled) {
+        this.isThresholdEnabled = isThresholdEnabled;
+    }
+
+    public boolean getIsThresholdEnabled() {
+        return this.isThresholdEnabled;
+    }
+
 
     @Override
     public void perform(Run<?, ?> build, FilePath workspace, EnvVars env, Launcher launcher, TaskListener listener)
@@ -168,12 +186,25 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                 activeArchiveType = "container";
             }
 
-            String activeSbomgenPath = sbomgenPath;
-            if (sbomgenSource != null && !sbomgenSource.isEmpty()) {
-                logger.println("Automatic SBOMGen Sourcing selected, downloading now...");
-                activeSbomgenPath = SbomgenDownloader.getBinary(sbomgenSource, workspace);
+            String sbomgenSelection = this.sbomgenSelection;
+
+            String activeSbomgenPath;
+            if ("automatic".equalsIgnoreCase(sbomgenSelection)) {
+                logger.println("Automatic SBOMGen selected, downloading using default settings...");
+                activeSbomgenPath = SbomgenDownloader.getBinary(workspace);
+            } else if ("manual".equalsIgnoreCase(sbomgenSelection)) {
+                if (sbomgenPath == null || sbomgenPath.isEmpty()) {
+                    throw new IllegalArgumentException("Manual SBOMGen selected but no path provided.");
+                }
+                File sbomgenFile = new File(sbomgenPath);
+                if (!sbomgenFile.exists() || !sbomgenFile.canExecute()) {
+                    throw new IllegalArgumentException("Provided SBOMgen path is invalid or not executable: " + sbomgenPath);
+                }
+                logger.println("Manual SBOMGen selected, using provided path: " + sbomgenPath);
+                activeSbomgenPath = sbomgenPath;
             } else {
-                build.getEnvironment(listener).put("sbomgenPath", activeSbomgenPath);
+                logger.println("Invalid SBOMGen selection. Defaulting to Automatic.");
+                activeSbomgenPath = SbomgenDownloader.getBinary(workspace);
             }
 
             StandardUsernamePasswordCredentials credential = null;
@@ -184,15 +215,13 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                 credential = CredentialsProvider.findCredentialById(credentialId,
                         StandardUsernamePasswordCredentials.class, build);
             }
-
+            String skipfiles = (sbomgenSkipFiles != null) ? sbomgenSkipFiles : "";
             String sbom;
             if (credential != null) {
-                logger.println("Running inspector-sbomgen with docker credential: " + credential.getId());
                 sbom = new SbomgenRunner(launcher, activeSbomgenPath, activeArchiveType, archivePath, credential.getUsername(),
-                        credential.getPassword().getPlainText()).run();
+                        credential.getPassword().getPlainText(),skipfiles).run();
             } else {
-                logger.println("No credential provided, running without.");
-                sbom = new SbomgenRunner(launcher, activeSbomgenPath, activeArchiveType, archivePath, null, null).run();
+                sbom = new SbomgenRunner(launcher, activeSbomgenPath, activeArchiveType, archivePath, null, null, skipfiles).run();
             }
 
             JsonElement metadata = JsonParser.parseString(sbom).getAsJsonObject().get("metadata");
@@ -225,12 +254,24 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             String responseData = new SdkRequests(awsRegion, awsCredential, oidcToken, awsProfileName, iamRole).requestSbom(sbom);
             SbomData sbomData = SbomData.builder().sbom(gson.fromJson(responseData, Sbom.class)).build();
 
-            String sbomFileName = String.format("%s-%s-sbom.json", build.getParent().getDisplayName(),
-                    build.getDisplayName()).replaceAll("[ #]", "");
+            String sbomFileName = String.format("%s-%s-sbom.json", reportArtifactName, build.getDisplayName()).replaceAll("[ #]", "");
             String sbomWorkspacePath = String.format("%s/%s", build.getId(), sbomFileName);
-            artifactMap.put(sbomFileName, sbomWorkspacePath);
+
             FilePath sbomFile = workspace.child(sbomWorkspacePath);
+            FilePath sbomFileParent = sbomFile.getParent();
+            if (sbomFile == null || sbomFileParent == null) {
+                throw new NullPointerException("SbomFile cannot be null.");
+            }
+            if (!sbomFileParent.exists()) {
+                sbomFileParent.mkdirs();
+            }
+
             sbomFile.write(gson.toJson(sbomData.getSbom()), "UTF-8");
+
+            artifactMap.put(sbomFileName, sbomWorkspacePath);
+
+            build.getArtifactManager().archive(workspace, launcher, new BuildListenerAdapter(listener), artifactMap);
+            listener.getLogger().println("Artifact saved: " + sbomFile.getRemote());
 
             CsvConverter converter = new CsvConverter(sbomData);
             String csvVulnFileName = String.format("%s-%s-vuln.csv", build.getParent().getDisplayName(),
@@ -309,9 +350,23 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             boolean doesBuildPass = !doesBuildFail(SbomOutputParser.aggregateCounts.getCounts());
 
             if (!isThresholdEnabled) {
-                build.setResult(Result.SUCCESS);
+                listener.getLogger().println("Thresholds disabled. Skipping all threshold/EPSS checks.");
                 doesBuildPass = true;
-            } else if (isThresholdEnabled && doesBuildPass) {
+            } else {
+                if (epssThreshold != null) {
+                    listener.getLogger().println("EPSS Threshold set to: " + epssThreshold);
+                    boolean cvesExceedThreshold = assessCVEsAgainstEPSS(build, workspace, listener, epssThreshold, sbomWorkspacePath);
+                    if (cvesExceedThreshold) {
+                        doesBuildPass = false;
+                    } else {
+                        listener.getLogger().println("All CVEs are within the EPSS threshold of " + epssThreshold + ".");
+                    }
+                } else {
+                    listener.getLogger().println("No EPSS Threshold specified. Skipping EPSS assessment.");
+                }
+            }
+
+            if (doesBuildPass) {
                 build.setResult(Result.SUCCESS);
             } else {
                 build.setResult(Result.FAILURE);
@@ -330,6 +385,57 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             e.printStackTrace(listener.getLogger());
         } finally {
             printStream.close();
+        }
+    }
+
+    private boolean assessCVEsAgainstEPSS(Run<?, ?> build, FilePath workspace, TaskListener listener, Double epssThreshold, String sbomPath)
+            throws IOException, InterruptedException {
+        FilePath sbomFile = workspace.child(sbomPath);
+        if (!sbomFile.exists()) {
+            listener.getLogger().println("SBOM file not found at: " + sbomFile.getRemote());
+            return true;
+        }
+        try {
+            String sbomContent = sbomFile.readToString();
+            listener.getLogger().println("SBOM file read successfully.");
+            Gson gson = new Gson();
+            Sbom sbom = gson.fromJson(sbomContent, Sbom.class);
+            listener.getLogger().println("SBOM JSON parsed successfully.");
+            List<Vulnerability> vulnerabilities = sbom.getVulnerabilities();
+            if (vulnerabilities == null || vulnerabilities.isEmpty()) {
+                listener.getLogger().println("No vulnerabilities found in the SBOM.");
+                return false;
+            }
+            listener.getLogger().println("Starting EPSS assessment for vulnerabilities...");
+            boolean exceedsThreshold = false;
+            Map<String, Double> exceedingCVEsMap = new HashMap<>();
+            for (Vulnerability vulnerability : vulnerabilities) {
+                String cveId = vulnerability.getId();
+                Double epssScore = vulnerability.getEpssScore();
+                if (epssScore == null) {
+                    continue;
+                }
+                if (epssScore >= epssThreshold) {
+                    exceedsThreshold = true;
+                    exceedingCVEsMap.put(cveId, epssScore);
+                }
+            }
+            if (exceedsThreshold) {
+                listener.getLogger().println("The following CVEs exceed the EPSS threshold of " + epssThreshold + ":");
+                for (Map.Entry<String, Double> entry : exceedingCVEsMap.entrySet()) {
+                    listener.getLogger().println(String.format("%s, EPSS Score: %.4f", entry.getKey(), entry.getValue()));
+                }
+                listener.getLogger().println("Failing the build due to EPSS threshold breach.");
+            } else {
+                listener.getLogger().println("All assessed CVEs are within the EPSS threshold of " + epssThreshold + ".");
+            }
+            return exceedsThreshold;
+        } catch (JsonParseException e) {
+            listener.getLogger().println("Invalid JSON structure in SBOM file: " + e.getMessage());
+            return true;
+        } catch (IOException e) {
+            listener.getLogger().println("Error reading SBOM file: " + e.getMessage());
+            return true;
         }
     }
 
@@ -373,14 +479,20 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
         @Override
         public AmazonInspectorBuilder newInstance(StaplerRequest req, JSONObject formData) throws FormException {
-            String value = JSONObject.fromObject(formData.get("sbomgenSelection")).get("value").toString();
-            formData.put("isAutomaticSbomgen", value.equals("automatic"));
-            formData.put("sbomgenMethod", value);
+            String sourceVal = formData.optString("sbomgenSource", null);
+            formData.put("sbomgenSource", sourceVal);
 
-            if (value.equals("manual")) {
-                formData.put("sbomgenPath", JSONObject.fromObject(formData.get("sbomgenSelection")).get("sbomgenPath"));
-            } else if (value.equals("automatic")) {
-                formData.put("sbomgenSource", JSONObject.fromObject(JSONObject.fromObject(formData.get("sbomgenSelection")).get("sbomgenSource")).get("value"));
+            JSONObject selectionObj = formData.optJSONObject("sbomgenSelection");
+            if (selectionObj != null && selectionObj.has("value")) {
+                String sbomValue = selectionObj.getString("value");
+                formData.put("sbomgenSelection", sbomValue);
+                if ("manual".equalsIgnoreCase(sbomValue)) {
+                    String manualPath = selectionObj.optString("sbomgenPath", "").trim();
+                    if (manualPath.isEmpty()) {
+                        throw new FormException("Manual SBOMGen selected but no path provided.", "sbomgenPath");
+                    }
+                    formData.put("sbomgenPath", manualPath);
+                }
             }
 
             return req.bindJSON(AmazonInspectorBuilder.class, formData);
@@ -457,6 +569,94 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                 return getCredentialIdModels();
             }
             return new ListBoxModel();
+        }
+
+        @POST
+        public FormValidation doCheckEpssThreshold(@QueryParameter String value) {
+            Jenkins.get().checkPermission(Job.CONFIGURE);
+            if (value == null || value.trim().isEmpty()) {
+                return FormValidation.ok();
+            }
+            try {
+                double d = Double.parseDouble(value);
+                if (d < 0.0 || d > 1.0) {
+                    return FormValidation.error("EPSS threshold must be between 0.0 and 1.0.");
+                }
+            } catch (NumberFormatException e) {
+                return FormValidation.error("EPSS threshold must be a numeric value between 0.0 and 1.0.");
+            }
+            return FormValidation.ok();
+        }
+
+        @POST
+        public FormValidation doCheckCountCritical(@QueryParameter String value) {
+            Jenkins.get().checkPermission(Job.CONFIGURE);
+            return validateNumericThreshold(value, "Critical");
+        }
+        @POST
+        public FormValidation doCheckCountHigh(@QueryParameter String value) {
+            Jenkins.get().checkPermission(Job.CONFIGURE);
+            return validateNumericThreshold(value, "High");
+        }
+        @POST
+        public FormValidation doCheckCountMedium(@QueryParameter String value) {
+            Jenkins.get().checkPermission(Job.CONFIGURE);
+            return validateNumericThreshold(value, "Medium");
+        }
+        @POST
+        public FormValidation doCheckCountLow(@QueryParameter String value) {
+            Jenkins.get().checkPermission(Job.CONFIGURE);
+            return validateNumericThreshold(value, "Low");
+        }
+
+        private FormValidation validateNumericThreshold(String value, String fieldName) {
+            Jenkins.get().checkPermission(Job.CONFIGURE);
+            if (value == null || value.trim().isEmpty()) {
+                return FormValidation.error(fieldName + " threshold cannot be empty.");
+            }
+            try {
+                int intValue = Integer.parseInt(value);
+                if (intValue < 0) {
+                    return FormValidation.error(fieldName + " threshold must be a non-negative integer.");
+                }
+            } catch (NumberFormatException e) {
+                return FormValidation.error(fieldName + " threshold must be a numeric value.");
+            }
+            return FormValidation.ok();
+        }
+
+        @POST
+        public FormValidation doCheckArchivePath(@QueryParameter String value) {
+            Jenkins.get().checkPermission(Job.CONFIGURE);
+            if (value == null || value.trim().isEmpty()) {
+                return FormValidation.error("Image Id is required. Provide a valid local/remote image name or path to an image tar file.");
+            }
+            if (!value.contains(":") && !value.contains("@") && !value.endsWith(".tar")) {
+                return FormValidation.warning("This doesn't look like a standard Docker image name or a tar file path. Verify it matches the expected format.");
+            }
+            return FormValidation.ok();
+        }
+
+        @POST
+        public FormValidation doCheckAwsRegion(@QueryParameter String value) {
+            Jenkins.get().checkPermission(Job.CONFIGURE);
+            if (value == null || value.trim().isEmpty()) {
+                return FormValidation.error("You must select an AWS Region.");
+            }
+            if ("Select AWS Region".equals(value)) {
+                return FormValidation.error("Please select a AWS Region from the list.");
+            }
+            boolean isValid = false;
+            for (String region : INSPECTOR_REGIONS) {
+                if (region.equals(value)) {
+                    isValid = true;
+                    break;
+                }
+            }
+            if (!isValid) {
+                return FormValidation.error("Please pick one from the list.");
+            }
+            return FormValidation.ok();
         }
 
         @SuppressFBWarnings()

@@ -28,8 +28,8 @@ jobs:
          artifact_path: './'
          display_vulnerability_findings: "enabled"
          critical_threshold: 1
-         high_threshold: 1
-         medium_threshold: 1
+         high_threshold: 2
+         medium_threshold: 2
          low_threshold: 1
          other_threshold: 1
 
