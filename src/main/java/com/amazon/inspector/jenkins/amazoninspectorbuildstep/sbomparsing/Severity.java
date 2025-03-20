@@ -10,7 +10,8 @@ public enum Severity {
     HIGH("high", 3),
     MEDIUM("medium", 2),
     LOW("low", 1),
-    OTHER("other", 0);
+    OTHER("other", 0),
+    UNTRIAGED("untriaged", -1);
 
     private String severityName;
     private int rating;

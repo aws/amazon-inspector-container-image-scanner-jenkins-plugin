@@ -16,6 +16,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.utils.ConversionUtils.getSeverity;
+
 public class HtmlConversionUtils {
 
     public static List<HtmlVulnerability> convertVulnerabilities(List<Vulnerability> vulnerabilities,
@@ -30,7 +32,7 @@ public class HtmlConversionUtils {
                 continue;
             }
 
-            String severity = getSeverity(vulnerability.getRatings());
+            String severity = String.valueOf(getSeverity(vulnerability));
             if (severity == null) {
                 severity = "Untriaged";
             }
@@ -105,7 +107,7 @@ public class HtmlConversionUtils {
                 continue;
             }
 
-            String severity = getSeverity(vulnerability.getRatings());
+            String severity = String.valueOf(getSeverity(vulnerability));
             if (severity == null) {
                 severity = "Untriaged";
             }
@@ -155,19 +157,5 @@ public class HtmlConversionUtils {
         }
 
         return null;
-    }
-
-    static String getSeverity(List<Rating> ratings) {
-        if (ratings == null || ratings.size() == 0) {
-            return null;
-        }
-
-        for (Rating rating : ratings) {
-            if (rating.getSource().getName().equals("NVD")) {
-                return rating.getSeverity();
-            }
-        }
-
-        return ratings.get(0).getSeverity();
     }
 }
