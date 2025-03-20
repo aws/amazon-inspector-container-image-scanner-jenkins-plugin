@@ -136,6 +136,38 @@
       stroke: #037f0c;
     }
 
+    div#note {
+      background-color: #f1faff;
+      border: 2px solid #0073bb;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: bold;
+      line-height: 20px;
+      padding: 14px 16px;
+    }
+
+    div#note svg {
+      box-sizing: border-box;
+      height: 16px;
+      width: 16px;
+      float: left;
+      color: #0073bb;
+      fill: none;
+      margin: 2px 10px 0 0;
+    }
+
+    div#note svg circle {
+      stroke-width: 2px;
+      stroke-linejoin: round;
+      stroke: #0073bb;
+    }
+
+    div#note svg path {
+      stroke-width: 2px;
+      stroke-linejoin: square;
+      stroke: #0073bb;
+    }
+
     h1 {
       font-size: 24px;
       font-weight: 700;
@@ -271,6 +303,17 @@
 
       <div id="updated-at">Updated at</div>
       <div class="clear"></div>
+    </div>
+
+    <div id="note" class="section">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" focusable="false" aria-hidden="true">
+        <circle class="stroke-linejoin-round" cx="8" cy="8" r="7"></circle>
+        <path d="M8 11V8H6"></path>
+        <path class="stroke-linejoin-round" d="M10 11H6"></path>
+        <path d="M7.99 5H8v.01h-.01z"></path>
+      </svg>
+
+      <div id="success-note">NOTE: A finding may contain multiple severity ratings from different vendors. For brevity, this report displays the highest severity provided. For more details regarding a given finding, please review the ratings list for each vulnerability in the SBOM associated with this scan.</div>
     </div>
 
     <div id="alert" class="section">
