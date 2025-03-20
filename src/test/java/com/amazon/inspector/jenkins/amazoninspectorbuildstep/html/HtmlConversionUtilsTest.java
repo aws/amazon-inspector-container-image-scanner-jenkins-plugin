@@ -9,12 +9,13 @@ import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Compone
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Components.Source;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Components.Vulnerability;
 
+import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomparsing.Severity;
 import org.junit.Test;
 
 import java.util.List;
 
-import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.html.HtmlConversionUtils.getSeverity;
 import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.html.HtmlConversionUtils.sortVulnerabilitiesBySeverity;
+import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.utils.ConversionUtils.getSeverity;
 import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -26,7 +27,7 @@ public class HtmlConversionUtilsTest {
                 .id("ID")
                 .ratings(List.of(Rating.builder().source(
                         Source.builder().name("NVD").build()
-                )
+                ).method("CVSSv4")
                         .severity("HIGH").build()))
                 .affects(List.of(Affect.builder().ref("bom").build()))
                 .build();
@@ -50,6 +51,7 @@ public class HtmlConversionUtilsTest {
                 .ratings(List.of(Rating.builder().source(
                                 Source.builder().name("NVD").build()
                         )
+                        .method("CVSSv4")
                         .severity("HIGH").build()))
                 .affects(List.of(Affect.builder().ref("bom").build()))
                 .build();
@@ -79,7 +81,7 @@ public class HtmlConversionUtilsTest {
 
         List<HtmlVulnerability> htmlVulnerabilities = HtmlConversionUtils.convertVulnerabilities(vulnerabilities, components);
 
-        assertEquals(htmlVulnerabilities.get(0).severity, "Untriaged");
+        assertEquals(htmlVulnerabilities.get(0).severity, "UNTRIAGED");
     }
 
     @Test
@@ -108,6 +110,7 @@ public class HtmlConversionUtilsTest {
                 .ratings(List.of(Rating.builder().source(
                                 Source.builder().name("NVD").build()
                         )
+                        .method("CVSSv4")
                         .severity("HIGH").build()))
                 .affects(List.of(Affect.builder().ref("bom").build()))
                 .build();
@@ -132,6 +135,7 @@ public class HtmlConversionUtilsTest {
                 .ratings(List.of(Rating.builder().source(
                                 Source.builder().name("NVD").build()
                         )
+                        .method("CVSSv4")
                         .severity("HIGH").build()))
                 .affects(List.of(Affect.builder().ref("bom").build()))
                 .build();
@@ -162,7 +166,7 @@ public class HtmlConversionUtilsTest {
 
         List<DockerVulnerability> htmlVulnerabilities = HtmlConversionUtils.convertDocker(vulnerabilities, components);
 
-        assertEquals(htmlVulnerabilities.get(0).severity, "Untriaged");
+        assertEquals(htmlVulnerabilities.get(0).severity, "UNTRIAGED");
     }
 
     @Test
@@ -191,6 +195,7 @@ public class HtmlConversionUtilsTest {
                 .ratings(List.of(Rating.builder().source(
                                 Source.builder().name("NVD").build()
                         )
+                        .method("CVSSv4")
                         .severity("HIGH").build()))
                 .affects(List.of(Affect.builder().ref("bom").build()))
                 .build();
@@ -252,13 +257,14 @@ public class HtmlConversionUtilsTest {
 
     @Test
     public void testGetSeverity_noNVD() {
-        assertEquals(getSeverity(
-                List.of(
-                        Rating.builder()
-                                .severity("low")
-                                .source(Source.builder()
-                                        .name("NonNVD").build()
-                                ).build())
-        ), "low");
+        Vulnerability vuln = Vulnerability.builder().ratings(List.of(
+                Rating.builder()
+                        .severity("low")
+                        .method("CVSSv4")
+                        .source(Source.builder()
+                                .name("NonNVD").build()
+                        ).build())).build();
+        assertEquals(getSeverity(vuln)
+                , Severity.UNTRIAGED);
     }
 }
