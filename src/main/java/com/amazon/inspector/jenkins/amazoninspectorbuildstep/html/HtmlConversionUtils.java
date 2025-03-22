@@ -18,7 +18,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.utils.ConversionUtils.getSeverity;
 
@@ -58,8 +57,6 @@ public class HtmlConversionUtils {
                 htmlVulnerabilities.add(htmlVulnerability);
             }
         }
-
-        System.out.println(htmlVulnerabilities.size());
 
         Set<String> seen = new HashSet<>();
         htmlVulnerabilities.removeIf(x -> !seen.add(x.title));
