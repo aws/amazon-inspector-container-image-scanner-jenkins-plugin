@@ -1,5 +1,6 @@
 package com.amazon.inspector.jenkins.amazoninspectorbuildstep.html;
 
+import com.amazon.inspector.jenkins.amazoninspectorbuildstep.TestUtils;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.html.components.DockerVulnerability;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.html.components.HtmlVulnerability;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Components.Affect;
@@ -9,9 +10,12 @@ import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Compone
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Components.Source;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Components.Vulnerability;
 
+import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.SbomData;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomparsing.Severity;
+import org.junit.Before;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.util.List;
 
 import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.html.HtmlConversionUtils.sortVulnerabilitiesBySeverity;
@@ -20,28 +24,23 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class HtmlConversionUtilsTest {
+    SbomData sbomData;
+
+    @Before
+    public void setUp() throws IOException {
+        String str = TestUtils.readStringFromFile("src/test/resources/data/SbomOutputExampleUbuntu.json");
+        sbomData = TestUtils.getSbomDataFromString(str);
+    }
 
     @Test
     public void testConvertVulnerabilities() {
-        Vulnerability vulnerability = Vulnerability.builder()
-                .id("ID")
-                .ratings(List.of(Rating.builder().source(
-                        Source.builder().name("NVD").build()
-                ).method("CVSSv4")
-                        .severity("HIGH").build()))
-                .affects(List.of(Affect.builder().ref("bom").build()))
-                .build();
-        List<Vulnerability> vulnerabilities = List.of(vulnerability);
+        List<Vulnerability> vulnerabilities = sbomData.getSbom().getVulnerabilities();
+        List<Component> components = sbomData.getSbom().getComponents();
 
-        Component component = Component.builder()
-                .bomRef("bom")
-                .purl("purl")
-                .build();
-        List<Component> components = List.of(component);
+        List<HtmlVulnerability> htmlVulnerabilities = HtmlConversionUtils.convertVulnerabilities(vulnerabilities,
+                components);
 
-        List<HtmlVulnerability> htmlVulnerabilities = HtmlConversionUtils.convertVulnerabilities(vulnerabilities, components);
-
-        assertEquals(htmlVulnerabilities.size(), 1);
+        assertEquals(htmlVulnerabilities.size(), 396);
     }
 
     @Test

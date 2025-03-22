@@ -5,7 +5,6 @@ import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.html.compone
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Components.Affect;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Components.Component;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Components.Property;
-import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Components.Rating;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Components.Vulnerability;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomparsing.Severity;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -14,7 +13,12 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.utils.ConversionUtils.getSeverity;
 
@@ -27,6 +31,8 @@ public class HtmlConversionUtils {
             return htmlVulnerabilities;
         }
 
+        Map<String, String> cveToComponentMap = new HashMap<>();
+
         for (Vulnerability vulnerability : vulnerabilities) {
             if (vulnerability.getId().contains("IN-DOCKER")) {
                 continue;
@@ -34,26 +40,56 @@ public class HtmlConversionUtils {
 
             String severity = String.valueOf(getSeverity(vulnerability));
             if (severity == null) {
-                severity = "Untriaged";
+                severity = "untriaged";
             }
 
             for (Affect affect : vulnerability.getAffects()) {
                 String component = getComponent(components, affect.getRef());
-                if (component == null) {
-                    continue;
+                if (component != null) {
+                    cveToComponentMap.put(vulnerability.getId(), component);
                 }
 
                 HtmlVulnerability htmlVulnerability = HtmlVulnerability.builder()
                         .title(vulnerability.getId())
                         .severity(StringUtils.capitalize(severity))
-                        .component(StringEscapeUtils.unescapeJava(component))
+                        .component(StringEscapeUtils.unescapeJava(cveToComponentMap.get(vulnerability.getId())))
                         .build();
+
                 htmlVulnerabilities.add(htmlVulnerability);
             }
         }
 
+        System.out.println(htmlVulnerabilities.size());
+
+        Set<String> seen = new HashSet<>();
+        htmlVulnerabilities.removeIf(x -> !seen.add(x.title));
+
         Collections.sort(htmlVulnerabilities, (v1, v2) -> sortVulnerabilitiesBySeverity(v1.severity, v2.severity));
+
         return htmlVulnerabilities;
+    }
+
+    private static List<HtmlVulnerability> dedupeVulnerabilities(List<HtmlVulnerability> htmlVulnerabilities) {
+        System.out.println(htmlVulnerabilities.size());
+        Map<String, HtmlVulnerability> dedupeMap = new HashMap<>();
+        for (HtmlVulnerability htmlVulnerability : htmlVulnerabilities) {
+            System.out.println(htmlVulnerability.vulnerabilityId);
+            if (!dedupeMap.containsKey(htmlVulnerability.vulnerabilityId)) {
+                dedupeMap.put(htmlVulnerability.vulnerabilityId, htmlVulnerability);
+                System.out.println(htmlVulnerability.vulnerabilityId);
+            }
+
+            if (dedupeMap.get(htmlVulnerability.vulnerabilityId).component == null) {
+                dedupeMap.get(htmlVulnerability.vulnerabilityId).component = htmlVulnerability.component;
+            }
+        }
+
+        List<HtmlVulnerability> dedupedValues = new ArrayList<>();
+        for ( Map.Entry<String, HtmlVulnerability> entry : dedupeMap.entrySet()) {
+            dedupedValues.add(entry.getValue());
+        }
+
+        return dedupedValues;
     }
 
     public static String getLines(String id, List<Property> properties) {
@@ -109,7 +145,7 @@ public class HtmlConversionUtils {
 
             String severity = String.valueOf(getSeverity(vulnerability));
             if (severity == null) {
-                severity = "Untriaged";
+                severity = "untriaged";
             }
 
             String description = vulnerability.getDescription();
