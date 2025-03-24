@@ -1,5 +1,6 @@
 package com.amazon.inspector.jenkins.amazoninspectorbuildstep.utils;
 
+import com.amazon.inspector.jenkins.amazoninspectorbuildstep.AmazonInspectorBuilder;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Components.Rating;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Components.Vulnerability;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomparsing.Severity;
@@ -29,7 +30,7 @@ public class ConversionUtils {
 
         Map<String, Severity> severityMap = new HashMap<>();
         for (Rating rating : ratings) {
-            if (rating == null || rating.getSource() == null) {
+            if (rating == null) {
                 continue;
             }
 

@@ -236,8 +236,8 @@
                     <mojoStatusPath/>
                     <outputDirectory/>
                     <projectArtifact/>
-                    <source>7</source>
-                    <target>7</target>
+                    <source>16</source>
+                    <target>16</target>
                 </configuration>
             </plugin>
         </plugins>
