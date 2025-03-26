@@ -22,7 +22,7 @@ import java.util.Set;
 import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.utils.ConversionUtils.getSeverity;
 
 public class HtmlConversionUtils {
-
+    @SuppressFBWarnings()
     public static List<HtmlVulnerability> convertVulnerabilities(List<Vulnerability> vulnerabilities,
                                                                  List<Component> components) {
         List<HtmlVulnerability> htmlVulnerabilities = new ArrayList<>();
@@ -64,29 +64,6 @@ public class HtmlConversionUtils {
         Collections.sort(htmlVulnerabilities, (v1, v2) -> sortVulnerabilitiesBySeverity(v1.severity, v2.severity));
 
         return htmlVulnerabilities;
-    }
-
-    private static List<HtmlVulnerability> dedupeVulnerabilities(List<HtmlVulnerability> htmlVulnerabilities) {
-        System.out.println(htmlVulnerabilities.size());
-        Map<String, HtmlVulnerability> dedupeMap = new HashMap<>();
-        for (HtmlVulnerability htmlVulnerability : htmlVulnerabilities) {
-            System.out.println(htmlVulnerability.vulnerabilityId);
-            if (!dedupeMap.containsKey(htmlVulnerability.vulnerabilityId)) {
-                dedupeMap.put(htmlVulnerability.vulnerabilityId, htmlVulnerability);
-                System.out.println(htmlVulnerability.vulnerabilityId);
-            }
-
-            if (dedupeMap.get(htmlVulnerability.vulnerabilityId).component == null) {
-                dedupeMap.get(htmlVulnerability.vulnerabilityId).component = htmlVulnerability.component;
-            }
-        }
-
-        List<HtmlVulnerability> dedupedValues = new ArrayList<>();
-        for ( Map.Entry<String, HtmlVulnerability> entry : dedupeMap.entrySet()) {
-            dedupedValues.add(entry.getValue());
-        }
-
-        return dedupedValues;
     }
 
     public static String getLines(String id, List<Property> properties) {
