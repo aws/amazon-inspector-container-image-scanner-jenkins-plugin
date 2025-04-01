@@ -50,7 +50,7 @@ jobs:
           target: "/home/ec2-user"
           
       - name: Copy file
-        uses: appleboy/ssh-action@v1.2.0
+        uses: appleboy/ssh-action@v1.2.2
         with:
           key: ${{ secrets.ID_RSA }}
           host: ${{ secrets.EC2_INSTANCE }}
