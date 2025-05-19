@@ -35,7 +35,7 @@
         <revision>1.0</revision>
         <changelist>999999-SNAPSHOT</changelist>
         <!-- https://www.jenkins.io/doc/developer/plugin-development/choosing-jenkins-baseline/ -->
-        <jenkins.version>2.462.3</jenkins.version>
+        <jenkins.version>2.479.1</jenkins.version>
         <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
     </properties>
 
@@ -44,7 +44,7 @@
             <dependency>
                 <groupId>software.amazon.awssdk</groupId>
                 <artifactId>bom</artifactId>
-                <version>2.29.43</version>
+                <version>2.31.33</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -54,7 +54,7 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>2.17.1</version>
+            <version>2.19.0</version>
         </dependency>
 
         <dependency>
@@ -66,13 +66,13 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>jackson2-api</artifactId>
-            <version>2.15.2-350.v0c2f3f8fc595</version>
+            <version>2.18.3-402.v74c4eb_f122b_2</version>
         </dependency>
 
         <dependency>
             <groupId>io.jenkins.plugins</groupId>
             <artifactId>oidc-provider</artifactId>
-            <version>79.v46f0066a_d813</version>
+            <version>111.v29fd614b_3617</version>
         </dependency>
 
         <dependency>
@@ -85,7 +85,7 @@
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
-            <version>5.13.0</version>
+            <version>5.17.0</version>
             <scope>test</scope>
         </dependency>
 
@@ -148,7 +148,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>aws-credentials</artifactId>
-            <version>231.v08a_59f17d742</version>
+            <version>245.v8a_1b_7c11a_94d</version>
         </dependency>
 
         <dependency>
@@ -160,7 +160,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>credentials</artifactId>
-            <version>1371.1373.v4eb_fa_b_7161e9</version>
+            <version>1415.v831096eb_5534</version>
         </dependency>
 
         <dependency>
@@ -185,6 +185,13 @@
             <groupId>commons-codec</groupId>
             <artifactId>commons-codec</artifactId>
             <version>1.17.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
+            <version>6.1.0</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 
@@ -238,6 +245,16 @@
                     <projectArtifact/>
                     <source>16</source>
                     <target>16</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.2.5</version>
+                <configuration>
+                    <excludes>
+                        <exclude>**InjectedTest</exclude>
+                    </excludes>
                 </configuration>
             </plugin>
         </plugins>
