@@ -72,7 +72,7 @@
         <dependency>
             <groupId>io.jenkins.plugins</groupId>
             <artifactId>oidc-provider</artifactId>
-            <version>79.v46f0066a_d813</version>
+            <version>111.v29fd614b_3617</version>
         </dependency>
 
         <dependency>
