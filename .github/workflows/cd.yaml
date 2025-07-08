@@ -1,4 +1,4 @@
-name: Jenkins Maven Release Plugin
+name: Jenkins Maven Release
 on:
   workflow_dispatch:
   check_run:
