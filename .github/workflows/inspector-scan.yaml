@@ -1,4 +1,4 @@
-name: Scan repo with Inspector
+name: Inspector Security Scan
 
 on: [push]
 jobs:
