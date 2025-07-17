@@ -104,6 +104,9 @@ public class SbomgenRunner {
 
     @VisibleForTesting
     protected boolean isValidPath(String path) {
+        // Validates paths for container images and file paths while preventing command injection
+        // Allows: alphanumeric, forward slashes, dots, underscores, hyphens, colons, and spaces
+        // Blocks: shell metacharacters like &&, ;, |, $(), backticks, @ to prevent injection attacks
         String regex = "^[a-zA-Z0-9/._\\-: ]+$";
         return path.matches(regex);
     }
