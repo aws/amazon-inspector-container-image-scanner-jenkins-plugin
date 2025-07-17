@@ -104,7 +104,7 @@ public class SbomgenRunner {
 
     @VisibleForTesting
     protected boolean isValidPath(String path) {
-        String regex = "^[a-zA-Z0-9/._\\-:]+$";
+        String regex = "^[a-zA-Z0-9/._\\-: ]+$";
         return path.matches(regex);
     }
 }
