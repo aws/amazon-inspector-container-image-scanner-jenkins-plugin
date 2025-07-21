@@ -117,7 +117,7 @@
         <dependency>
             <groupId>com.opencsv</groupId>
             <artifactId>opencsv</artifactId>
-            <version>5.9</version>
+            <version>5.11.2</version>
         </dependency>
 
         <dependency>
@@ -148,7 +148,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>aws-credentials</artifactId>
-            <version>245.v8a_1b_7c11a_94d</version>
+            <version>248.v78a_dcfc9db_ff</version>
         </dependency>
 
         <dependency>
@@ -184,7 +184,7 @@
         <dependency>
             <groupId>commons-codec</groupId>
             <artifactId>commons-codec</artifactId>
-            <version>1.17.1</version>
+            <version>1.18.0</version>
         </dependency>
 
         <dependency>
