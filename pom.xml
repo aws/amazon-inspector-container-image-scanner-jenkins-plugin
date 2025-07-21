@@ -85,7 +85,7 @@
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
-            <version>5.13.0</version>
+            <version>5.17.0</version>
             <scope>test</scope>
         </dependency>
 
@@ -148,7 +148,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>aws-credentials</artifactId>
-            <version>231.v08a_59f17d742</version>
+            <version>245.v8a_1b_7c11a_94d</version>
         </dependency>
 
         <dependency>
@@ -160,7 +160,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>credentials</artifactId>
-            <version>1371.1373.v4eb_fa_b_7161e9</version>
+            <version>1415.v831096eb_5534</version>
         </dependency>
 
         <dependency>
@@ -185,6 +185,13 @@
             <groupId>commons-codec</groupId>
             <artifactId>commons-codec</artifactId>
             <version>1.17.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
+            <version>6.1.0</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 
@@ -238,6 +245,16 @@
                     <projectArtifact/>
                     <source>16</source>
                     <target>16</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.2.5</version>
+                <configuration>
+                    <excludes>
+                        <exclude>**InjectedTest</exclude>
+                    </excludes>
                 </configuration>
             </plugin>
         </plugins>
