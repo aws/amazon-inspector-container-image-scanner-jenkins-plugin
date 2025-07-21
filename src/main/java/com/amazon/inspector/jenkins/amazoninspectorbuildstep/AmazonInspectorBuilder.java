@@ -470,7 +470,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     }
 
 
-    @Symbol("Amazon Inspector")
+    @Symbol("amazonInspector")
     @Extension
     public static class DescriptorImpl extends BuildStepDescriptor<Builder> {
         public DescriptorImpl() {
