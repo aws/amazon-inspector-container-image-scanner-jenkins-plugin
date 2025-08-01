@@ -191,7 +191,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             String activeSbomgenPath;
             if ("automatic".equalsIgnoreCase(sbomgenSelection)) {
                 logger.println("Automatic SBOMGen selected, downloading using default settings...");
-                activeSbomgenPath = SbomgenDownloader.getBinary(workspace);
+                activeSbomgenPath = SbomgenDownloader.getBinary(workspace, env, launcher);
             } else if ("manual".equalsIgnoreCase(sbomgenSelection)) {
                 if (sbomgenPath == null || sbomgenPath.isEmpty()) {
                     throw new IllegalArgumentException("Manual SBOMGen selected but no path provided.");
@@ -204,7 +204,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                 activeSbomgenPath = sbomgenPath;
             } else {
                 logger.println("Invalid SBOMGen selection. Defaulting to Automatic.");
-                activeSbomgenPath = SbomgenDownloader.getBinary(workspace);
+                activeSbomgenPath = SbomgenDownloader.getBinary(workspace, env, launcher);
             }
 
             StandardUsernamePasswordCredentials credential = null;
@@ -218,10 +218,10 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             String skipfiles = (sbomgenSkipFiles != null) ? sbomgenSkipFiles : "";
             String sbom;
             if (credential != null) {
-                sbom = new SbomgenRunner(launcher, activeSbomgenPath, activeArchiveType, archivePath, credential.getUsername(),
+                sbom = new SbomgenRunner(launcher, workspace, activeSbomgenPath, activeArchiveType, archivePath, credential.getUsername(),
                         credential.getPassword().getPlainText(),skipfiles).run();
             } else {
-                sbom = new SbomgenRunner(launcher, activeSbomgenPath, activeArchiveType, archivePath, null, null, skipfiles).run();
+                sbom = new SbomgenRunner(launcher, workspace, activeSbomgenPath, activeArchiveType, archivePath, null, null, skipfiles).run();
             }
 
             JsonElement metadata = JsonParser.parseString(sbom).getAsJsonObject().get("metadata");
