@@ -20,6 +20,7 @@ public class SbomgenRunner {
     public String archiveType;
     public String archivePath;
     public Launcher launcher;
+    public FilePath workspace;
 
     @Setter
     public String dockerUsername;
@@ -29,7 +30,7 @@ public class SbomgenRunner {
 
     private final String sbomgenSkipFiles;
 
-    public SbomgenRunner(Launcher launcher, String sbomgenPath, String activeArchiveType,
+    public SbomgenRunner(Launcher launcher, FilePath workspace, String sbomgenPath, String activeArchiveType,
                          String archivePath, String dockerUsername, String dockerPassword,
                          String sbomgenSkipFiles) {
         this.sbomgenPath = sbomgenPath;
@@ -38,6 +39,7 @@ public class SbomgenRunner {
         this.dockerUsername = dockerUsername;
         this.dockerPassword = dockerPassword;
         this.launcher = launcher;
+        this.workspace = workspace;
         this.sbomgenSkipFiles = sbomgenSkipFiles;
     }
 
@@ -46,7 +48,12 @@ public class SbomgenRunner {
     }
 
     private String runSbomgen(String sbomgenPath, String archivePath) throws Exception {
-        FilePath sbomgenFilePath = new FilePath(new File(sbomgenPath));
+        FilePath sbomgenFilePath;
+        if (workspace.getChannel() != null) {
+            sbomgenFilePath = new FilePath(workspace.getChannel(), sbomgenPath);
+        } else {
+            sbomgenFilePath = new FilePath(new File(sbomgenPath));
+        }
 
         if (!isValidPath(sbomgenFilePath.getRemote())) {
             throw new IllegalArgumentException("Invalid sbomgen path: " + sbomgenPath);
