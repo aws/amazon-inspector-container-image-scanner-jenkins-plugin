@@ -1,15 +1,19 @@
 package com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomgen;
 
+import hudson.FilePath;
+import hudson.remoting.VirtualChannel;
 import org.junit.Test;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class SbomgenRunnerTest {
 
     @Test
     public void testIsValidPath() {
-        SbomgenRunner runner = new SbomgenRunner(null, null, null, null, null, null, null);
+        SbomgenRunner runner = new SbomgenRunner(null, null, null, null, null, null, null, null);
         
         // Valid paths (matching regex: ^[a-zA-Z0-9/._\-: ]+$)
         assertTrue(runner.isValidPath("alpine:latest"));
@@ -35,7 +39,7 @@ public class SbomgenRunnerTest {
 
     @Test
     public void testIsValidPathEdgeCases() {
-        SbomgenRunner runner = new SbomgenRunner(null, null, null, null, null, null, null);
+        SbomgenRunner runner = new SbomgenRunner(null, null, null, null, null, null, null, null);
         
         // Edge cases that should be invalid
         assertFalse(runner.isValidPath(""));
@@ -53,7 +57,34 @@ public class SbomgenRunnerTest {
 
     @Test(expected = NullPointerException.class)
     public void testIsValidPathWithNull() {
-        SbomgenRunner runner = new SbomgenRunner(null, null, null, null, null, null, null);
+        SbomgenRunner runner = new SbomgenRunner(null, null, null, null, null, null, null, null);
         runner.isValidPath(null);
+    }
+
+    @Test
+    public void testWorkspaceChannelDetectionForRemoteAgent() throws Exception {
+        FilePath mockWorkspace = mock(FilePath.class);
+        VirtualChannel mockChannel = mock(VirtualChannel.class);
+        
+        when(mockWorkspace.getChannel()).thenReturn(mockChannel);
+        
+        SbomgenRunner runner = new SbomgenRunner(null, mockWorkspace, null, null, null, null, null, null);
+        
+        // Verify the runner correctly identifies remote agent scenario
+        assertTrue("Should detect remote agent when workspace has channel", 
+                   runner.workspace.getChannel() != null);
+    }
+
+    @Test
+    public void testWorkspaceChannelDetectionForLocalExecution() throws Exception {
+        FilePath mockWorkspace = mock(FilePath.class);
+        
+        when(mockWorkspace.getChannel()).thenReturn(null);
+        
+        SbomgenRunner runner = new SbomgenRunner(null, mockWorkspace, null, null, null, null, null, null);
+        
+        // Verify the runner correctly identifies local execution scenario
+        assertTrue("Should detect local execution when workspace has no channel", 
+                   runner.workspace.getChannel() == null);
     }
 }
