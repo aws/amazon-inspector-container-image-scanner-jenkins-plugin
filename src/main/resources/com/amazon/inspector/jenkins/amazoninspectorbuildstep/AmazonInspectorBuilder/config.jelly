@@ -92,47 +92,92 @@
         <f:textbox placeholder="default"/>
     </f:entry>
 
-    <f:entry field="isThresholdEnabled">
-        <f:checkbox id="isThresholdEnabled"
-                    class="bold"
-                    checked="${instance.isThresholdEnabled}"
-                    title="Enable Vulnerability Thresholds"
-                    tooltip="Specifies whether the build should fail when scanned vulnerabilities exceed specified thresholds. For EPSS threshold, enter a value between 0 and 1 (e.g., 0.6)."
-                    onclick='document.getElementById("thresholds").style.display = this.checked ? "block" : "none";' />
-    </f:entry>
 
-    <f:entry>
-        <div id="thresholds" class="${instance.isThresholdEnabled ? '' : 'hidden'}">
-            <div class="vulnWrapper" >
-                <label class="vulnLabel required-field" for="countCritical">Critical:</label>
-                <div class="resizedTextbox">
-                    <f:textbox default="0" name="countCritical" field="countCritical" />
-                </div>
-            </div>
-            <div class="vulnWrapper">
-                <label class="vulnLabel required-field" for="countHigh">High:</label>
-                <div class="resizedTextbox">
-                    <f:textbox default="0" name="countHigh" field="countHigh" />
-                </div>
-            </div>
-            <div class="vulnWrapper">
-                <label class="vulnLabel required-field" for="countMedium">Medium:</label>
-                <div class="resizedTextbox">
-                    <f:textbox default="5" name="countMedium" field="countMedium" />
-                </div>
-            </div>
-            <div class="vulnWrapper">
-                <label class="vulnLabel  required-field" for="countLow">Low:</label>
-                <div class="resizedTextbox">
-                    <f:textbox default="10" name="countLow" field="countLow" />
-                </div>
-            </div>
-            <div class="vulnWrapper">
-                <label class="vulnLabel" for="epssThreshold" title="EPSS scores range from 0-1, enter a value between 0 and 1 (e.g., 0.6).">EPSS:</label>
-                <div class="resizedTextbox">
-                    <f:textbox name="epssThreshold" field="epssThreshold" />
-                </div>
+    <!-- Scan Output Filters - Independent Checkboxes -->
+    <hr></hr>
+    <h3>Scan Output Filters</h3>
+    
+    <f:entry field="isSeverityThresholdEnabled">
+        <f:checkbox id="isSeverityThresholdEnabled"
+                    class="bold"
+                    checked="${instance.isSeverityThresholdEnabled}"
+                    title="Enable severity thresholds"
+                    tooltip="Enable build failure when vulnerability counts exceed specified thresholds."
+                    onclick='document.getElementById("vulnThresholdSection").style.display = this.checked ? "block" : "none";' />
+    </f:entry>
+    
+    <div id="vulnThresholdSection" class="${instance.isSeverityThresholdEnabled ? '' : 'hidden'}">
+        <div class="vulnWrapper" >
+            <label class="vulnLabel required-field" for="countCritical">Critical:</label>
+            <div class="resizedTextbox">
+                <f:textbox default="0" name="countCritical" field="countCritical" />
             </div>
         </div>
+        <div class="vulnWrapper">
+            <label class="vulnLabel required-field" for="countHigh">High:</label>
+            <div class="resizedTextbox">
+                <f:textbox default="0" name="countHigh" field="countHigh" />
+            </div>
+        </div>
+        <div class="vulnWrapper">
+            <label class="vulnLabel required-field" for="countMedium">Medium:</label>
+            <div class="resizedTextbox">
+                <f:textbox default="5" name="countMedium" field="countMedium" />
+            </div>
+        </div>
+        <div class="vulnWrapper">
+            <label class="vulnLabel  required-field" for="countLow">Low:</label>
+            <div class="resizedTextbox">
+                <f:textbox default="10" name="countLow" field="countLow" />
+            </div>
+        </div>
+    </div>
+    
+    <f:entry field="isEpssThresholdEnabled">
+        <f:checkbox id="isEpssThresholdEnabled"
+                    class="bold"
+                    checked="${instance.isEpssThresholdEnabled}"
+                    title="Enable EPSS threshold"
+                    tooltip="Enable EPSS (Exploit Prediction Scoring System) assessment for vulnerability risk evaluation."
+                    onclick='document.getElementById("epssSection").style.display = this.checked ? "block" : "none";' />
     </f:entry>
+    
+    <div id="epssSection" class="${instance.isEpssThresholdEnabled ? '' : 'hidden'}">
+        <div class="vulnWrapper">
+            <label class="vulnLabel" for="epssThreshold" title="EPSS scores range from 0-1, enter a value between 0 and 1 (e.g., 0.6).">EPSS Threshold:</label>
+            <div class="resizedTextbox">
+                <f:textbox name="epssThreshold" field="epssThreshold" />
+            </div>
+        </div>
+    </div>
+    
+    <f:entry field="isSuppressedCveEnabled">
+        <f:checkbox id="isSuppressedCveEnabled"
+                    class="bold"
+                    checked="${instance.isSuppressedCveEnabled}"
+                    title="Enable CVE suppression list"
+                    tooltip="Enable the ability to ignore specific CVEs from threshold and EPSS calculations."
+                    onclick='document.getElementById("ignoreCveSection").style.display = this.checked ? "block" : "none";' />
+    </f:entry>
+    
+    <div id="ignoreCveSection" class="${instance.isSuppressedCveEnabled ? '' : 'hidden'}">
+        <f:entry field="suppressedCves" title="CVE suppression list">
+            <f:textarea placeholder="CVE-2023-1234, CVE-2023-5678" rows="3" />
+        </f:entry>
+    </div>
+    
+    <f:entry field="isAutoFailCveEnabled">
+        <f:checkbox id="isAutoFailCveEnabled"
+                    class="bold"
+                    checked="${instance.isAutoFailCveEnabled}"
+                    title="Enable CVE auto-fail list"
+                    tooltip="Enable the ability to specify CVEs that will always fail the build when detected."
+                    onclick='document.getElementById("blockedCveSection").style.display = this.checked ? "block" : "none";' />
+    </f:entry>
+    
+    <div id="blockedCveSection" class="${instance.isAutoFailCveEnabled ? '' : 'hidden'}">
+        <f:entry field="autoFailCves" title="CVE auto-fail list">
+            <f:textarea placeholder="CVE-2023-9999, CVE-2024-0001" rows="3" />
+        </f:entry>
+    </div>
 </j:jelly>

@@ -1,0 +1,25 @@
+<div>
+    <h4>CVE auto-fail list</h4>
+    <p>
+        Specify a list of CVE identifiers that will <strong>always fail the build</strong> when detected, regardless of other threshold settings.
+    </p>
+    
+    <h5>Supported Formats:</h5>
+    <ul>
+        <li><strong>Comma-separated:</strong> CVE-2023-9999, CVE-2024-0001</li>
+        <li><strong>One per line:</strong><br/>
+            CVE-2023-9999<br/>
+            CVE-2024-0001
+        </li>
+        <li><strong>Mixed format:</strong> CVE-2023-9999, CVE-2024-0001<br/>CVE-2024-0002</li>
+    </ul>
+    
+    <h5>Behavior:</h5>
+    <ul>
+        <li>Runs independently of vulnerability threshold settings</li>
+        <li>Takes precedence over the CVE suppression list</li>
+        <li>Immediately fails the build when any auto-fail CVE is detected</li>
+    </ul>
+    
+    <p><strong>Note:</strong> CVE IDs must follow the format CVE-YYYY-NNNN (e.g., CVE-2023-1234)</p>
+</div>
