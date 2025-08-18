@@ -86,8 +86,8 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     private final String awsRegion;
     private final String credentialId;
     private final String oidcCredentialId;
-    private final boolean isSeverityThresholdEnabled;
-    private final boolean isEpssThresholdEnabled;
+    private boolean isSeverityThresholdEnabled;
+    private boolean isEpssThresholdEnabled;
     private final boolean isSuppressedCveEnabled;
     private final boolean isAutoFailCveEnabled;
     private final boolean osArch;
@@ -101,19 +101,22 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     private final String sbomgenPath;
     private final String sbomgenSkipFiles;
     private final Double epssThreshold;
-    private final String suppressedCves;
-    private final String autoFailCves;
+    private final String suppressedCveList;
+    private final String autoFailCveList;
     private Job<?, ?> job;
     private String reportArtifactName = "default-report";
+    private final boolean showThresholdDeprecationWarning;
+    private final boolean showEpssDeprecationWarning;
 
     @DataBoundConstructor
     public AmazonInspectorBuilder(String archivePath, String artifactPath, String archiveType, boolean osArch, String iamRole,
                                   String awsRegion, String credentialId, String awsProfileName, String awsCredentialId,
                                   String sbomgenSelection, String sbomgenPath,
                                   int countCritical, int countHigh, int countMedium, int countLow, String oidcCredentialId,
-                                  String sbomgenSkipFiles, Double epssThreshold, String suppressedCves,
-                                  boolean isSeverityThresholdEnabled, boolean isEpssThresholdEnabled, boolean isSuppressedCveEnabled,
-                                  boolean isAutoFailCveEnabled, String autoFailCves) {
+                                  String sbomgenSkipFiles, Double epssThreshold, String suppressedCveList,
+                                  Boolean isSuppressedCveEnabled, Boolean isAutoFailCveEnabled, String autoFailCveList,
+                                  // Legacy parameters for backward compatibility (DEPRECATED)
+                                  Boolean isThresholdEnabled, Boolean isEpssEnabled) {
         if (artifactPath != null && !artifactPath.isEmpty()) {
             this.archivePath = artifactPath;
         } else {
@@ -130,17 +133,33 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         this.sbomgenSelection = (sbomgenSelection != null) ? sbomgenSelection : "automatic";
         this.sbomgenPath = sbomgenPath;
         this.sbomgenSkipFiles = sbomgenSkipFiles;
-        this.isSeverityThresholdEnabled = isSeverityThresholdEnabled;
-        this.isEpssThresholdEnabled = isEpssThresholdEnabled;
-        this.isSuppressedCveEnabled = isSuppressedCveEnabled;
-        this.isAutoFailCveEnabled = isAutoFailCveEnabled;
+        
+        boolean finalSeverityThresholdEnabled = false;
+        boolean finalEpssThresholdEnabled = false;
+        
+        this.showThresholdDeprecationWarning = (isThresholdEnabled != null);
+        this.showEpssDeprecationWarning = (isEpssEnabled != null);
+        
+        if (isThresholdEnabled != null) {
+            finalSeverityThresholdEnabled = isThresholdEnabled;
+        }
+        
+        if (isEpssEnabled != null) {
+            finalEpssThresholdEnabled = isEpssEnabled;
+        }
+        
+        this.isSeverityThresholdEnabled = finalSeverityThresholdEnabled;
+        this.isEpssThresholdEnabled = finalEpssThresholdEnabled;
+        this.isSuppressedCveEnabled = (isSuppressedCveEnabled != null) ? isSuppressedCveEnabled : false;
+        this.isAutoFailCveEnabled = (isAutoFailCveEnabled != null) ? isAutoFailCveEnabled : false;
+        this.suppressedCveList = (suppressedCveList != null) ? suppressedCveList : "";
+        this.autoFailCveList = (autoFailCveList != null) ? autoFailCveList : "";
+        
         this.countCritical = countCritical;
         this.countHigh = countHigh;
         this.countMedium = countMedium;
         this.countLow = countLow;
         this.epssThreshold = epssThreshold;
-        this.suppressedCves = suppressedCves;
-        this.autoFailCves = autoFailCves;
         this.reportArtifactName = (reportArtifactName != null && !reportArtifactName.isEmpty()) ? reportArtifactName : "default-report";
     }
 
@@ -403,6 +422,26 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         this.reportArtifactName = sanitizedName;
     }
 
+    @DataBoundSetter
+    public void setIsSeverityThresholdEnabled(boolean isSeverityThresholdEnabled) {
+        this.isSeverityThresholdEnabled = isSeverityThresholdEnabled;
+    }
+
+    @DataBoundSetter 
+    public void setIsEpssThresholdEnabled(boolean isEpssThresholdEnabled) {
+        this.isEpssThresholdEnabled = isEpssThresholdEnabled;
+    }
+
+    @DataBoundSetter
+    public void setIsThresholdEnabled(boolean isThresholdEnabled) {
+        this.isSeverityThresholdEnabled = isThresholdEnabled;
+    }
+
+    @DataBoundSetter
+    public void setIsEpssEnabled(boolean isEpssEnabled) {
+        this.isEpssThresholdEnabled = isEpssEnabled;
+    }
+
     public String getReportArtifactName() {
         return reportArtifactName != null ? reportArtifactName : "default-report";
     }
@@ -424,6 +463,13 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         return this.isAutoFailCveEnabled;
     }
 
+    public String getSuppressedCveList() {
+        return this.suppressedCveList;
+    }
+
+    public String getAutoFailCveList() {
+        return this.autoFailCveList;
+    }
 
     @Override
     public void perform(Run<?, ?> build, FilePath workspace, EnvVars env, Launcher launcher, TaskListener listener)
@@ -435,6 +481,13 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
         PrintStream printStream = new PrintStream(outFile, StandardCharsets.UTF_8);
         try {
+            if (showThresholdDeprecationWarning) {
+                listener.getLogger().println("[DEPRECATED] Parameter 'isThresholdEnabled' is deprecated. Use 'isSeverityThresholdEnabled' instead.");
+            }
+            if (showEpssDeprecationWarning) {
+                listener.getLogger().println("[DEPRECATED] Parameter 'isEpssEnabled' is deprecated. Use 'isEpssThresholdEnabled' instead.");
+            }
+            
             Map<String, String> artifactMap = new HashMap<>();
 
             if (Jenkins.getInstanceOrNull() == null) {
@@ -551,9 +604,9 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
             Set<String> suppressedCveSet = null;
             int suppressedCount = 0;
-            if (isSuppressedCveEnabled && suppressedCves != null && !suppressedCves.trim().isEmpty()) {
+            if (isSuppressedCveEnabled && suppressedCveList != null && !suppressedCveList.trim().isEmpty()) {
                 suppressedCveSet = new HashSet<>();
-                String[] cveArray = suppressedCves.split("[,\\n\\r]+");
+                String[] cveArray = suppressedCveList.split("[,\\n\\r]+");
                 for (String cve : cveArray) {
                     suppressedCveSet.add(cve.trim().toUpperCase());
                 }
@@ -621,9 +674,9 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
             boolean doesBuildPass = true;
 
-            if (isAutoFailCveEnabled && autoFailCves != null && !autoFailCves.trim().isEmpty()) {
+            if (isAutoFailCveEnabled && autoFailCveList != null && !autoFailCveList.trim().isEmpty()) {
                 Set<String> autoFailCveSet = new HashSet<>();
-                String[] cveArray = autoFailCves.split("[,\\n\\r]+");
+                String[] cveArray = autoFailCveList.split("[,\\n\\r]+");
                 for (String cve : cveArray) {
                     autoFailCveSet.add(cve.trim().toUpperCase());
                 }
@@ -649,8 +702,6 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                 boolean cvesExceedThreshold = assessCVEsAgainstEPSS(build, workspace, listener, epssThreshold, sbomWorkspacePath);
                 if (cvesExceedThreshold) {
                     doesBuildPass = false;
-                } else {
-                    listener.getLogger().println("All CVEs are within the EPSS threshold of " + epssThreshold + ".");
                 }
             } else {
                 listener.getLogger().println("EPSS assessment disabled or no threshold specified. Skipping EPSS assessment.");
@@ -699,8 +750,8 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             }
             
             Set<String> suppressedCveSet = new HashSet<>();
-            if (isSuppressedCveEnabled && suppressedCves != null && !suppressedCves.trim().isEmpty()) {
-                String[] cveArray = suppressedCves.split("[,\\n\\r]+");
+            if (isSuppressedCveEnabled && suppressedCveList != null && !suppressedCveList.trim().isEmpty()) {
+                String[] cveArray = suppressedCveList.split("[,\\n\\r]+");
                 for (String cve : cveArray) {
                     suppressedCveSet.add(cve.trim().toUpperCase());
                 }
@@ -911,7 +962,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         }
 
         @POST
-        public FormValidation doCheckSuppressedCves(@QueryParameter String value) {
+        public FormValidation doCheckSuppressedCveList(@QueryParameter String value) {
             Jenkins.get().checkPermission(Job.CONFIGURE);
             if (value == null || value.trim().isEmpty()) {
                 return FormValidation.ok(); // Optional field
@@ -937,7 +988,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         }
 
         @POST
-        public FormValidation doCheckAutoFailCves(@QueryParameter String value) {
+        public FormValidation doCheckAutoFailCveList(@QueryParameter String value) {
             Jenkins.get().checkPermission(Job.CONFIGURE);
             if (value == null || value.trim().isEmpty()) {
                 return FormValidation.ok(); // Optional field

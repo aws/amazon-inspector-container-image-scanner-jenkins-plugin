@@ -161,7 +161,7 @@
     </f:entry>
     
     <div id="ignoreCveSection" class="${instance.isSuppressedCveEnabled ? '' : 'hidden'}">
-        <f:entry field="suppressedCves" title="CVE suppression list">
+        <f:entry field="suppressedCveList" title="CVE suppression list">
             <f:textarea placeholder="CVE-2023-1234, CVE-2023-5678" rows="3" />
         </f:entry>
     </div>
@@ -176,7 +176,7 @@
     </f:entry>
     
     <div id="blockedCveSection" class="${instance.isAutoFailCveEnabled ? '' : 'hidden'}">
-        <f:entry field="autoFailCves" title="CVE auto-fail list">
+        <f:entry field="autoFailCveList" title="CVE auto-fail list">
             <f:textarea placeholder="CVE-2023-9999, CVE-2024-0001" rows="3" />
         </f:entry>
     </div>
