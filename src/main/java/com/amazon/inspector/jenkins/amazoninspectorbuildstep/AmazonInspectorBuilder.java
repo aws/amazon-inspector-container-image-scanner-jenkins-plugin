@@ -2,6 +2,7 @@ package com.amazon.inspector.jenkins.amazoninspectorbuildstep;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.requests.SdkRequests;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Sbom;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Components.Vulnerability;
+import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Components.Rating;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomgen.SbomgenDownloader;
 import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
@@ -36,8 +37,10 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomgen.SbomgenRunner;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.csvconversion.CsvConverter;
@@ -70,13 +73,23 @@ import static hudson.security.Permission.READ;
 public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     @SuppressFBWarnings()
     public static PrintStream logger;
+    
+    private static final int MAX_BLOCKED_CVES_CONSOLE = 20;
+    private static final int MAX_IGNORED_CVES_CONSOLE = 10;
+    private static final int MAX_EPSS_CVES_CONSOLE = 10;
+    private static final int MAX_HIGH_MEDIUM_CVES_CONSOLE = 10;
+    private static final int MAX_LOW_CVES_CONSOLE = 5;
+    private static final int MAX_CRITICAL_CVES_CONSOLE = 20;
     private final String archivePath;
     private final String archiveType;
     private final String iamRole;
     private final String awsRegion;
     private final String credentialId;
     private final String oidcCredentialId;
-    private boolean isThresholdEnabled;
+    private boolean isSeverityThresholdEnabled;
+    private boolean isEpssThresholdEnabled;
+    private final boolean isSuppressedCveEnabled;
+    private final boolean isAutoFailCveEnabled;
     private final boolean osArch;
     private final int countCritical;
     private final int countHigh;
@@ -88,15 +101,22 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     private final String sbomgenPath;
     private final String sbomgenSkipFiles;
     private final Double epssThreshold;
+    private final String suppressedCveList;
+    private final String autoFailCveList;
     private Job<?, ?> job;
     private String reportArtifactName = "default-report";
+    private final boolean showThresholdDeprecationWarning;
+    private final boolean showEpssDeprecationWarning;
 
     @DataBoundConstructor
     public AmazonInspectorBuilder(String archivePath, String artifactPath, String archiveType, boolean osArch, String iamRole,
                                   String awsRegion, String credentialId, String awsProfileName, String awsCredentialId,
-                                  String sbomgenSelection, String sbomgenPath, boolean isThresholdEnabled,
+                                  String sbomgenSelection, String sbomgenPath,
                                   int countCritical, int countHigh, int countMedium, int countLow, String oidcCredentialId,
-                                  String sbomgenSkipFiles, Double epssThreshold) {
+                                  String sbomgenSkipFiles, Double epssThreshold, String suppressedCveList,
+                                  Boolean isSuppressedCveEnabled, Boolean isAutoFailCveEnabled, String autoFailCveList,
+                                  // Legacy parameters for backward compatibility (DEPRECATED)
+                                  Boolean isThresholdEnabled, Boolean isEpssEnabled) {
         if (artifactPath != null && !artifactPath.isEmpty()) {
             this.archivePath = artifactPath;
         } else {
@@ -113,7 +133,28 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         this.sbomgenSelection = (sbomgenSelection != null) ? sbomgenSelection : "automatic";
         this.sbomgenPath = sbomgenPath;
         this.sbomgenSkipFiles = sbomgenSkipFiles;
-        this.isThresholdEnabled = isThresholdEnabled;
+        
+        boolean finalSeverityThresholdEnabled = false;
+        boolean finalEpssThresholdEnabled = false;
+        
+        this.showThresholdDeprecationWarning = (isThresholdEnabled != null);
+        this.showEpssDeprecationWarning = (isEpssEnabled != null);
+        
+        if (isThresholdEnabled != null) {
+            finalSeverityThresholdEnabled = isThresholdEnabled;
+        }
+        
+        if (isEpssEnabled != null) {
+            finalEpssThresholdEnabled = isEpssEnabled;
+        }
+        
+        this.isSeverityThresholdEnabled = finalSeverityThresholdEnabled;
+        this.isEpssThresholdEnabled = finalEpssThresholdEnabled;
+        this.isSuppressedCveEnabled = (isSuppressedCveEnabled != null) ? isSuppressedCveEnabled : false;
+        this.isAutoFailCveEnabled = (isAutoFailCveEnabled != null) ? isAutoFailCveEnabled : false;
+        this.suppressedCveList = (suppressedCveList != null) ? suppressedCveList : "";
+        this.autoFailCveList = (autoFailCveList != null) ? autoFailCveList : "";
+        
         this.countCritical = countCritical;
         this.countHigh = countHigh;
         this.countMedium = countMedium;
@@ -129,6 +170,236 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         boolean lowExceedsLimit = counts.get(Severity.LOW) > countLow;
 
         return criticalExceedsLimit || highExceedsLimit || mediumExceedsLimit || lowExceedsLimit;
+    }
+
+    private void logThresholdBreachDetails(SbomData sbomData, TaskListener listener, Map<Severity, Integer> counts) {
+        List<Vulnerability> vulnerabilities = sbomData.getSbom().getVulnerabilities();
+        if (vulnerabilities == null || vulnerabilities.isEmpty()) {
+            return;
+        }
+
+        boolean hasBreaches = false;
+        Map<Severity, Integer> exceedingCounts = new HashMap<>();
+        
+        if (counts.get(Severity.CRITICAL) > countCritical) {
+            exceedingCounts.put(Severity.CRITICAL, counts.get(Severity.CRITICAL) - countCritical);
+            hasBreaches = true;
+        }
+        if (counts.get(Severity.HIGH) > countHigh) {
+            exceedingCounts.put(Severity.HIGH, counts.get(Severity.HIGH) - countHigh);
+            hasBreaches = true;
+        }
+        if (counts.get(Severity.MEDIUM) > countMedium) {
+            exceedingCounts.put(Severity.MEDIUM, counts.get(Severity.MEDIUM) - countMedium);
+            hasBreaches = true;
+        }
+        if (counts.get(Severity.LOW) > countLow) {
+            exceedingCounts.put(Severity.LOW, counts.get(Severity.LOW) - countLow);
+            hasBreaches = true;
+        }
+
+        if (!hasBreaches) {
+            return;
+        }
+
+        listener.getLogger().println("THRESHOLD BREACH DETAILS:");
+        listener.getLogger().println("Thresholds: Critical≤" + countCritical + ", High≤" + countHigh + 
+                                    ", Medium≤" + countMedium + ", Low≤" + countLow);
+        listener.getLogger().println("Actual: Critical=" + counts.get(Severity.CRITICAL) + 
+                                    ", High=" + counts.get(Severity.HIGH) + 
+                                    ", Medium=" + counts.get(Severity.MEDIUM) + 
+                                    ", Low=" + counts.get(Severity.LOW));
+
+        Map<Severity, Set<String>> cvesBySeverity = new HashMap<>();
+        cvesBySeverity.put(Severity.CRITICAL, new HashSet<>());
+        cvesBySeverity.put(Severity.HIGH, new HashSet<>());
+        cvesBySeverity.put(Severity.MEDIUM, new HashSet<>());
+        cvesBySeverity.put(Severity.LOW, new HashSet<>());
+
+        for (Vulnerability vulnerability : vulnerabilities) {
+            String severityStr = "UNKNOWN";
+            if (vulnerability.getRatings() != null && !vulnerability.getRatings().isEmpty()) {
+                severityStr = vulnerability.getRatings().get(0).getSeverity();
+            }
+
+            Severity severity;
+            switch (severityStr.toUpperCase()) {
+                case "CRITICAL":
+                    severity = Severity.CRITICAL;
+                    break;
+                case "HIGH":
+                    severity = Severity.HIGH;
+                    break;
+                case "MEDIUM":
+                    severity = Severity.MEDIUM;
+                    break;
+                case "LOW":
+                    severity = Severity.LOW;
+                    break;
+                default:
+                    continue; // Skip unknown severities
+            }
+
+            if (exceedingCounts.containsKey(severity)) {
+                cvesBySeverity.get(severity).add(vulnerability.getId());
+            }
+        }
+
+        for (Severity severity : new Severity[]{Severity.CRITICAL, Severity.HIGH, Severity.MEDIUM, Severity.LOW}) {
+            if (exceedingCounts.containsKey(severity)) {
+                Set<String> cves = cvesBySeverity.get(severity);
+                if (!cves.isEmpty()) {
+                    listener.getLogger().println(severity.name() + " CVEs (" + cves.size() + "):");
+                    int maxToShow;
+                    switch (severity) {
+                        case CRITICAL:
+                            maxToShow = MAX_CRITICAL_CVES_CONSOLE;
+                            break;
+                        case HIGH:
+                        case MEDIUM:
+                            maxToShow = MAX_HIGH_MEDIUM_CVES_CONSOLE;
+                            break;
+                        case LOW:
+                            maxToShow = MAX_LOW_CVES_CONSOLE;
+                            break;
+                        default:
+                            maxToShow = MAX_LOW_CVES_CONSOLE;
+                            break;
+                    }
+                    
+                    int count = 0;
+                    for (String cve : cves) {
+                        if (count < maxToShow) {
+                            listener.getLogger().println("  - " + cve);
+                            count++;
+                        } else {
+                            listener.getLogger().println("  ... and " + (cves.size() - count) + " more " + severity.name() + " CVEs (check SBOM file for complete list)");
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private void filterSuppressedCvesFromCounts(SbomData sbomData, Set<String> suppressedCveSet, TaskListener listener) {
+        List<Vulnerability> vulnerabilities = sbomData.getSbom().getVulnerabilities();
+        if (vulnerabilities == null || vulnerabilities.isEmpty()) {
+            return;
+        }
+
+        int suppressedCount = 0;
+        
+        Map<Severity, Integer> suppressedCounts = new HashMap<>();
+        suppressedCounts.put(Severity.CRITICAL, 0);
+        suppressedCounts.put(Severity.HIGH, 0);
+        suppressedCounts.put(Severity.MEDIUM, 0);
+        suppressedCounts.put(Severity.LOW, 0);
+        suppressedCounts.put(Severity.OTHER, 0);
+        
+        for (Vulnerability vulnerability : vulnerabilities) {
+            String cveId = vulnerability.getId();
+            if (suppressedCveSet.contains(cveId.toUpperCase())) {
+                suppressedCount++;
+                
+                String severityStr = "UNKNOWN";
+                if (vulnerability.getRatings() != null && !vulnerability.getRatings().isEmpty()) {
+                    severityStr = vulnerability.getRatings().get(0).getSeverity();
+                }
+                
+                Severity severity;
+                switch (severityStr.toUpperCase()) {
+                    case "CRITICAL":
+                        severity = Severity.CRITICAL;
+                        break;
+                    case "HIGH":
+                        severity = Severity.HIGH;
+                        break;
+                    case "MEDIUM":
+                        severity = Severity.MEDIUM;
+                        break;
+                    case "LOW":
+                        severity = Severity.LOW;
+                        break;
+                    default:
+                        severity = Severity.OTHER;
+                        break;
+                }
+                suppressedCounts.put(severity, suppressedCounts.get(severity) + 1);
+            }
+        }
+        
+        if (suppressedCount > 0) {
+            listener.getLogger().println("Suppressing " + suppressedCount + " CVEs from threshold calculations: " + suppressedCveSet);
+            
+            Map<Severity, Integer> currentCounts = SbomOutputParser.aggregateCounts.getCounts();
+            for (Map.Entry<Severity, Integer> entry : suppressedCounts.entrySet()) {
+                if (entry.getValue() > 0) {
+                    int newCount = Math.max(0, currentCounts.get(entry.getKey()) - entry.getValue());
+                    currentCounts.put(entry.getKey(), newCount);
+                }
+            }
+        }
+    }
+
+    private boolean checkForAutoFailCves(SbomData sbomData, Set<String> autoFailCveSet, TaskListener listener) {
+        List<Vulnerability> vulnerabilities = sbomData.getSbom().getVulnerabilities();
+        if (vulnerabilities == null || vulnerabilities.isEmpty()) {
+            return false;
+        }
+
+        Set<String> foundAutoFailCves = new HashSet<>();
+        
+        for (Vulnerability vulnerability : vulnerabilities) {
+            String cveId = vulnerability.getId();
+            if (autoFailCveSet.contains(cveId.toUpperCase())) {
+                foundAutoFailCves.add(cveId);
+            }
+        }
+        
+        if (!foundAutoFailCves.isEmpty()) {
+            listener.getLogger().println("BUILD FAILED: Found " + foundAutoFailCves.size() + " auto-fail CVE(s):");
+            int count = 0;
+            for (String cve : foundAutoFailCves) {
+                if (count < MAX_BLOCKED_CVES_CONSOLE) {
+                    listener.getLogger().println("  - " + cve);
+                    count++;
+                } else {
+                    listener.getLogger().println("  ... and " + (foundAutoFailCves.size() - count) + " more auto-fail CVEs (check assessment file for complete list)");
+                    break;
+                }
+            }
+            listener.getLogger().println("These CVEs are configured to always fail the build.");
+            return true;
+        }
+        
+        return false;
+    }
+
+    private void logSecurityAssessmentSummary(TaskListener listener, Set<String> suppressedCveSet, int suppressedCount) {
+        listener.getLogger().println("");
+        listener.getLogger().println("=== SECURITY ASSESSMENT SUMMARY ===");
+        listener.getLogger().println("Timestamp: " + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(Calendar.getInstance().getTime()));
+        listener.getLogger().println("Features: Thresholds=" + (isSeverityThresholdEnabled ? "✓" : "✗") + 
+                                    ", EPSS=" + (isEpssThresholdEnabled ? "✓" : "✗") + 
+                                    ", CVE Suppression=" + (isSuppressedCveEnabled ? "✓" : "✗") + 
+                                    ", CVE Auto-fail=" + (isAutoFailCveEnabled ? "✓" : "✗"));
+        
+        if (isSuppressedCveEnabled && suppressedCount > 0 && suppressedCveSet != null) {
+            listener.getLogger().println("CVE Suppression List (" + suppressedCount + " CVEs ignored from thresholds):");
+            int count = 0;
+            for (String cve : suppressedCveSet) {
+                if (count < MAX_IGNORED_CVES_CONSOLE) {
+                    listener.getLogger().println("  - " + cve);
+                    count++;
+                } else {
+                    listener.getLogger().println("  ... and " + (suppressedCount - count) + " more (check assessment file for complete list)");
+                    break;
+                }
+            }
+        }
+        listener.getLogger().println("=====================================");
+        listener.getLogger().println("");
     }
 
     @DataBoundSetter
@@ -151,19 +422,54 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         this.reportArtifactName = sanitizedName;
     }
 
-    public String getReportArtifactName() {
-        return reportArtifactName != null ? reportArtifactName : "default-report";
+    @DataBoundSetter
+    public void setIsSeverityThresholdEnabled(boolean isSeverityThresholdEnabled) {
+        this.isSeverityThresholdEnabled = isSeverityThresholdEnabled;
+    }
+
+    @DataBoundSetter 
+    public void setIsEpssThresholdEnabled(boolean isEpssThresholdEnabled) {
+        this.isEpssThresholdEnabled = isEpssThresholdEnabled;
     }
 
     @DataBoundSetter
     public void setIsThresholdEnabled(boolean isThresholdEnabled) {
-        this.isThresholdEnabled = isThresholdEnabled;
+        this.isSeverityThresholdEnabled = isThresholdEnabled;
     }
 
-    public boolean getIsThresholdEnabled() {
-        return this.isThresholdEnabled;
+    @DataBoundSetter
+    public void setIsEpssEnabled(boolean isEpssEnabled) {
+        this.isEpssThresholdEnabled = isEpssEnabled;
     }
 
+    public String getReportArtifactName() {
+        return reportArtifactName != null ? reportArtifactName : "default-report";
+    }
+
+
+    public boolean getIsSeverityThresholdEnabled() {
+        return this.isSeverityThresholdEnabled;
+    }
+
+    public boolean getIsEpssThresholdEnabled() {
+        return this.isEpssThresholdEnabled;
+    }
+
+    public boolean getIsSuppressedCveEnabled() {
+        return this.isSuppressedCveEnabled;
+    }
+
+    public boolean getIsAutoFailCveEnabled() {
+        return this.isAutoFailCveEnabled;
+    }
+
+    public String getSuppressedCveList() {
+        return this.suppressedCveList;
+    }
+
+    public String getAutoFailCveList() {
+        return this.autoFailCveList;
+    }
 
     @Override
     public void perform(Run<?, ?> build, FilePath workspace, EnvVars env, Launcher launcher, TaskListener listener)
@@ -175,6 +481,13 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
         PrintStream printStream = new PrintStream(outFile, StandardCharsets.UTF_8);
         try {
+            if (showThresholdDeprecationWarning) {
+                listener.getLogger().println("[DEPRECATED] Parameter 'isThresholdEnabled' is deprecated. Use 'isSeverityThresholdEnabled' instead.");
+            }
+            if (showEpssDeprecationWarning) {
+                listener.getLogger().println("[DEPRECATED] Parameter 'isEpssEnabled' is deprecated. Use 'isEpssThresholdEnabled' instead.");
+            }
+            
             Map<String, String> artifactMap = new HashMap<>();
 
             if (Jenkins.getInstanceOrNull() == null) {
@@ -289,6 +602,18 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             SbomOutputParser parser = new SbomOutputParser(sbomData);
             parser.parseVulnCounts();
 
+            Set<String> suppressedCveSet = null;
+            int suppressedCount = 0;
+            if (isSuppressedCveEnabled && suppressedCveList != null && !suppressedCveList.trim().isEmpty()) {
+                suppressedCveSet = new HashSet<>();
+                String[] cveArray = suppressedCveList.split("[,\\n\\r]+");
+                for (String cve : cveArray) {
+                    suppressedCveSet.add(cve.trim().toUpperCase());
+                }
+                suppressedCount = suppressedCveSet.size();
+                filterSuppressedCvesFromCounts(sbomData, suppressedCveSet, listener);
+            }
+
             String sanitizedArchiveName = null;
             String componentName = null;
             if (component != null && component.get("name") != null) {
@@ -347,23 +672,39 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
             listener.getLogger().println("Build Artifacts: " + env.get("RUN_ARTIFACTS_DISPLAY_URL"));
 
-            boolean doesBuildPass = !doesBuildFail(SbomOutputParser.aggregateCounts.getCounts());
+            boolean doesBuildPass = true;
 
-            if (!isThresholdEnabled) {
-                listener.getLogger().println("Thresholds disabled. Skipping all threshold/EPSS checks.");
-                doesBuildPass = true;
-            } else {
-                if (epssThreshold != null) {
-                    listener.getLogger().println("EPSS Threshold set to: " + epssThreshold);
-                    boolean cvesExceedThreshold = assessCVEsAgainstEPSS(build, workspace, listener, epssThreshold, sbomWorkspacePath);
-                    if (cvesExceedThreshold) {
-                        doesBuildPass = false;
-                    } else {
-                        listener.getLogger().println("All CVEs are within the EPSS threshold of " + epssThreshold + ".");
-                    }
-                } else {
-                    listener.getLogger().println("No EPSS Threshold specified. Skipping EPSS assessment.");
+            if (isAutoFailCveEnabled && autoFailCveList != null && !autoFailCveList.trim().isEmpty()) {
+                Set<String> autoFailCveSet = new HashSet<>();
+                String[] cveArray = autoFailCveList.split("[,\\n\\r]+");
+                for (String cve : cveArray) {
+                    autoFailCveSet.add(cve.trim().toUpperCase());
                 }
+                listener.getLogger().println("Checking for " + autoFailCveSet.size() + " auto-fail CVE(s): " + autoFailCveSet);
+                boolean foundAutoFailCves = checkForAutoFailCves(sbomData, autoFailCveSet, listener);
+                if (foundAutoFailCves) {
+                    doesBuildPass = false;
+                }
+            }
+
+            if (isSeverityThresholdEnabled) {
+                boolean vulnThresholdsFailed = doesBuildFail(SbomOutputParser.aggregateCounts.getCounts());
+                if (vulnThresholdsFailed) {
+                    doesBuildPass = false;
+                    logThresholdBreachDetails(sbomData, listener, SbomOutputParser.aggregateCounts.getCounts());
+                }
+            } else {
+                listener.getLogger().println("Vulnerability thresholds disabled. Skipping threshold checks.");
+            }
+            
+            if (isEpssThresholdEnabled && epssThreshold != null) {
+                listener.getLogger().println("EPSS Threshold set to: " + epssThreshold);
+                boolean cvesExceedThreshold = assessCVEsAgainstEPSS(build, workspace, listener, epssThreshold, sbomWorkspacePath);
+                if (cvesExceedThreshold) {
+                    doesBuildPass = false;
+                }
+            } else {
+                listener.getLogger().println("EPSS assessment disabled or no threshold specified. Skipping EPSS assessment.");
             }
 
             if (doesBuildPass) {
@@ -372,10 +713,11 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                 build.setResult(Result.FAILURE);
             }
 
-            listener.getLogger().println("Results: " + SbomOutputParser.aggregateCounts.toString());
-            if (!isThresholdEnabled) {
-                listener.getLogger().println("Ignoring results due to thresholds being disabled.");
+            if (isSeverityThresholdEnabled) {
+                listener.getLogger().println("Results: " + SbomOutputParser.aggregateCounts.toString());
             }
+
+            logSecurityAssessmentSummary(listener, suppressedCveSet, suppressedCount);
 
             listener.getLogger().println("Does Build Pass: " + doesBuildPass);
         } catch (Exception e) {
@@ -406,12 +748,31 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                 listener.getLogger().println("No vulnerabilities found in the SBOM.");
                 return false;
             }
+            
+            Set<String> suppressedCveSet = new HashSet<>();
+            if (isSuppressedCveEnabled && suppressedCveList != null && !suppressedCveList.trim().isEmpty()) {
+                String[] cveArray = suppressedCveList.split("[,\\n\\r]+");
+                for (String cve : cveArray) {
+                    suppressedCveSet.add(cve.trim().toUpperCase());
+                }
+                listener.getLogger().println("Suppressing " + suppressedCveSet.size() + " CVEs from EPSS assessment: " + suppressedCveSet);
+            }
+            
             listener.getLogger().println("Starting EPSS assessment for vulnerabilities...");
             boolean exceedsThreshold = false;
             Map<String, Double> exceedingCVEsMap = new HashMap<>();
+            int suppressedCount = 0;
+            
             for (Vulnerability vulnerability : vulnerabilities) {
                 String cveId = vulnerability.getId();
                 Double epssScore = vulnerability.getEpssScore();
+                
+                // Skip suppressed CVEs
+                if (suppressedCveSet.contains(cveId.toUpperCase())) {
+                    suppressedCount++;
+                    continue;
+                }
+                
                 if (epssScore == null) {
                     continue;
                 }
@@ -420,10 +781,22 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                     exceedingCVEsMap.put(cveId, epssScore);
                 }
             }
+            
+            if (suppressedCount > 0) {
+                listener.getLogger().println("Suppressed " + suppressedCount + " CVEs from EPSS assessment.");
+            }
+            
             if (exceedsThreshold) {
                 listener.getLogger().println("The following CVEs exceed the EPSS threshold of " + epssThreshold + ":");
+                int count = 0;
                 for (Map.Entry<String, Double> entry : exceedingCVEsMap.entrySet()) {
-                    listener.getLogger().println(String.format("%s, EPSS Score: %.4f", entry.getKey(), entry.getValue()));
+                    if (count < MAX_EPSS_CVES_CONSOLE) {
+                        listener.getLogger().println(String.format("  - %s (EPSS: %.3f)", entry.getKey(), entry.getValue()));
+                        count++;
+                    } else {
+                        listener.getLogger().println("  ... and " + (exceedingCVEsMap.size() - count) + " more EPSS breaches (check assessment file for complete list)");
+                        break;
+                    }
                 }
                 listener.getLogger().println("Failing the build due to EPSS threshold breach.");
             } else {
@@ -584,6 +957,58 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                 }
             } catch (NumberFormatException e) {
                 return FormValidation.error("EPSS threshold must be a numeric value between 0.0 and 1.0.");
+            }
+            return FormValidation.ok();
+        }
+
+        @POST
+        public FormValidation doCheckSuppressedCveList(@QueryParameter String value) {
+            Jenkins.get().checkPermission(Job.CONFIGURE);
+            if (value == null || value.trim().isEmpty()) {
+                return FormValidation.ok(); // Optional field
+            }
+            
+            String[] cves = value.split("[,\\n\\r]+");
+            int validCount = 0;
+            for (String cve : cves) {
+                cve = cve.trim();
+                if (cve.isEmpty()) {
+                    continue;
+                }
+                if (!cve.matches("^CVE-\\d{4}-\\d{4,}$")) {
+                    return FormValidation.error("Invalid CVE format: '" + cve + "'. Expected format: CVE-YYYY-NNNN (e.g., CVE-2023-1234)");
+                }
+                validCount++;
+            }
+            
+            if (validCount > 0) {
+                return FormValidation.ok("Valid: " + validCount + " CVE" + (validCount > 1 ? "s" : "") + " will be suppressed");
+            }
+            return FormValidation.ok();
+        }
+
+        @POST
+        public FormValidation doCheckAutoFailCveList(@QueryParameter String value) {
+            Jenkins.get().checkPermission(Job.CONFIGURE);
+            if (value == null || value.trim().isEmpty()) {
+                return FormValidation.ok(); // Optional field
+            }
+            
+            String[] cves = value.split("[,\\n\\r]+");
+            int validCount = 0;
+            for (String cve : cves) {
+                cve = cve.trim();
+                if (cve.isEmpty()) {
+                    continue;
+                }
+                if (!cve.matches("^CVE-\\d{4}-\\d{4,}$")) {
+                    return FormValidation.error("Invalid CVE format: '" + cve + "'. Expected format: CVE-YYYY-NNNN (e.g., CVE-2023-1234)");
+                }
+                validCount++;
+            }
+            
+            if (validCount > 0) {
+                return FormValidation.ok("Valid: " + validCount + " CVE" + (validCount > 1 ? "s" : "") + " will always fail the build");
             }
             return FormValidation.ok();
         }

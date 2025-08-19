@@ -1,7 +1,15 @@
-<div title="Help for feature: Enable Vulnerability Thresholds">
+<div title="Help for feature: Enable Security Assessment Features">
     <p>
-        Specifies whether scanned vulnerabilities exceeding a value will cause a build failure.
-        EPSS scores range from 0-1, enter a value between 0 and 1 (e.g., 0.6).
+        Enables vulnerability thresholds, EPSS assessment, and CVE ignore functionality for comprehensive security evaluation.
+    </p>
+    <p>
+        <strong>Vulnerability Thresholds:</strong> Specifies whether scanned vulnerabilities exceeding a value will cause a build failure.
+    </p>
+    <p>
+        <strong>EPSS Assessment:</strong> EPSS scores range from 0-1, enter a value between 0 and 1 (e.g., 0.6).
+    </p>
+    <p>
+        <strong>Ignore CVE:</strong> Specify CVEs to exclude from threshold calculations and EPSS assessment. Ignored CVEs appear in reports but won't cause build failures.
     </p>
     <p>
         For more info: <a href="https://docs.aws.amazon.com/inspector/latest/user/cicd-jenkins.html">https://docs.aws.amazon.com/inspector/latest/user/cicd-jenkins.html</a>

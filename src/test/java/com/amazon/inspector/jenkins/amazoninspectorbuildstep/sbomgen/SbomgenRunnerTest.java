@@ -23,10 +23,10 @@ public class SbomgenRunnerTest {
         assertTrue(runner.isValidPath("/tmp/docker_image-123.tar"));
         assertTrue(runner.isValidPath("registry.example.com/namespace/image:tag"));
         
-        // Test colon characters in realistic user scenarios
-        assertTrue(runner.isValidPath("ubuntu:22.04"));  // Docker Hub image (what users actually scan)
-        assertTrue(runner.isValidPath("C:/build/app.tar"));  // Windows file path (actual archive users would scan)
-        assertTrue(runner.isValidPath("/opt/data/container:v1.0.tar"));  // Linux file with colon in name
+        // Test colon characters
+        assertTrue(runner.isValidPath("ubuntu:22.04"));
+        assertTrue(runner.isValidPath("C:/build/app.tar"));
+        assertTrue(runner.isValidPath("/opt/data/container:v1.0.tar"));
         
         // Invalid paths (containing characters not in regex)
         assertFalse(runner.isValidPath("alpine:latest&&ls"));
