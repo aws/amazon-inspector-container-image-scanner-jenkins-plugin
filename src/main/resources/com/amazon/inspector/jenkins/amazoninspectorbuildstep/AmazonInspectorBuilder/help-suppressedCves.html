@@ -1,0 +1,28 @@
+<div>
+    <h4>CVE suppression list</h4>
+    <p>
+        Specify a list of CVE identifiers to exclude from vulnerability threshold calculations and EPSS assessment. 
+        These CVEs will be detected and reported but will not contribute to build failure decisions.
+    </p>
+    
+    <h5>Supported Formats:</h5>
+    <ul>
+        <li><strong>Comma-separated:</strong> CVE-2023-1234, CVE-2023-5678, CVE-2024-0001</li>
+        <li><strong>One per line:</strong><br/>
+            CVE-2023-1234<br/>
+            CVE-2023-5678<br/>
+            CVE-2024-0001
+        </li>
+        <li><strong>Mixed format:</strong> CVE-2023-1234, CVE-2023-5678<br/>CVE-2024-0001</li>
+    </ul>
+    
+    <h5>Behavior:</h5>
+    <ul>
+        <li>Suppressed CVEs are subtracted from vulnerability threshold counts</li>
+        <li>Suppressed CVEs are excluded from EPSS threshold evaluation</li>
+        <li>CVEs will still appear in scan reports and artifacts</li>
+        <li>Detailed logging shows which CVEs were suppressed and their impact</li>
+    </ul>
+    
+    <p><strong>Note:</strong> CVE IDs must follow the format CVE-YYYY-NNNN (e.g., CVE-2023-1234)</p>
+</div>
