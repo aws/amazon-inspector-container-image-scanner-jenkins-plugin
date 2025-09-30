@@ -18,7 +18,7 @@ jobs:
           role-to-assume: ${{ secrets.AWS_IAM_ROLE }}
 
      - name: Checkout repository
-       uses: actions/checkout@v4
+       uses: actions/checkout@v5
 
      - name: Scan project with Inspector
        id: inspector
