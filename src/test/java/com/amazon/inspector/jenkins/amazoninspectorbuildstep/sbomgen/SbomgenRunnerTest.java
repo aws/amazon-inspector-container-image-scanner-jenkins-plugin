@@ -13,7 +13,7 @@ public class SbomgenRunnerTest {
 
     @Test
     public void testIsValidPath() {
-        SbomgenRunner runner = new SbomgenRunner(null, null, null, null, null, null, null, null);
+        SbomgenRunner runner = new SbomgenRunner(null, null, null, null, null, null, null, null, false);
         
         // Valid paths (matching regex: ^[a-zA-Z0-9/._\-: ]+$)
         assertTrue(runner.isValidPath("alpine:latest"));
@@ -39,7 +39,7 @@ public class SbomgenRunnerTest {
 
     @Test
     public void testIsValidPathEdgeCases() {
-        SbomgenRunner runner = new SbomgenRunner(null, null, null, null, null, null, null, null);
+        SbomgenRunner runner = new SbomgenRunner(null, null, null, null, null, null, null, null, false);
         
         // Edge cases that should be invalid
         assertFalse(runner.isValidPath(""));
@@ -57,7 +57,7 @@ public class SbomgenRunnerTest {
 
     @Test(expected = NullPointerException.class)
     public void testIsValidPathWithNull() {
-        SbomgenRunner runner = new SbomgenRunner(null, null, null, null, null, null, null, null);
+        SbomgenRunner runner = new SbomgenRunner(null, null, null, null, null, null, null, null, false);
         runner.isValidPath(null);
     }
 
@@ -68,7 +68,7 @@ public class SbomgenRunnerTest {
         
         when(mockWorkspace.getChannel()).thenReturn(mockChannel);
         
-        SbomgenRunner runner = new SbomgenRunner(null, mockWorkspace, null, null, null, null, null, null);
+        SbomgenRunner runner = new SbomgenRunner(null, mockWorkspace, null, null, null, null, null, null, false);
         
         // Verify the runner correctly identifies remote agent scenario
         assertTrue("Should detect remote agent when workspace has channel", 
@@ -81,7 +81,7 @@ public class SbomgenRunnerTest {
         
         when(mockWorkspace.getChannel()).thenReturn(null);
         
-        SbomgenRunner runner = new SbomgenRunner(null, mockWorkspace, null, null, null, null, null, null);
+        SbomgenRunner runner = new SbomgenRunner(null, mockWorkspace, null, null, null, null, null, null, false);
         
         // Verify the runner correctly identifies local execution scenario
         assertTrue("Should detect local execution when workspace has no channel", 

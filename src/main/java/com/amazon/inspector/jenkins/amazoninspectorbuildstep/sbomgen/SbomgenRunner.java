@@ -29,10 +29,11 @@ public class SbomgenRunner {
     public String dockerPassword;
 
     private final String sbomgenSkipFiles;
+    private final boolean isLicenseCollectionEnabled;
 
     public SbomgenRunner(Launcher launcher, FilePath workspace, String sbomgenPath, String activeArchiveType,
                          String archivePath, String dockerUsername, String dockerPassword,
-                         String sbomgenSkipFiles) {
+                         String sbomgenSkipFiles, boolean isLicenseCollectionEnabled) {
         this.sbomgenPath = sbomgenPath;
         this.archivePath = archivePath;
         this.archiveType = activeArchiveType;
@@ -41,6 +42,7 @@ public class SbomgenRunner {
         this.launcher = launcher;
         this.workspace = workspace;
         this.sbomgenSkipFiles = sbomgenSkipFiles;
+        this.isLicenseCollectionEnabled = isLicenseCollectionEnabled;
     }
 
     public String run() throws Exception {
@@ -103,6 +105,16 @@ public class SbomgenRunner {
                         skipFilesJoined);
                 AmazonInspectorBuilder.logger.println(Arrays.toString(baseCommandList));
             }
+        }
+
+        if (isLicenseCollectionEnabled) {
+            String[] extendedCommandList = Arrays.copyOf(baseCommandList,
+                    baseCommandList.length + 1);
+            extendedCommandList[extendedCommandList.length - 1] = "--collect-licenses";
+            baseCommandList = extendedCommandList;
+
+            AmazonInspectorBuilder.logger.println("License collection enabled, adding --collect-licenses flag");
+            AmazonInspectorBuilder.logger.println(Arrays.toString(baseCommandList));
         }
 
         String output = SbomgenUtils.runCommand(baseCommandList, launcher, environment);
