@@ -90,6 +90,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     private boolean isEpssThresholdEnabled;
     private final boolean isSuppressedCveEnabled;
     private final boolean isAutoFailCveEnabled;
+    private final boolean isLicenseCollectionEnabled;
     private final boolean osArch;
     private final int countCritical;
     private final int countHigh;
@@ -115,6 +116,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                                   int countCritical, int countHigh, int countMedium, int countLow, String oidcCredentialId,
                                   String sbomgenSkipFiles, Double epssThreshold, String suppressedCveList,
                                   Boolean isSuppressedCveEnabled, Boolean isAutoFailCveEnabled, String autoFailCveList,
+                                  Boolean isLicenseCollectionEnabled,
                                   // Legacy parameters for backward compatibility (DEPRECATED)
                                   Boolean isThresholdEnabled, Boolean isEpssEnabled) {
         if (artifactPath != null && !artifactPath.isEmpty()) {
@@ -152,6 +154,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         this.isEpssThresholdEnabled = finalEpssThresholdEnabled;
         this.isSuppressedCveEnabled = (isSuppressedCveEnabled != null) ? isSuppressedCveEnabled : false;
         this.isAutoFailCveEnabled = (isAutoFailCveEnabled != null) ? isAutoFailCveEnabled : false;
+        this.isLicenseCollectionEnabled = (isLicenseCollectionEnabled != null) ? isLicenseCollectionEnabled : false;
         this.suppressedCveList = (suppressedCveList != null) ? suppressedCveList : "";
         this.autoFailCveList = (autoFailCveList != null) ? autoFailCveList : "";
         
@@ -383,7 +386,8 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         listener.getLogger().println("Features: Thresholds=" + (isSeverityThresholdEnabled ? "✓" : "✗") + 
                                     ", EPSS=" + (isEpssThresholdEnabled ? "✓" : "✗") + 
                                     ", CVE Suppression=" + (isSuppressedCveEnabled ? "✓" : "✗") + 
-                                    ", CVE Auto-fail=" + (isAutoFailCveEnabled ? "✓" : "✗"));
+                                    ", CVE Auto-fail=" + (isAutoFailCveEnabled ? "✓" : "✗") + 
+                                    ", License Collection=" + (isLicenseCollectionEnabled ? "✓" : "✗"));
         
         if (isSuppressedCveEnabled && suppressedCount > 0 && suppressedCveSet != null) {
             listener.getLogger().println("CVE Suppression List (" + suppressedCount + " CVEs ignored from thresholds):");
@@ -463,6 +467,10 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         return this.isAutoFailCveEnabled;
     }
 
+    public boolean getIsLicenseCollectionEnabled() {
+        return this.isLicenseCollectionEnabled;
+    }
+
     public String getSuppressedCveList() {
         return this.suppressedCveList;
     }
@@ -532,9 +540,9 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             String sbom;
             if (credential != null) {
                 sbom = new SbomgenRunner(launcher, workspace, activeSbomgenPath, activeArchiveType, archivePath, credential.getUsername(),
-                        credential.getPassword().getPlainText(),skipfiles).run();
+                        credential.getPassword().getPlainText(), skipfiles, isLicenseCollectionEnabled).run();
             } else {
-                sbom = new SbomgenRunner(launcher, workspace, activeSbomgenPath, activeArchiveType, archivePath, null, null, skipfiles).run();
+                sbom = new SbomgenRunner(launcher, workspace, activeSbomgenPath, activeArchiveType, archivePath, null, null, skipfiles, isLicenseCollectionEnabled).run();
             }
 
             JsonElement metadata = JsonParser.parseString(sbom).getAsJsonObject().get("metadata");
@@ -564,9 +572,6 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             IdTokenFileCredentials oidcFile = CredentialsProvider.findCredentialById(workingOidcCredentialId, IdTokenFileCredentials.class, build);
             String oidcToken = getOidcToken(oidcStr, oidcFile);
 
-            String responseData = new SdkRequests(awsRegion, awsCredential, oidcToken, awsProfileName, iamRole).requestSbom(sbom);
-            SbomData sbomData = SbomData.builder().sbom(gson.fromJson(responseData, Sbom.class)).build();
-
             String sbomFileName = String.format("%s-%s-sbom.json", reportArtifactName, build.getDisplayName()).replaceAll("[ #]", "");
             String sbomWorkspacePath = String.format("%s/%s", build.getId(), sbomFileName);
 
@@ -579,7 +584,10 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                 sbomFileParent.mkdirs();
             }
 
-            sbomFile.write(gson.toJson(sbomData.getSbom()), "UTF-8");
+            sbomFile.write(sbom, "UTF-8");
+
+            String responseData = new SdkRequests(awsRegion, awsCredential, oidcToken, awsProfileName, iamRole).requestSbom(sbom);
+            SbomData sbomData = SbomData.builder().sbom(gson.fromJson(responseData, Sbom.class)).build();
 
             artifactMap.put(sbomFileName, sbomWorkspacePath);
 

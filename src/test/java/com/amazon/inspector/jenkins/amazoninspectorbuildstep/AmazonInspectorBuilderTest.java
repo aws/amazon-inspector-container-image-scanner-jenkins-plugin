@@ -26,6 +26,7 @@ public class AmazonInspectorBuilderTest {
             true, 
             "CVE-2024-9999",
             true,
+            true,
             true
         );
 
@@ -33,6 +34,7 @@ public class AmazonInspectorBuilderTest {
         assertTrue(builder.getIsEpssThresholdEnabled());
         assertTrue(builder.getIsSuppressedCveEnabled());
         assertTrue(builder.getIsAutoFailCveEnabled());
+        assertTrue(builder.getIsLicenseCollectionEnabled());
         assertEquals("CVE-2023-1234,CVE-2023-5678", builder.getSuppressedCveList());
         assertEquals("CVE-2024-9999", builder.getAutoFailCveList());
         assertEquals(Double.valueOf(0.7), builder.getEpssThreshold());
@@ -60,6 +62,7 @@ public class AmazonInspectorBuilderTest {
             false, 
             false, 
             "",
+            false,
             null,
             null
         );
@@ -68,6 +71,7 @@ public class AmazonInspectorBuilderTest {
         assertFalse(builder.getIsEpssThresholdEnabled());
         assertFalse(builder.getIsSuppressedCveEnabled());
         assertFalse(builder.getIsAutoFailCveEnabled());
+        assertFalse(builder.getIsLicenseCollectionEnabled());
         assertEquals("", builder.getSuppressedCveList());
         assertEquals("", builder.getAutoFailCveList());
         assertEquals(Double.valueOf(0.5), builder.getEpssThreshold());
@@ -99,6 +103,7 @@ public class AmazonInspectorBuilderTest {
             true, 
             true, 
             "CVE-2023-2222",
+            false,
             null,
             null
         );
@@ -130,6 +135,7 @@ public class AmazonInspectorBuilderTest {
             "test", "test", "container", false, "", "us-east-1", "", "", "",
             "automatic", "", 0, 0, 0, 0, "", "", null, "",
             false, false, "",
+            false,
             null,
             null
         );
@@ -143,6 +149,7 @@ public class AmazonInspectorBuilderTest {
             "", "", "container", false, "", "us-east-1", "", "", "",
             "automatic", "", 0, 0, 0, 0, "", "", 0.0, "",
             false, false, "",
+            false,
             null,
             null
         );
@@ -160,6 +167,7 @@ public class AmazonInspectorBuilderTest {
             "automatic", "", Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE,
             "", "", 1.0, "",
             true, true, "",
+            false,
             null,
             null
         );
@@ -178,6 +186,7 @@ public class AmazonInspectorBuilderTest {
             "automatic", "", 0, 0, 0, 0,
             "", "", 0.0, "",
             true, true, "",
+            false,
             null,
             null
         );
@@ -197,6 +206,7 @@ public class AmazonInspectorBuilderTest {
             "manual", "/custom/path/sbomgen", 1, 5, 10, 50,
             "oidc-123", "*.tmp,*.log", 0.85, "CVE-2023-1111,CVE-2023-2222",
             true, true, "CVE-2023-9999",
+            true,
             true,
             true
         );
@@ -220,6 +230,7 @@ public class AmazonInspectorBuilderTest {
             "CVE-2023-1234,CVE-2024-5678,CVE-2022-9999,CVE-2025-123456",
             true, true,
             "CVE-2023-0001,CVE-2024-0002",
+            false,
             null,
             null
         );
@@ -236,6 +247,7 @@ public class AmazonInspectorBuilderTest {
             "CVE-2023-1234",
             true, true,
             "CVE-2024-9999",
+            false,
             null,
             null
         );
@@ -250,6 +262,7 @@ public class AmazonInspectorBuilderTest {
             "test", "test", "container", false, "", "us-east-1", "", "", "",
             "automatic", "", 0, 0, 0, 0, "", "", null, "",
             false, false, "",
+            false,
             null,
             null
         );
@@ -259,6 +272,7 @@ public class AmazonInspectorBuilderTest {
             "test", "test", "archive", false, "", "us-east-1", "", "", "",
             "automatic", "", 0, 0, 0, 0, "", "", null, "",
             false, false, "",
+            false,
             null,
             null
         );
@@ -274,6 +288,7 @@ public class AmazonInspectorBuilderTest {
                 "test", "test", "container", false, "", region, "", "", "",
                 "automatic", "", 0, 0, 0, 0, "", "", null, "",
                 false, false, "",
+                false,
                 null,
                 null
             );
@@ -290,6 +305,7 @@ public class AmazonInspectorBuilderTest {
                 "test", "test", "container", false, "", "us-east-1", "", "", "",
                 selection, "", 0, 0, 0, 0, "", "", null, "",
                 false, false, "",
+                false,
                 null,
                 null
             );
@@ -309,6 +325,7 @@ public class AmazonInspectorBuilderTest {
                             "test", "test", "container", false, "", "us-east-1", "", "", "",
                             "automatic", "", 0, 0, 0, 0, "", "", 0.5, "",
                             suppressFlag, autoFailFlag, "",
+                            false,
                             severityFlag,
                             epssFlag
                         );
@@ -343,6 +360,7 @@ public class AmazonInspectorBuilderTest {
             null, 
             "",
             false, false, "",
+            false,
             null,
             null
         );
@@ -358,6 +376,7 @@ public class AmazonInspectorBuilderTest {
             "test", "test", "container", false, "", "us-east-1", "", "", "",
             "automatic", "", 0, 0, 0, 0, "", "", 0.5, "",
             false, false, "",
+            false,
             true, true
         );
 

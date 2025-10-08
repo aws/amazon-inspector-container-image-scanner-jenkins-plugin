@@ -180,4 +180,12 @@
             <f:textarea placeholder="CVE-2023-9999, CVE-2024-0001" rows="3" />
         </f:entry>
     </div>
+    
+    <f:entry field="isLicenseCollectionEnabled">
+        <f:checkbox id="isLicenseCollectionEnabled"
+                    class="bold"
+                    checked="${instance.isLicenseCollectionEnabled}"
+                    title="Enable license collection"
+                    tooltip="Collect license information for packages in the SBOM. Requires Bomerman v1.8.0 or greater." />
+    </f:entry>
 </j:jelly>
