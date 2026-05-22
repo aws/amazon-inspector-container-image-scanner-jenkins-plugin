@@ -12,7 +12,6 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.EnvVars;
@@ -707,7 +706,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             
             if (isEpssThresholdEnabled && epssThreshold != null) {
                 listener.getLogger().println("EPSS Threshold set to: " + epssThreshold);
-                boolean cvesExceedThreshold = assessCVEsAgainstEPSS(build, workspace, listener, epssThreshold, sbomWorkspacePath);
+                boolean cvesExceedThreshold = assessCVEsAgainstEPSS(listener, epssThreshold, sbomData);
                 if (cvesExceedThreshold) {
                     doesBuildPass = false;
                 }
@@ -738,86 +737,66 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         }
     }
 
-    private boolean assessCVEsAgainstEPSS(Run<?, ?> build, FilePath workspace, TaskListener listener, Double epssThreshold, String sbomPath)
-            throws IOException, InterruptedException {
-        FilePath sbomFile = workspace.child(sbomPath);
-        if (!sbomFile.exists()) {
-            listener.getLogger().println("SBOM file not found at: " + sbomFile.getRemote());
-            return true;
+    private boolean assessCVEsAgainstEPSS(TaskListener listener, Double epssThreshold, SbomData sbomData) {
+        List<Vulnerability> vulnerabilities = sbomData.getSbom().getVulnerabilities();
+        if (vulnerabilities == null || vulnerabilities.isEmpty()) {
+            listener.getLogger().println("No vulnerabilities found in the scan response.");
+            return false;
         }
-        try {
-            String sbomContent = sbomFile.readToString();
-            listener.getLogger().println("SBOM file read successfully.");
-            Gson gson = new Gson();
-            Sbom sbom = gson.fromJson(sbomContent, Sbom.class);
-            listener.getLogger().println("SBOM JSON parsed successfully.");
-            List<Vulnerability> vulnerabilities = sbom.getVulnerabilities();
-            if (vulnerabilities == null || vulnerabilities.isEmpty()) {
-                listener.getLogger().println("No vulnerabilities found in the SBOM.");
-                return false;
+
+        Set<String> suppressedCveSet = new HashSet<>();
+        if (isSuppressedCveEnabled && suppressedCveList != null && !suppressedCveList.trim().isEmpty()) {
+            String[] cveArray = suppressedCveList.split("[,\\n\\r]+");
+            for (String cve : cveArray) {
+                suppressedCveSet.add(cve.trim().toUpperCase());
             }
-            
-            Set<String> suppressedCveSet = new HashSet<>();
-            if (isSuppressedCveEnabled && suppressedCveList != null && !suppressedCveList.trim().isEmpty()) {
-                String[] cveArray = suppressedCveList.split("[,\\n\\r]+");
-                for (String cve : cveArray) {
-                    suppressedCveSet.add(cve.trim().toUpperCase());
-                }
-                listener.getLogger().println("Suppressing " + suppressedCveSet.size() + " CVEs from EPSS assessment: " + suppressedCveSet);
-            }
-            
-            listener.getLogger().println("Starting EPSS assessment for vulnerabilities...");
-            boolean exceedsThreshold = false;
-            Map<String, Double> exceedingCVEsMap = new HashMap<>();
-            int suppressedCount = 0;
-            
-            for (Vulnerability vulnerability : vulnerabilities) {
-                String cveId = vulnerability.getId();
-                Double epssScore = vulnerability.getEpssScore();
-                
-                // Skip suppressed CVEs
-                if (suppressedCveSet.contains(cveId.toUpperCase())) {
-                    suppressedCount++;
-                    continue;
-                }
-                
-                if (epssScore == null) {
-                    continue;
-                }
-                if (epssScore >= epssThreshold) {
-                    exceedsThreshold = true;
-                    exceedingCVEsMap.put(cveId, epssScore);
-                }
-            }
-            
-            if (suppressedCount > 0) {
-                listener.getLogger().println("Suppressed " + suppressedCount + " CVEs from EPSS assessment.");
-            }
-            
-            if (exceedsThreshold) {
-                listener.getLogger().println("The following CVEs exceed the EPSS threshold of " + epssThreshold + ":");
-                int count = 0;
-                for (Map.Entry<String, Double> entry : exceedingCVEsMap.entrySet()) {
-                    if (count < MAX_EPSS_CVES_CONSOLE) {
-                        listener.getLogger().println(String.format("  - %s (EPSS: %.3f)", entry.getKey(), entry.getValue()));
-                        count++;
-                    } else {
-                        listener.getLogger().println("  ... and " + (exceedingCVEsMap.size() - count) + " more EPSS breaches (check assessment file for complete list)");
-                        break;
-                    }
-                }
-                listener.getLogger().println("Failing the build due to EPSS threshold breach.");
-            } else {
-                listener.getLogger().println("All assessed CVEs are within the EPSS threshold of " + epssThreshold + ".");
-            }
-            return exceedsThreshold;
-        } catch (JsonParseException e) {
-            listener.getLogger().println("Invalid JSON structure in SBOM file: " + e.getMessage());
-            return true;
-        } catch (IOException e) {
-            listener.getLogger().println("Error reading SBOM file: " + e.getMessage());
-            return true;
+            listener.getLogger().println("Suppressing " + suppressedCveSet.size() + " CVEs from EPSS assessment: " + suppressedCveSet);
         }
+
+        listener.getLogger().println("Starting EPSS assessment for vulnerabilities...");
+        boolean exceedsThreshold = false;
+        Map<String, Double> exceedingCVEsMap = new HashMap<>();
+        int suppressedCount = 0;
+
+        for (Vulnerability vulnerability : vulnerabilities) {
+            String cveId = vulnerability.getId();
+            Double epssScore = vulnerability.getEpssScore();
+
+            if (suppressedCveSet.contains(cveId.toUpperCase())) {
+                suppressedCount++;
+                continue;
+            }
+
+            if (epssScore == null) {
+                continue;
+            }
+            if (epssScore >= epssThreshold) {
+                exceedsThreshold = true;
+                exceedingCVEsMap.put(cveId, epssScore);
+            }
+        }
+
+        if (suppressedCount > 0) {
+            listener.getLogger().println("Suppressed " + suppressedCount + " CVEs from EPSS assessment.");
+        }
+
+        if (exceedsThreshold) {
+            listener.getLogger().println("The following CVEs exceed the EPSS threshold of " + epssThreshold + ":");
+            int count = 0;
+            for (Map.Entry<String, Double> entry : exceedingCVEsMap.entrySet()) {
+                if (count < MAX_EPSS_CVES_CONSOLE) {
+                    listener.getLogger().println(String.format("  - %s (EPSS: %.3f)", entry.getKey(), entry.getValue()));
+                    count++;
+                } else {
+                    listener.getLogger().println("  ... and " + (exceedingCVEsMap.size() - count) + " more EPSS breaches (check assessment file for complete list)");
+                    break;
+                }
+            }
+            listener.getLogger().println("Failing the build due to EPSS threshold breach.");
+        } else {
+            listener.getLogger().println("All assessed CVEs are within the EPSS threshold of " + epssThreshold + ".");
+        }
+        return exceedsThreshold;
     }
 
     private String getOidcToken(IdTokenStringCredentials oidcStr, IdTokenFileCredentials oidcFile) throws IOException {
