@@ -12,39 +12,39 @@ import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Compone
 
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.SbomData;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomparsing.Severity;
-import org.junit.Before;
-import org.junit.Test;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.List;
 
 import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.html.HtmlConversionUtils.sortVulnerabilitiesBySeverity;
 import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.utils.ConversionUtils.getSeverity;
-import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class HtmlConversionUtilsTest {
-    SbomData sbomData;
+class HtmlConversionUtilsTest {
 
-    @Before
-    public void setUp() throws IOException {
+    private SbomData sbomData;
+
+    @BeforeEach
+    void beforeEach() throws IOException {
         String str = TestUtils.readStringFromFile("src/test/resources/data/SbomOutputExampleUbuntu.json");
         sbomData = TestUtils.getSbomDataFromString(str);
     }
 
     @Test
-    public void testConvertVulnerabilities() {
+    void testConvertVulnerabilities() {
         List<Vulnerability> vulnerabilities = sbomData.getSbom().getVulnerabilities();
         List<Component> components = sbomData.getSbom().getComponents();
 
         List<HtmlVulnerability> htmlVulnerabilities = HtmlConversionUtils.convertVulnerabilities(vulnerabilities,
                 components);
 
-        assertEquals(htmlVulnerabilities.size(), 396);
+        assertEquals(396, htmlVulnerabilities.size());
     }
 
     @Test
-    public void testConvertVulnerabilities_emptyComponents() {
+    void testConvertVulnerabilities_emptyComponents() {
         Vulnerability vulnerability = Vulnerability.builder()
                 .id("ID")
                 .ratings(List.of(Rating.builder().source(
@@ -64,7 +64,7 @@ public class HtmlConversionUtilsTest {
     }
 
     @Test
-    public void testConvertVulnerabilities_nullSeverity() {
+    void testConvertVulnerabilities_nullSeverity() {
         Vulnerability vulnerability = Vulnerability.builder()
                 .id("ID")
                 .ratings(List.of())
@@ -80,11 +80,11 @@ public class HtmlConversionUtilsTest {
 
         List<HtmlVulnerability> htmlVulnerabilities = HtmlConversionUtils.convertVulnerabilities(vulnerabilities, components);
 
-        assertEquals(htmlVulnerabilities.get(0).severity, "UNTRIAGED");
+        assertEquals("UNTRIAGED", htmlVulnerabilities.get(0).severity);
     }
 
     @Test
-    public void testConvertVulnerabilities_skipsDocker() {
+    void testConvertVulnerabilities_skipsDocker() {
         Vulnerability vulnerability = Vulnerability.builder()
                 .id("IN-DOCKER")
                 .build();
@@ -92,18 +92,18 @@ public class HtmlConversionUtilsTest {
 
         List<HtmlVulnerability> htmlVulnerabilities = HtmlConversionUtils.convertVulnerabilities(vulnerabilities, null);
 
-        assertEquals(htmlVulnerabilities.size(), 0);
+        assertEquals(0, htmlVulnerabilities.size());
     }
 
     @Test
-    public void testConvertVulnerabilities_nullVulnerabilities() {
+    void testConvertVulnerabilities_nullVulnerabilities() {
         List<HtmlVulnerability> htmlVulnerabilities = HtmlConversionUtils.convertVulnerabilities(null, null);
 
-        assertEquals(htmlVulnerabilities.size(), 0);
+        assertEquals(0, htmlVulnerabilities.size());
     }
 
     @Test
-    public void testConvertDocker() {
+    void testConvertDocker() {
         Vulnerability vulnerability = Vulnerability.builder()
                 .id("IN-DOCKER")
                 .ratings(List.of(Rating.builder().source(
@@ -124,11 +124,11 @@ public class HtmlConversionUtilsTest {
 
         List<DockerVulnerability> htmlVulnerabilities = HtmlConversionUtils.convertDocker(vulnerabilities, components);
 
-        assertEquals(htmlVulnerabilities.size(), 1);
+        assertEquals(1, htmlVulnerabilities.size());
     }
 
     @Test
-    public void testConvertDocker_emptyComponents() {
+    void testConvertDocker_emptyComponents() {
         Vulnerability vulnerability = Vulnerability.builder()
                 .id("IN-DOCKER")
                 .ratings(List.of(Rating.builder().source(
@@ -144,11 +144,11 @@ public class HtmlConversionUtilsTest {
 
         List<DockerVulnerability> htmlVulnerabilities = HtmlConversionUtils.convertDocker(vulnerabilities, components);
 
-        assertEquals(htmlVulnerabilities.size(), 1);
+        assertEquals(1, htmlVulnerabilities.size());
     }
 
     @Test
-    public void testConvertDocker_nullSeverity() {
+    void testConvertDocker_nullSeverity() {
         Vulnerability vulnerability = Vulnerability.builder()
                 .id("IN-DOCKER")
                 .ratings(List.of())
@@ -165,11 +165,11 @@ public class HtmlConversionUtilsTest {
 
         List<DockerVulnerability> htmlVulnerabilities = HtmlConversionUtils.convertDocker(vulnerabilities, components);
 
-        assertEquals(htmlVulnerabilities.get(0).severity, "UNTRIAGED");
+        assertEquals("UNTRIAGED", htmlVulnerabilities.get(0).severity);
     }
 
     @Test
-    public void testConvertDocker_skipsVuln() {
+    void testConvertDocker_skipsVuln() {
         Vulnerability vulnerability = Vulnerability.builder()
                 .id("ID")
                 .build();
@@ -177,18 +177,18 @@ public class HtmlConversionUtilsTest {
 
         List<DockerVulnerability> htmlVulnerabilities = HtmlConversionUtils.convertDocker(vulnerabilities, null);
 
-        assertEquals(htmlVulnerabilities.size(), 0);
+        assertEquals(0, htmlVulnerabilities.size());
     }
 
     @Test
-    public void testConvertDocker_nullVulnerabilities() {
+    void testConvertDocker_nullVulnerabilities() {
         List<DockerVulnerability> htmlVulnerabilities = HtmlConversionUtils.convertDocker(null, null);
 
-        assertEquals(htmlVulnerabilities.size(), 0);
+        assertEquals(0, htmlVulnerabilities.size());
     }
 
     @Test
-    public void testConvertDocker_derivedDockerfile() {
+    void testConvertDocker_derivedDockerfile() {
         Vulnerability vulnerability = Vulnerability.builder()
                 .id("IN-DOCKER")
                 .ratings(List.of(Rating.builder().source(
@@ -213,49 +213,49 @@ public class HtmlConversionUtilsTest {
     }
 
     @Test
-    public void testGetLines() {
+    void testGetLines() {
         String id = "testId";
         List<Property> properties = List.of(Property.builder()
                         .value("affected_lines:6-6")
                         .name(id)
                 .build());
-        assertEquals(HtmlConversionUtils.getLines(id, properties), "6");
+        assertEquals("6", HtmlConversionUtils.getLines(id, properties));
     }
 
     @Test
-    public void testGetLines_multipleLines() {
+    void testGetLines_multipleLines() {
         String id = "testId";
         List<Property> properties = List.of(Property.builder()
                 .value("affected_lines:6-7")
                 .name(id)
                 .build());
-        assertEquals(HtmlConversionUtils.getLines(id, properties), "6-7");
+        assertEquals("6-7", HtmlConversionUtils.getLines(id, properties));
     }
 
     @Test
-    public void testGetLines_nullProperties() {
-        assertEquals(HtmlConversionUtils.getLines(null, null), "N/A");
+    void testGetLines_nullProperties() {
+        assertEquals("N/A", HtmlConversionUtils.getLines(null, null));
     }
 
     @Test
-    public void testGetLines_noApplicableLines() {
+    void testGetLines_noApplicableLines() {
         String id = "testId";
         List<Property> properties = List.of(Property.builder()
                 .value("affected_lines:6-6")
                 .name(id)
                 .build());
-        assertEquals(HtmlConversionUtils.getLines("invalid", properties), "N/A");
+        assertEquals("N/A", HtmlConversionUtils.getLines("invalid", properties));
     }
 
     @Test
-    public void testSortVulnerabilitiesBySeverity() {
-        assertEquals(sortVulnerabilitiesBySeverity("high", "low"), -2);
-        assertEquals(sortVulnerabilitiesBySeverity("low", "high"), 2);
-        assertEquals(sortVulnerabilitiesBySeverity("high", "high"), 0);
+    void testSortVulnerabilitiesBySeverity() {
+        assertEquals(-2, sortVulnerabilitiesBySeverity("high", "low"));
+        assertEquals(2, sortVulnerabilitiesBySeverity("low", "high"));
+        assertEquals(0, sortVulnerabilitiesBySeverity("high", "high"));
     }
 
     @Test
-    public void testGetSeverity_noNVD() {
+    void testGetSeverity_noNVD() {
         Vulnerability vuln = Vulnerability.builder().ratings(List.of(
                 Rating.builder()
                         .severity("low")
@@ -263,7 +263,7 @@ public class HtmlConversionUtilsTest {
                         .source(Source.builder()
                                 .name("NonNVD").build()
                         ).build())).build();
-        assertEquals(getSeverity(vuln)
-                , Severity.UNTRIAGED);
+        assertEquals(Severity.UNTRIAGED, getSeverity(vuln)
+        );
     }
 }

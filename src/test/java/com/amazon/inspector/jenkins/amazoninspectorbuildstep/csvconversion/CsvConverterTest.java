@@ -16,28 +16,28 @@ import java.util.HashMap;
 import java.util.List;
 
 import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomparsing.Severity.OTHER;
-import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
-public class CsvConverterTest {
+class CsvConverterTest {
 
     private CsvConverter csvConverter;
     private SbomData sbomData;
 
     @BeforeEach
-    public void setUp() throws IOException {
+    void beforeEach() throws IOException {
         sbomData = new Gson().fromJson(TestUtils.readStringFromFile("src/test/resources/data/SbomOutputExample.json"), SbomData.class);
     }
 
     @Test
-    public void convertVulnerabilities_shouldReturnNull_whenNoVulnData() throws IOException {
+    void convertVulnerabilities_shouldReturnNull_whenNoVulnData() throws IOException {
         csvConverter = new CsvConverter(sbomData);
         SeverityCounts counts = new SeverityCounts();
-        assertEquals(null, csvConverter.convertVulnerabilities("imageName", "imageSha", "buildId", counts));
+        assertNull(csvConverter.convertVulnerabilities("imageName", "imageSha", "buildId", counts));
     }
 
     @Test
-    public void convertVulnerabilities_normalBehavior() throws IOException {
+    void convertVulnerabilities_normalBehavior() throws IOException {
         csvConverter = new CsvConverter(sbomData);
         csvConverter.routeVulnerabilities();
         SeverityCounts counts = new SeverityCounts();
@@ -45,14 +45,14 @@ public class CsvConverterTest {
     }
 
     @Test
-    public void convertDocker_shouldReturnNull_whenNoDockerData() throws IOException {
+    void convertDocker_shouldReturnNull_whenNoDockerData() throws IOException {
         csvConverter = new CsvConverter(sbomData);
         SeverityCounts counts = new SeverityCounts();
-        assertEquals(null, csvConverter.convertDocker("imageName", "imageSha", "buildId", counts));
+        assertNull(csvConverter.convertDocker("imageName", "imageSha", "buildId", counts));
     }
 
     @Test
-    public void convertDocker_normalBehavior() throws IOException {
+    void convertDocker_normalBehavior() throws IOException {
         csvConverter = new CsvConverter(sbomData);
         csvConverter.routeVulnerabilities();
         SeverityCounts counts = new SeverityCounts();
@@ -60,28 +60,28 @@ public class CsvConverterTest {
     }
 
     @Test
-    public void populateComponentMap_shouldReturnEmptyMap_whenSbomDataIsNull() {
+    void populateComponentMap_shouldReturnEmptyMap_whenSbomDataIsNull() {
         SbomData sbomData = null;
         csvConverter = new CsvConverter(sbomData);
         assertEquals(new HashMap<>(), csvConverter.populateComponentMap(sbomData));
     }
 
     @Test
-    public void populateComponentMap_shouldReturnEmptyMap_whenSbomDataHasNoComponents() {
+    void populateComponentMap_shouldReturnEmptyMap_whenSbomDataHasNoComponents() {
         sbomData.setSbom(null);
         csvConverter = new CsvConverter(sbomData);
         assertEquals(new HashMap<>(), csvConverter.populateComponentMap(sbomData));
     }
 
     @Test
-    public void routeVulnerabilities_shouldNotThrowException_whenVulnerabilitiesAreNull() {
+    void routeVulnerabilities_shouldNotThrowException_whenVulnerabilitiesAreNull() {
         csvConverter = new CsvConverter(sbomData);
         csvConverter.routeVulnerabilities(); // No exception expected
     }
 
 
     @Test
-    public void routeVulnCsvData_vulnListSizes_nonINDOCKERVulnId() {
+    void routeVulnCsvData_vulnListSizes_nonINDOCKERVulnId() {
         csvConverter = new CsvConverter(sbomData);
         Vulnerability vulnerability = Vulnerability.builder().id("123").build();
         Component component = Component.builder().build();
@@ -92,14 +92,14 @@ public class CsvConverterTest {
     }
 
     @Test
-    public void getSeverity_emptyRatingsReturnsOTHER() {
+    void getSeverity_emptyRatingsReturnsOTHER() {
         csvConverter = new CsvConverter(sbomData);
         Vulnerability vulnerability = Vulnerability.builder().ratings(new ArrayList<>()).build();
-        assertTrue(csvConverter.getSeverity(vulnerability).equals(OTHER.name()));
+        assertEquals(csvConverter.getSeverity(vulnerability), OTHER.name());
     }
 
     @Test
-    public void getProprtyValueFromKey_returnsProperty() {
+    void getPropertyValueFromKey_returnsProperty() {
         csvConverter = new CsvConverter(sbomData);
         String key = "value";
         List<Property> properties = List.of(Property.builder().name(key).value(key).build());
