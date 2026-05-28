@@ -87,8 +87,22 @@ class CsvConverterTest {
         Component component = Component.builder().build();
         component.setPurl("InstalledVersion");
         csvConverter.routeVulnCsvData(vulnerability, component);
-        assertEquals(1, CsvConverter.vulnData.size());
-        assertEquals(0, CsvConverter.dockerData.size());
+        assertEquals(1, csvConverter.getVulnData().size());
+        assertEquals(0, csvConverter.getDockerData().size());
+    }
+
+    @Test
+    void parallelInstancesDoNotShareData() {
+        CsvConverter converterA = new CsvConverter(sbomData);
+        CsvConverter converterB = new CsvConverter(sbomData);
+
+        Vulnerability vulnerability = Vulnerability.builder().id("123").build();
+        Component component = Component.builder().build();
+        component.setPurl("InstalledVersion");
+        converterA.routeVulnCsvData(vulnerability, component);
+
+        assertEquals(1, converterA.getVulnData().size());
+        assertEquals(0, converterB.getVulnData().size());
     }
 
     @Test

@@ -41,6 +41,22 @@ class SbomOutputParserTest {
         severityCounts.increment(Severity.CRITICAL);
         SbomOutputParser parser = new SbomOutputParser(sbomData);
         parser.parseVulnCounts();
-        assertEquals(SbomOutputParser.aggregateCounts.getCounts(), severityCounts.getCounts());
+        assertEquals(parser.getAggregateCounts().getCounts(), severityCounts.getCounts());
+    }
+
+    @Test
+    void parallelInstancesDoNotShareCounters() {
+        SbomData sbomData = SbomData.builder().sbom(Sbom.builder().vulnerabilities(
+                List.of(Vulnerability.builder().id("CVE").ratings(
+                        List.of(Rating.builder().severity(Severity.CRITICAL.name()).build())
+                ).build())
+        ).build()).build();
+
+        SbomOutputParser parserA = new SbomOutputParser(sbomData);
+        SbomOutputParser parserB = new SbomOutputParser(sbomData);
+        parserA.parseVulnCounts();
+
+        assertEquals(1, parserA.getAggregateCounts().getCounts().get(Severity.CRITICAL));
+        assertEquals(0, parserB.getAggregateCounts().getCounts().get(Severity.CRITICAL));
     }
 }

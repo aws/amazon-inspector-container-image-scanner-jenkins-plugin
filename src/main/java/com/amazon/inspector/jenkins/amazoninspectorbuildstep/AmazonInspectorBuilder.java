@@ -284,7 +284,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         }
     }
 
-    private void filterSuppressedCvesFromCounts(SbomData sbomData, Set<String> suppressedCveSet, TaskListener listener) {
+    private void filterSuppressedCvesFromCounts(SbomData sbomData, Set<String> suppressedCveSet, TaskListener listener, SbomOutputParser parser) {
         List<Vulnerability> vulnerabilities = sbomData.getSbom().getVulnerabilities();
         if (vulnerabilities == null || vulnerabilities.isEmpty()) {
             return;
@@ -334,7 +334,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         if (suppressedCount > 0) {
             listener.getLogger().println("Suppressing " + suppressedCount + " CVEs from threshold calculations: " + suppressedCveSet);
             
-            Map<Severity, Integer> currentCounts = SbomOutputParser.aggregateCounts.getCounts();
+            Map<Severity, Integer> currentCounts = parser.getAggregateCounts().getCounts();
             for (Map.Entry<Severity, Integer> entry : suppressedCounts.entrySet()) {
                 if (entry.getValue() > 0) {
                     int newCount = Math.max(0, currentCounts.get(entry.getKey()) - entry.getValue());
@@ -618,7 +618,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                     suppressedCveSet.add(cve.trim().toUpperCase());
                 }
                 suppressedCount = suppressedCveSet.size();
-                filterSuppressedCvesFromCounts(sbomData, suppressedCveSet, listener);
+                filterSuppressedCvesFromCounts(sbomData, suppressedCveSet, listener, parser);
             }
 
             String sanitizedArchiveName = null;
@@ -634,13 +634,13 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             }
 
             converter.routeVulnerabilities();
-            String csvVulnContent = converter.convertVulnerabilities(sanitizedArchiveName, imageSha, build.getId(), SbomOutputParser.vulnCounts);
+            String csvVulnContent = converter.convertVulnerabilities(sanitizedArchiveName, imageSha, build.getId(), parser.getVulnCounts());
             if (csvVulnContent != null) {
                 artifactMap.put(csvVulnFileName, csvVulnWorkspacePath);
                 csvVulnFile.write(csvVulnContent, "UTF-8");
             }
 
-            String csvDockerContent = converter.convertDocker(sanitizedArchiveName, imageSha, build.getId(), SbomOutputParser.dockerCounts);
+            String csvDockerContent = converter.convertDocker(sanitizedArchiveName, imageSha, build.getId(), parser.getDockerCounts());
             if (csvDockerContent != null) {
                 artifactMap.put(csvDockerFileName, csvDockerWorkspacePath);
                 csvDockerFile.write(csvDockerContent, "UTF-8");
@@ -695,10 +695,10 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             }
 
             if (isSeverityThresholdEnabled) {
-                boolean vulnThresholdsFailed = doesBuildFail(SbomOutputParser.aggregateCounts.getCounts());
+                boolean vulnThresholdsFailed = doesBuildFail(parser.getAggregateCounts().getCounts());
                 if (vulnThresholdsFailed) {
                     doesBuildPass = false;
-                    logThresholdBreachDetails(sbomData, listener, SbomOutputParser.aggregateCounts.getCounts());
+                    logThresholdBreachDetails(sbomData, listener, parser.getAggregateCounts().getCounts());
                 }
             } else {
                 listener.getLogger().println("Vulnerability thresholds disabled. Skipping threshold checks.");
@@ -721,7 +721,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             }
 
             if (isSeverityThresholdEnabled) {
-                listener.getLogger().println("Results: " + SbomOutputParser.aggregateCounts.toString());
+                listener.getLogger().println("Results: " + parser.getAggregateCounts().toString());
             }
 
             logSecurityAssessmentSummary(listener, suppressedCveSet, suppressedCount);
