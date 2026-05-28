@@ -10,17 +10,14 @@ import lombok.Getter;
 import java.util.List;
 
 @SuppressFBWarnings
+@Getter
 public class SbomOutputParser {
-    @Getter
-    private SbomData sbom;
-    public static SeverityCounts vulnCounts;
-    public static SeverityCounts dockerCounts;
-    public static SeverityCounts aggregateCounts;
+    private final SbomData sbom;
+    private final SeverityCounts vulnCounts = new SeverityCounts();
+    private final SeverityCounts dockerCounts = new SeverityCounts();
+    private final SeverityCounts aggregateCounts = new SeverityCounts();
 
     public SbomOutputParser(SbomData sbomData) {
-        vulnCounts = new SeverityCounts();
-        dockerCounts = new SeverityCounts();
-        aggregateCounts = new SeverityCounts();
         this.sbom = sbomData;
     }
 

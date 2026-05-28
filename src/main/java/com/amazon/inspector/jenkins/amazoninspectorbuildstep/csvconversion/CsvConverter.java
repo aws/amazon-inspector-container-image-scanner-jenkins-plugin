@@ -12,6 +12,7 @@ import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Compone
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Components.Vulnerability;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.SbomData;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import lombok.Getter;
 import org.apache.commons.lang.StringUtils;
 
 import java.io.File;
@@ -29,17 +30,16 @@ import java.util.Map;
 import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.html.HtmlConversionUtils.getLineComponents;
 
 @SuppressFBWarnings
+@Getter
 public class CsvConverter {
     private SbomData sbomData;
     private Map<String, Component> componentMap;
-    static List<CsvData> dockerData;
-    static List<CsvData> vulnData;
+    private final List<CsvData> dockerData = new ArrayList<>();
+    private final List<CsvData> vulnData = new ArrayList<>();
 
     public CsvConverter(SbomData sbomData) {
         this.sbomData = sbomData;
         this.componentMap = populateComponentMap(sbomData);
-        dockerData = new ArrayList<>();
-        vulnData = new ArrayList<>();
     }
 
     Map<String, Component> populateComponentMap(SbomData sbomData) {
