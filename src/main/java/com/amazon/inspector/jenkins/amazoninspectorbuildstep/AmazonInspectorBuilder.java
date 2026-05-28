@@ -61,7 +61,7 @@ import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.StaplerRequest2;
 import org.kohsuke.stapler.verb.POST;
 import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.utils.InspectorRegions.INSPECTOR_REGIONS;
 import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.utils.Sanitizer.sanitizeFilePath;
@@ -838,7 +838,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         }
 
         @Override
-        public AmazonInspectorBuilder newInstance(StaplerRequest req, JSONObject formData) throws FormException {
+        public AmazonInspectorBuilder newInstance(StaplerRequest2 req, JSONObject formData) throws FormException {
             String sourceVal = formData.optString("sbomgenSource", null);
             formData.put("sbomgenSource", sourceVal);
 
@@ -860,10 +860,10 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
         private ListBoxModel getCredentialIdModels() {
             ListBoxModel items = new ListBoxModel();
-            List<StandardUsernamePasswordCredentials> credentials = CredentialsProvider.lookupCredentials(
+            List<StandardUsernamePasswordCredentials> credentials = CredentialsProvider.lookupCredentialsInItemGroup(
                     StandardUsernamePasswordCredentials.class,
-                    Jenkins.getInstance(),
-                    ACL.SYSTEM,
+                    Jenkins.get(),
+                    ACL.SYSTEM2,
                     Collections.emptyList()
             );
 
@@ -880,10 +880,10 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
         private ListBoxModel getOidcStringIdModels() {
             ListBoxModel items = new ListBoxModel();
-            List<IdTokenStringCredentials> credentials = CredentialsProvider.lookupCredentials(
+            List<IdTokenStringCredentials> credentials = CredentialsProvider.lookupCredentialsInItemGroup(
                     IdTokenStringCredentials.class,
-                    Jenkins.getInstance(),
-                    ACL.SYSTEM,
+                    Jenkins.get(),
+                    ACL.SYSTEM2,
                     Collections.emptyList()
             );
 
@@ -896,10 +896,10 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
         private ListBoxModel getOidcFileIdModels() {
             ListBoxModel items = new ListBoxModel();
-            List<IdTokenFileCredentials> credentials = CredentialsProvider.lookupCredentials(
+            List<IdTokenFileCredentials> credentials = CredentialsProvider.lookupCredentialsInItemGroup(
                     IdTokenFileCredentials.class,
-                    Jenkins.getInstance(),
-                    ACL.SYSTEM,
+                    Jenkins.get(),
+                    ACL.SYSTEM2,
                     Collections.emptyList()
             );
 
@@ -1074,10 +1074,10 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         @SuppressFBWarnings()
         private ListBoxModel getAwsCredentialIdModels() {
             ListBoxModel items = new ListBoxModel();
-            List<AmazonWebServicesCredentials> credentials = CredentialsProvider.lookupCredentials(
+            List<AmazonWebServicesCredentials> credentials = CredentialsProvider.lookupCredentialsInItemGroup(
                     AmazonWebServicesCredentials.class,
-                    Jenkins.getInstance(),
-                    ACL.SYSTEM,
+                    Jenkins.get(),
+                    ACL.SYSTEM2,
                     Collections.emptyList()
             );
 
