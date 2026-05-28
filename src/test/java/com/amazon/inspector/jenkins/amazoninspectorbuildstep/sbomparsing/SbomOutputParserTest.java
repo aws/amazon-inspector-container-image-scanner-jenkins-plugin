@@ -4,30 +4,31 @@ import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Compone
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Components.Vulnerability;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Sbom;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.SbomData;
-import org.junit.Test;
 
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.Test;
 
-public class SbomOutputParserTest {
+class SbomOutputParserTest {
+
     @Test
-    public void testGetHighestRatingFromList_Successful() {
+    void testGetHighestRatingFromList_Successful() {
         List<Rating> ratings = List.of(
                 Rating.builder().severity(Severity.HIGH.name()).build(),
                 Rating.builder().severity(Severity.LOW.name()).build());
 
-        assertEquals(new SbomOutputParser(null).getHighestRatingFromList(ratings), Severity.HIGH);
+        assertEquals(Severity.HIGH, new SbomOutputParser(null).getHighestRatingFromList(ratings));
     }
 
     @Test
-    public void testGetHighestRatingFromList_EmptyRatings() {
-        assertEquals(new SbomOutputParser(null).getHighestRatingFromList(null), Severity.OTHER);
-        assertEquals(new SbomOutputParser(null).getHighestRatingFromList(List.of()), Severity.OTHER);
+    void testGetHighestRatingFromList_EmptyRatings() {
+        assertEquals(Severity.OTHER, new SbomOutputParser(null).getHighestRatingFromList(null));
+        assertEquals(Severity.OTHER, new SbomOutputParser(null).getHighestRatingFromList(List.of()));
     }
 
     @Test
-    public void testParseSbom_Successful() {
+    void testParseSbom_Successful() {
         SbomData sbomData = SbomData.builder().sbom(Sbom.builder().vulnerabilities(
                 List.of(Vulnerability.builder().id("CVE").ratings(
                         List.of(

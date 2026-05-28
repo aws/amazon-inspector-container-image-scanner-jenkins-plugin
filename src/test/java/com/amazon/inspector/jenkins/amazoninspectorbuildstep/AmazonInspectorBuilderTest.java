@@ -1,10 +1,12 @@
 package com.amazon.inspector.jenkins.amazoninspectorbuildstep;
-import org.junit.Test;
-import static org.junit.Assert.*;
-public class AmazonInspectorBuilderTest {
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+class AmazonInspectorBuilderTest {
 
     @Test
-    public void testConstructorWithNewParameters() {
+    void testConstructorWithNewParameters() {
         AmazonInspectorBuilder builder = new AmazonInspectorBuilder(
             "alpine:latest", 
             "alpine:latest", 
@@ -41,7 +43,7 @@ public class AmazonInspectorBuilderTest {
     }
 
     @Test
-    public void testConstructorWithFalseFlags() {
+    void testConstructorWithFalseFlags() {
         AmazonInspectorBuilder builder = new AmazonInspectorBuilder(
             "ubuntu:20.04", 
             "ubuntu:20.04", 
@@ -82,7 +84,7 @@ public class AmazonInspectorBuilderTest {
     }
 
     @Test
-    public void testGettersReturnCorrectValues() {
+    void testGettersReturnCorrectValues() {
         AmazonInspectorBuilder builder = new AmazonInspectorBuilder(
             "test-image:v1.0", 
             "", 
@@ -130,7 +132,7 @@ public class AmazonInspectorBuilderTest {
     }
 
     @Test
-    public void testNullEpssThreshold() {
+    void testNullEpssThreshold() {
         AmazonInspectorBuilder builder = new AmazonInspectorBuilder(
             "test", "test", "container", false, "", "us-east-1", "", "", "",
             "automatic", "", 0, 0, 0, 0, "", "", null, "",
@@ -144,7 +146,7 @@ public class AmazonInspectorBuilderTest {
     }
 
     @Test
-    public void testEmptyStringParameters() {
+    void testEmptyStringParameters() {
         AmazonInspectorBuilder builder = new AmazonInspectorBuilder(
             "", "", "container", false, "", "us-east-1", "", "", "",
             "automatic", "", 0, 0, 0, 0, "", "", 0.0, "",
@@ -161,7 +163,7 @@ public class AmazonInspectorBuilderTest {
     }
 
     @Test
-    public void testBoundaryValueThresholds() {
+    void testBoundaryValueThresholds() {
         AmazonInspectorBuilder builder = new AmazonInspectorBuilder(
             "test", "test", "container", false, "", "us-east-1", "", "", "",
             "automatic", "", Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE,
@@ -180,7 +182,7 @@ public class AmazonInspectorBuilderTest {
     }
 
     @Test
-    public void testZeroThresholds() {
+    void testZeroThresholds() {
         AmazonInspectorBuilder builder = new AmazonInspectorBuilder(
             "test", "test", "container", false, "", "us-east-1", "", "", "",
             "automatic", "", 0, 0, 0, 0,
@@ -199,7 +201,7 @@ public class AmazonInspectorBuilderTest {
     }
 
     @Test
-    public void testMixedFeatureFlags() {
+    void testMixedFeatureFlags() {
         AmazonInspectorBuilder builder = new AmazonInspectorBuilder(
             "alpine:3.18", "alpine:3.18", "container", true, "arn:aws:iam::123456789012:role/test", 
             "ap-southeast-1", "jenkins-cred", "dev-profile", "aws-cred-123",
@@ -223,7 +225,7 @@ public class AmazonInspectorBuilderTest {
     }
 
     @Test
-    public void testComplexCveStrings() {
+    void testComplexCveStrings() {
         AmazonInspectorBuilder builder = new AmazonInspectorBuilder(
             "test", "test", "container", false, "", "us-east-1", "", "", "",
             "automatic", "", 0, 0, 0, 0, "", "", 0.5,
@@ -240,7 +242,7 @@ public class AmazonInspectorBuilderTest {
     }
 
     @Test
-    public void testSingleCveStrings() {
+    void testSingleCveStrings() {
         AmazonInspectorBuilder builder = new AmazonInspectorBuilder(
             "test", "test", "container", false, "", "us-east-1", "", "", "",
             "automatic", "", 0, 0, 0, 0, "", "", 0.5,
@@ -257,7 +259,7 @@ public class AmazonInspectorBuilderTest {
     }
 
     @Test
-    public void testAllArchiveTypes() {
+    void testAllArchiveTypes() {
         AmazonInspectorBuilder containerBuilder = new AmazonInspectorBuilder(
             "test", "test", "container", false, "", "us-east-1", "", "", "",
             "automatic", "", 0, 0, 0, 0, "", "", null, "",
@@ -280,7 +282,7 @@ public class AmazonInspectorBuilderTest {
     }
 
     @Test
-    public void testAllRegions() {
+    void testAllRegions() {
         String[] regions = {"us-east-1", "us-west-2", "eu-west-1", "ap-southeast-1", "ca-central-1"};
 
         for (String region : regions) {
@@ -297,7 +299,7 @@ public class AmazonInspectorBuilderTest {
     }
 
     @Test
-    public void testSbomgenSelectionOptions() {
+    void testSbomgenSelectionOptions() {
         String[] selections = {"automatic", "manual"};
 
         for (String selection : selections) {
@@ -314,7 +316,7 @@ public class AmazonInspectorBuilderTest {
     }
 
     @Test
-    public void testFeatureFlagCombinations() {
+    void testFeatureFlagCombinations() {
         boolean[] flags = {true, false};
 
         for (boolean severityFlag : flags) {
@@ -341,7 +343,7 @@ public class AmazonInspectorBuilderTest {
     }
 
     @Test
-    public void testSpecialCharactersInPaths() {
+    void testSpecialCharactersInPaths() {
         AmazonInspectorBuilder builder = new AmazonInspectorBuilder(
             "/path with spaces/image-name_v1.0:latest", 
             "/path with spaces/image-name_v1.0:latest", 
@@ -371,7 +373,7 @@ public class AmazonInspectorBuilderTest {
     }
 
     @Test
-    public void testLegacyParameterBackwardCompatibility() {
+    void testLegacyParameterBackwardCompatibility() {
         AmazonInspectorBuilder builder = new AmazonInspectorBuilder(
             "test", "test", "container", false, "", "us-east-1", "", "", "",
             "automatic", "", 0, 0, 0, 0, "", "", 0.5, "",

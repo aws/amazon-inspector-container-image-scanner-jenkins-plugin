@@ -6,8 +6,8 @@ import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Compone
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Components.Source;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Components.Vulnerability;
 import hudson.model.TaskListener;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -16,18 +16,18 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class AmazonInspectorBuilderEpssTest {
+class AmazonInspectorBuilderEpssTest {
 
     private TaskListener listener;
     private Method assessMethod;
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() throws Exception {
         listener = mock(TaskListener.class);
         when(listener.getLogger()).thenReturn(new PrintStream(new ByteArrayOutputStream()));
 
@@ -37,53 +37,53 @@ public class AmazonInspectorBuilderEpssTest {
     }
 
     @Test
-    public void emptyVulnerabilitiesReturnsFalse() throws Exception {
+    void emptyVulnerabilitiesReturnsFalse() throws Exception {
         assertFalse(invoke(builder(false, ""), 0.5, sbomData(Collections.emptyList())));
     }
 
     @Test
-    public void nullVulnerabilitiesReturnsFalse() throws Exception {
+    void nullVulnerabilitiesReturnsFalse() throws Exception {
         assertFalse(invoke(builder(false, ""), 0.5, sbomData(null)));
     }
 
     @Test
-    public void vulnAboveThresholdReturnsTrue() throws Exception {
+    void vulnAboveThresholdReturnsTrue() throws Exception {
         List<Vulnerability> vulns = Collections.singletonList(epssVuln("CVE-1", 0.8));
         assertTrue(invoke(builder(false, ""), 0.5, sbomData(vulns)));
     }
 
     @Test
-    public void vulnBelowThresholdReturnsFalse() throws Exception {
+    void vulnBelowThresholdReturnsFalse() throws Exception {
         List<Vulnerability> vulns = Collections.singletonList(epssVuln("CVE-1", 0.1));
         assertFalse(invoke(builder(false, ""), 0.5, sbomData(vulns)));
     }
 
     @Test
-    public void vulnEqualToThresholdReturnsTrue() throws Exception {
+    void vulnEqualToThresholdReturnsTrue() throws Exception {
         List<Vulnerability> vulns = Collections.singletonList(epssVuln("CVE-1", 0.5));
         assertTrue(invoke(builder(false, ""), 0.5, sbomData(vulns)));
     }
 
     @Test
-    public void nullEpssScoreIsSkipped() throws Exception {
+    void nullEpssScoreIsSkipped() throws Exception {
         List<Vulnerability> vulns = Collections.singletonList(noEpssVuln("CVE-1"));
         assertFalse(invoke(builder(false, ""), 0.5, sbomData(vulns)));
     }
 
     @Test
-    public void suppressedCveAboveThresholdIsSkippedWhenSuppressionEnabled() throws Exception {
+    void suppressedCveAboveThresholdIsSkippedWhenSuppressionEnabled() throws Exception {
         List<Vulnerability> vulns = Collections.singletonList(epssVuln("CVE-1", 0.9));
         assertFalse(invoke(builder(true, "CVE-1"), 0.5, sbomData(vulns)));
     }
 
     @Test
-    public void suppressedCveAboveThresholdIsCountedWhenSuppressionDisabled() throws Exception {
+    void suppressedCveAboveThresholdIsCountedWhenSuppressionDisabled() throws Exception {
         List<Vulnerability> vulns = Collections.singletonList(epssVuln("CVE-1", 0.9));
         assertTrue(invoke(builder(false, "CVE-1"), 0.5, sbomData(vulns)));
     }
 
     @Test
-    public void mixOfSuppressedAndBreachingCves() throws Exception {
+    void mixOfSuppressedAndBreachingCves() throws Exception {
         List<Vulnerability> vulns = Arrays.asList(
                 epssVuln("CVE-1", 0.9),
                 epssVuln("CVE-2", 0.8),
@@ -92,7 +92,7 @@ public class AmazonInspectorBuilderEpssTest {
     }
 
     @Test
-    public void allSuppressedReturnsFalseEvenWhenAboveThreshold() throws Exception {
+    void allSuppressedReturnsFalseEvenWhenAboveThreshold() throws Exception {
         List<Vulnerability> vulns = Arrays.asList(
                 epssVuln("CVE-1", 0.9),
                 epssVuln("CVE-2", 0.8));
@@ -100,7 +100,7 @@ public class AmazonInspectorBuilderEpssTest {
     }
 
     @Test
-    public void suppressionMatchIsCaseInsensitive() throws Exception {
+    void suppressionMatchIsCaseInsensitive() throws Exception {
         List<Vulnerability> vulns = Collections.singletonList(epssVuln("cve-2024-1234", 0.9));
         assertFalse(invoke(builder(true, "CVE-2024-1234"), 0.5, sbomData(vulns)));
     }
