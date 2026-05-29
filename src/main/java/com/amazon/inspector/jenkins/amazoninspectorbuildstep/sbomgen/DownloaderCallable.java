@@ -28,39 +28,38 @@ class DownloaderCallable implements FilePath.FileCallable {
     @Override
     public String invoke(File f, VirtualChannel channel) throws IOException {
         byte[] buffer = new byte[1024];
-        ZipInputStream zis = new ZipInputStream(new FileInputStream(f));
-        ZipEntry zipEntry = zis.getNextEntry();
         String sbomgenPath = "";
-        while (zipEntry != null) {
-            File newFile = newFile(new File(destinationPath), zipEntry);
-            if (zipEntry.getName().endsWith("inspector-sbomgen")) {
-                sbomgenPath = newFile.getAbsolutePath();
-                newFile.setExecutable(true);
-            }
-
-            if (zipEntry.isDirectory()) {
-                if (!newFile.isDirectory() && !newFile.mkdirs()) {
-                    throw new IOException("Failed to create directory " + newFile);
-                }
-            } else {
-                File parent = newFile.getParentFile();
-                if (!parent.isDirectory() && !parent.mkdirs()) {
-                    throw new IOException("Failed to create directory " + parent);
+        try (ZipInputStream zis = new ZipInputStream(new FileInputStream(f))) {
+            ZipEntry zipEntry = zis.getNextEntry();
+            while (zipEntry != null) {
+                File newFile = newFile(new File(destinationPath), zipEntry);
+                if (zipEntry.getName().endsWith("inspector-sbomgen")) {
+                    sbomgenPath = newFile.getAbsolutePath();
+                    newFile.setExecutable(true);
                 }
 
-                FileOutputStream fos = new FileOutputStream(newFile);
-                int len;
-                while ((len = zis.read(buffer)) > 0) {
-                    fos.write(buffer, 0, len);
+                if (zipEntry.isDirectory()) {
+                    if (!newFile.isDirectory() && !newFile.mkdirs()) {
+                        throw new IOException("Failed to create directory " + newFile);
+                    }
+                } else {
+                    File parent = newFile.getParentFile();
+                    if (!parent.isDirectory() && !parent.mkdirs()) {
+                        throw new IOException("Failed to create directory " + parent);
+                    }
+
+                    try (FileOutputStream fos = new FileOutputStream(newFile)) {
+                        int len;
+                        while ((len = zis.read(buffer)) > 0) {
+                            fos.write(buffer, 0, len);
+                        }
+                    }
                 }
-                fos.close();
+                zipEntry = zis.getNextEntry();
             }
-            zipEntry = zis.getNextEntry();
+
+            zis.closeEntry();
         }
-
-        zis.closeEntry();
-        zis.close();
-
 
         return sbomgenPath;
     }

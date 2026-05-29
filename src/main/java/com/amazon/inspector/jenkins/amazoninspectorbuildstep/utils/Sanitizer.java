@@ -24,8 +24,4 @@ public class Sanitizer {
         }
 
     }
-
-    public static String sanitizeText(String text) throws URISyntaxException {
-        return sanitizeFilePath(text);
-    }
 }
