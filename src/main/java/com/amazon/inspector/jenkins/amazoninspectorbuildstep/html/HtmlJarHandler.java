@@ -1,11 +1,10 @@
 package com.amazon.inspector.jenkins.amazoninspectorbuildstep.html;
 
-import com.amazon.inspector.jenkins.amazoninspectorbuildstep.AmazonInspectorBuilder;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.FilePath;
 import lombok.AllArgsConstructor;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringEscapeUtils;
+import org.apache.commons.text.StringEscapeUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -40,12 +39,11 @@ public class HtmlJarHandler {
 
     @SuppressFBWarnings()
     public String readStringFromJarEntry(String fileName) throws IOException {
-        JarFile jarFile = new JarFile(jarPath);
-        JarEntry entry = jarFile.getJarEntry(fileName);
-        InputStream inputStream = jarFile.getInputStream(entry);
-        String content = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
-        inputStream.close();
-        jarFile.close();
-        return content;
+        try (JarFile jarFile = new JarFile(jarPath)) {
+            JarEntry entry = jarFile.getJarEntry(fileName);
+            try (InputStream inputStream = jarFile.getInputStream(entry)) {
+                return IOUtils.toString(inputStream, StandardCharsets.UTF_8);
+            }
+        }
     }
 }

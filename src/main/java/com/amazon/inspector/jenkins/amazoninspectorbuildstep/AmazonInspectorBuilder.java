@@ -2,7 +2,6 @@ package com.amazon.inspector.jenkins.amazoninspectorbuildstep;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.requests.SdkRequests;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Sbom;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Components.Vulnerability;
-import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Components.Rating;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomgen.SbomgenDownloader;
 import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
@@ -483,10 +482,8 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             throws IOException, InterruptedException {
         logger = listener.getLogger();
 
-        File outFile = new File(build.getRootDir(), "out");
         this.job = build.getParent();
 
-        PrintStream printStream = new PrintStream(outFile, StandardCharsets.UTF_8);
         try {
             if (showThresholdDeprecationWarning) {
                 listener.getLogger().println("[DEPRECATED] Parameter 'isThresholdEnabled' is deprecated. Use 'isSeverityThresholdEnabled' instead.");
@@ -728,12 +725,10 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
             listener.getLogger().println("Does Build Pass: " + doesBuildPass);
         } catch (Exception e) {
-            listener.getLogger().println("Plugin execution ran into an error and is being aborted!");
-            build.setResult(Result.ABORTED);
+            listener.getLogger().println("Plugin execution failed.");
+            build.setResult(Result.FAILURE);
             listener.getLogger().println("Exception:" + e);
             e.printStackTrace(listener.getLogger());
-        } finally {
-            printStream.close();
         }
     }
 
