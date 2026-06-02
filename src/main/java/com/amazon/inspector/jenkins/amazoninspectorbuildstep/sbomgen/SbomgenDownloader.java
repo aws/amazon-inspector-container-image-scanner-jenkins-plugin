@@ -59,7 +59,9 @@ public class SbomgenDownloader {
 
     private static FilePath downloadFile(String url, FilePath workspace) throws IOException, InterruptedException {
         FilePath sbomgenZip = workspace.child("inspector-sbomgen.zip");
-        sbomgenZip.copyFrom(new BufferedInputStream(new URL(url).openStream()));
+        try (BufferedInputStream in = new BufferedInputStream(new URL(url).openStream())) {
+            sbomgenZip.copyFrom(in);
+        }
         return sbomgenZip;
     }
 
