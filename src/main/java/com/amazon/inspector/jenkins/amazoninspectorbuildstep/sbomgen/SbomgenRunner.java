@@ -4,7 +4,7 @@ import com.amazon.inspector.jenkins.amazoninspectorbuildstep.AmazonInspectorBuil
 import com.google.common.annotations.VisibleForTesting;
 import hudson.FilePath;
 import hudson.Launcher;
-import lombok.Setter;
+import lombok.Getter;
 
 import java.io.File;
 import java.util.Arrays;
@@ -14,20 +14,16 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @SuppressWarnings("lgtm[jenkins/plaintext-storage]")
+@Getter
 public class SbomgenRunner {
 
-    public String sbomgenPath;
-    public String archiveType;
-    public String archivePath;
-    public Launcher launcher;
-    public FilePath workspace;
-
-    @Setter
-    public String dockerUsername;
-
-    @Setter
-    public String dockerPassword;
-
+    private final String sbomgenPath;
+    private final String archiveType;
+    private final String archivePath;
+    private final Launcher launcher;
+    private final FilePath workspace;
+    private final String dockerUsername;
+    private final String dockerPassword;
     private final String sbomgenSkipFiles;
     private final boolean isLicenseCollectionEnabled;
 

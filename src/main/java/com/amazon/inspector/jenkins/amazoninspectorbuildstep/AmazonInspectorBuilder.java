@@ -862,7 +862,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                     Collections.emptyList()
             );
 
-            items.add("Select Docker Username", null);
+            items.add("Select Docker Username", "");
             for (StandardUsernamePasswordCredentials credential : credentials) {
                 if (credential.getUsername() != null && !credential.getUsername().isEmpty()) {
                     items.add(String.format("[%s] %s/*****", credential.getId(), credential.getUsername()),
@@ -906,11 +906,10 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         }
 
         @POST
-        @SuppressFBWarnings
         public ListBoxModel doFillOidcCredentialIdItems() {
             if (Jenkins.get().hasPermission(READ)) {
                 ListBoxModel items = new ListBoxModel();
-                items.add("Select OIDC Credential ID", null);
+                items.add("Select OIDC Credential ID", "");
                 items.addAll(getOidcFileIdModels());
                 items.addAll(getOidcStringIdModels());
                 return items;
@@ -1066,7 +1065,6 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             return FormValidation.ok();
         }
 
-        @SuppressFBWarnings()
         private ListBoxModel getAwsCredentialIdModels() {
             ListBoxModel items = new ListBoxModel();
             List<AmazonWebServicesCredentials> credentials = CredentialsProvider.lookupCredentialsInItemGroup(
@@ -1076,7 +1074,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                     Collections.emptyList()
             );
 
-            items.add("Select AWS Credentials", null);
+            items.add("Select AWS Credentials", "");
             for (AmazonWebServicesCredentials credential : credentials) {
                 if (credential != null && credential.getCredentials() != null) {
                     items.add(String.format("[%s] %s", credential.getId(), credential.getDisplayName()),
@@ -1098,7 +1096,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         public ListBoxModel doFillAwsRegionItems() {
             ListBoxModel items = new ListBoxModel();
 
-            items.add("Select AWS Region", null);
+            items.add("Select AWS Region", "");
 
             for (String region : INSPECTOR_REGIONS) {
                 items.add(region, region);

@@ -29,7 +29,10 @@ public class SbomgenProcessing {
     }
 
     public static String processSbomgenFile(File outFile) throws IOException {
-        String rawFileContent = new String(new FileInputStream(outFile).readAllBytes(), StandardCharsets.UTF_8);
+        String rawFileContent;
+        try (FileInputStream fis = new FileInputStream(outFile)) {
+            rawFileContent = new String(fis.readAllBytes(), StandardCharsets.UTF_8);
+        }
 
         String[] splitRawFileContent = rawFileContent.split("\n");
         List<String> lines = new ArrayList<>();

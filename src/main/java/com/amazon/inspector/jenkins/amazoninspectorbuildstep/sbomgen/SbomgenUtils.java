@@ -32,7 +32,6 @@ public class SbomgenUtils {
     }
 
     @VisibleForTesting
-    @SuppressFBWarnings()
     public static String stripProperties(String sbom) {
         JsonObject json = JsonParser.parseString(sbom).getAsJsonObject();
 

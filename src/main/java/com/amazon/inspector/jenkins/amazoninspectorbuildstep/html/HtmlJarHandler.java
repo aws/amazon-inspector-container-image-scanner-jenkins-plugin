@@ -1,6 +1,5 @@
 package com.amazon.inspector.jenkins.amazoninspectorbuildstep.html;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.FilePath;
 import lombok.AllArgsConstructor;
 import org.apache.commons.io.IOUtils;
@@ -37,7 +36,6 @@ public class HtmlJarHandler {
         return htmlContent;
     }
 
-    @SuppressFBWarnings()
     public String readStringFromJarEntry(String fileName) throws IOException {
         try (JarFile jarFile = new JarFile(jarPath)) {
             JarEntry entry = jarFile.getJarEntry(fileName);
