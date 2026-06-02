@@ -71,7 +71,7 @@ class SbomgenRunnerTest {
         SbomgenRunner runner = new SbomgenRunner(null, mockWorkspace, null, null, null, null, null, null, false);
         
         // Verify the runner correctly identifies remote agent scenario
-        assertNotNull(runner.workspace.getChannel(), "Should detect remote agent when workspace has channel");
+        assertNotNull(runner.getWorkspace().getChannel(), "Should detect remote agent when workspace has channel");
     }
 
     @Test
@@ -83,6 +83,6 @@ class SbomgenRunnerTest {
         SbomgenRunner runner = new SbomgenRunner(null, mockWorkspace, null, null, null, null, null, null, false);
 
         // Verify the runner correctly identifies local execution scenario
-        assertNull(runner.workspace.getChannel(), "Should detect local execution when workspace has no channel");
+        assertNull(runner.getWorkspace().getChannel(), "Should detect local execution when workspace has no channel");
     }
 }

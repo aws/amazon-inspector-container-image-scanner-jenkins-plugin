@@ -4,12 +4,10 @@ import com.google.common.annotations.VisibleForTesting;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Components.Rating;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Components.Vulnerability;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.SbomData;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import lombok.Getter;
 
 import java.util.List;
 
-@SuppressFBWarnings
 @Getter
 public class SbomOutputParser {
     private final SbomData sbom;
