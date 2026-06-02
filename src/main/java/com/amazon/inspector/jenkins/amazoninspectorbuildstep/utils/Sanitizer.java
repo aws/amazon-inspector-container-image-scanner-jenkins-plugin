@@ -16,6 +16,9 @@ public class Sanitizer {
     public static String sanitizeFilePath(String rawUrl) {
         try {
             String[] splitUrl = rawUrl.split(":");
+            if (splitUrl.length < 2) {
+                return rawUrl;
+            }
             URI uri = new URI(splitUrl[0], splitUrl[1], null);
             return uri.toASCIIString();
         } catch(Exception e) {

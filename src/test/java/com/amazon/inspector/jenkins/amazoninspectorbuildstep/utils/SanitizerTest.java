@@ -16,4 +16,16 @@ class SanitizerTest {
     void testSanitizeNonUrl() {
         assertEquals("test:test%7B%7D", sanitizeFilePath("test:test{}"));
     }
+
+    @Test
+    void testSanitizeFilePathWithoutColon() {
+        // No colon: returned as-is instead of throwing ArrayIndexOutOfBoundsException.
+        assertEquals("/var/lib/jenkins/workspace/image.tar",
+                sanitizeFilePath("/var/lib/jenkins/workspace/image.tar"));
+    }
+
+    @Test
+    void testSanitizeEmptyString() {
+        assertEquals("", sanitizeFilePath(""));
+    }
 }
