@@ -17,7 +17,7 @@ class SbomgenUtilsTest {
 
     @BeforeEach
     void setUp() {
-        AmazonInspectorBuilder.logger = new PrintStream(new ByteArrayOutputStream());
+        AmazonInspectorBuilder.setLogger(new PrintStream(new ByteArrayOutputStream()));
     }
 
     @Test

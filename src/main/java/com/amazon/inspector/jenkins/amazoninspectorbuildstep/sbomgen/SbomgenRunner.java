@@ -63,11 +63,11 @@ public class SbomgenRunner {
             environment.put("INSPECTOR_SBOMGEN_PASSWORD", dockerPassword);
         }
 
-        AmazonInspectorBuilder.logger.println("Making downloaded SBOMGen executable...");
+        AmazonInspectorBuilder.getLogger().println("Making downloaded SBOMGen executable...");
         SbomgenUtils.runCommand(new String[]{"chmod", "+x", sbomgenFilePath.getRemote()},
                 launcher, environment);
 
-        AmazonInspectorBuilder.logger.println("Running command...");
+        AmazonInspectorBuilder.getLogger().println("Running command...");
         String option = "--image";
         if (!archiveType.equals("container")) {
             option = "--path";
@@ -80,7 +80,7 @@ public class SbomgenRunner {
                 archivePath
         };
 
-        AmazonInspectorBuilder.logger.println(Arrays.toString(baseCommandList));
+        AmazonInspectorBuilder.getLogger().println(Arrays.toString(baseCommandList));
 
         if (sbomgenSkipFiles != null && !sbomgenSkipFiles.trim().isEmpty()) {
             String[] patterns = sbomgenSkipFiles.split("\\r?\\n");
@@ -97,9 +97,9 @@ public class SbomgenRunner {
                 extendedCommandList[extendedCommandList.length - 1] = skipFilesJoined;
                 baseCommandList = extendedCommandList;
 
-                AmazonInspectorBuilder.logger.println("DEBUG: --skip-files argument: " +
+                AmazonInspectorBuilder.getLogger().println("DEBUG: --skip-files argument: " +
                         skipFilesJoined);
-                AmazonInspectorBuilder.logger.println(Arrays.toString(baseCommandList));
+                AmazonInspectorBuilder.getLogger().println(Arrays.toString(baseCommandList));
             }
         }
 
@@ -109,8 +109,8 @@ public class SbomgenRunner {
             extendedCommandList[extendedCommandList.length - 1] = "--collect-licenses";
             baseCommandList = extendedCommandList;
 
-            AmazonInspectorBuilder.logger.println("License collection enabled, adding --collect-licenses flag");
-            AmazonInspectorBuilder.logger.println(Arrays.toString(baseCommandList));
+            AmazonInspectorBuilder.getLogger().println("License collection enabled, adding --collect-licenses flag");
+            AmazonInspectorBuilder.getLogger().println(Arrays.toString(baseCommandList));
         }
 
         String output = SbomgenUtils.runCommand(baseCommandList, launcher, environment);

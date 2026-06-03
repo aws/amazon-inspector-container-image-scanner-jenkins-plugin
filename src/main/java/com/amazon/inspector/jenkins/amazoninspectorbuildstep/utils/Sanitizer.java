@@ -22,7 +22,7 @@ public class Sanitizer {
             URI uri = new URI(splitUrl[0], splitUrl[1], null);
             return uri.toASCIIString();
         } catch(Exception e) {
-            AmazonInspectorBuilder.logger.printf("%s in invalid format, using it as the path.", rawUrl);
+            AmazonInspectorBuilder.getLogger().printf("%s in invalid format, using it as the path.", rawUrl);
             return rawUrl;
         }
 
