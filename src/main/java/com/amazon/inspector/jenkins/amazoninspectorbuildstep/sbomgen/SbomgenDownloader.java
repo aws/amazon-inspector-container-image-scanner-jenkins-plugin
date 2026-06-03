@@ -7,7 +7,7 @@ import java.net.URL;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.AmazonInspectorBuilder.logger;
+import static com.amazon.inspector.jenkins.amazoninspectorbuildstep.AmazonInspectorBuilder.getLogger;
 
 public class SbomgenDownloader {
     private static final String BASE_URL = "https://amazon-inspector-" +
@@ -20,7 +20,7 @@ public class SbomgenDownloader {
 
     public static String getUrl(FilePath workspace, hudson.EnvVars env, hudson.Launcher launcher) throws IOException, InterruptedException {
         String osName = System.getProperty("os.name").toLowerCase();
-        logger.println("Detected OS Name: " + osName);
+        getLogger().println("Detected OS Name: " + osName);
         if (!osName.contains("linux")) {
             throw new UnsupportedOperationException("Unsupported OS: " + osName);
         }
@@ -35,17 +35,17 @@ public class SbomgenDownloader {
                 String output = SbomgenUtils.runCommand(new String[]{"uname", "-m"}, launcher, environment);
                 if (output != null && !output.trim().isEmpty()) {
                     osArch = output.trim();
-                    logger.println("Detected OS Architecture (from agent): " + osArch);
+                    getLogger().println("Detected OS Architecture (from agent): " + osArch);
                 }
             } catch (Exception e) {
-                logger.println("Failed to detect architecture from agent: " + e.getMessage());
+                getLogger().println("Failed to detect architecture from agent: " + e.getMessage());
             }
         }
         
         // Fallback to System.getProperty if agent detection failed
         if (osArch == null || osArch.trim().isEmpty()) {
             osArch = System.getProperty("os.arch").toLowerCase();
-            logger.println("Detected OS Architecture (fallback from master): " + osArch);
+            getLogger().println("Detected OS Architecture (fallback from master): " + osArch);
         }
         
         osArch = osArch.toLowerCase().trim();

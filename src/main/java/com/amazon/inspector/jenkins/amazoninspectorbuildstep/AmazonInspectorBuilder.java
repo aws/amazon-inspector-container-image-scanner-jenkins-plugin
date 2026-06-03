@@ -6,6 +6,7 @@ import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomgen.SbomgenDown
 import com.cloudbees.jenkins.plugins.awscredentials.AmazonWebServicesCredentials;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
@@ -69,8 +70,28 @@ import static hudson.security.Permission.READ;
 
 @Getter
 public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
-    @SuppressFBWarnings()
-    public static PrintStream logger;
+    /**
+     * Per-build console logger. ThreadLocal (not a plain static field) so concurrent builds, which
+     * run on separate executor threads, don't overwrite each other's stream. Cleared in perform()'s
+     * finally block so a pooled thread doesn't retain a finished build's stream.
+     */
+    private static final ThreadLocal<PrintStream> LOGGER_HOLDER = new ThreadLocal<>();
+
+    /** Console logger for the current build thread, or System.out if called outside a build. */
+    public static PrintStream getLogger() {
+        PrintStream current = LOGGER_HOLDER.get();
+        return current != null ? current : System.out;
+    }
+
+    @VisibleForTesting
+    public static void setLogger(PrintStream logger) {
+        LOGGER_HOLDER.set(logger);
+    }
+
+    @VisibleForTesting
+    public static void clearLogger() {
+        LOGGER_HOLDER.remove();
+    }
     
     private static final int MAX_BLOCKED_CVES_CONSOLE = 20;
     private static final int MAX_IGNORED_CVES_CONSOLE = 10;
@@ -480,7 +501,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     @Override
     public void perform(Run<?, ?> build, FilePath workspace, EnvVars env, Launcher launcher, TaskListener listener)
             throws IOException, InterruptedException {
-        logger = listener.getLogger();
+        setLogger(listener.getLogger());
 
         this.job = build.getParent();
 
@@ -507,7 +528,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
             String activeSbomgenPath;
             if ("automatic".equalsIgnoreCase(sbomgenSelection)) {
-                logger.println("Automatic SBOMGen selected, downloading using default settings...");
+                getLogger().println("Automatic SBOMGen selected, downloading using default settings...");
                 activeSbomgenPath = SbomgenDownloader.getBinary(workspace, env, launcher);
             } else if ("manual".equalsIgnoreCase(sbomgenSelection)) {
                 if (sbomgenPath == null || sbomgenPath.isEmpty()) {
@@ -517,16 +538,16 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                 if (!sbomgenFile.exists() || !sbomgenFile.canExecute()) {
                     throw new IllegalArgumentException("Provided SBOMgen path is invalid or not executable: " + sbomgenPath);
                 }
-                logger.println("Manual SBOMGen selected, using provided path: " + sbomgenPath);
+                getLogger().println("Manual SBOMGen selected, using provided path: " + sbomgenPath);
                 activeSbomgenPath = sbomgenPath;
             } else {
-                logger.println("Invalid SBOMGen selection. Defaulting to Automatic.");
+                getLogger().println("Invalid SBOMGen selection. Defaulting to Automatic.");
                 activeSbomgenPath = SbomgenDownloader.getBinary(workspace, env, launcher);
             }
 
             StandardUsernamePasswordCredentials credential = null;
             if (credentialId == null) {
-                logger.println("Credential ID is null, this is not normal, please check your config. " +
+                getLogger().println("Credential ID is null, this is not normal, please check your config. " +
                         "Continuing without docker credentials.");
             } else {
                 credential = CredentialsProvider.findCredentialById(credentialId,
@@ -601,7 +622,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                     build.getDisplayName()).replaceAll("[ #]", "");
             String csvDockerWorkspacePath = String.format("%s/%s", build.getId(), csvDockerFileName);
             FilePath csvDockerFile = workspace.child(csvDockerWorkspacePath);
-            logger.println("Converting SBOM Results to CSV.");
+            getLogger().println("Converting SBOM Results to CSV.");
 
             SbomOutputParser parser = new SbomOutputParser(sbomData);
             parser.parseVulnCounts();
@@ -729,6 +750,8 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
             build.setResult(Result.FAILURE);
             listener.getLogger().println("Exception:" + e);
             e.printStackTrace(listener.getLogger());
+        } finally {
+            clearLogger();
         }
     }
 
@@ -817,8 +840,8 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                 }
             }
         } catch (Exception e) {
-            AmazonInspectorBuilder.logger.println("An exception occurred when getting image sha.");
-            AmazonInspectorBuilder.logger.println(e);
+            AmazonInspectorBuilder.getLogger().println("An exception occurred when getting image sha.");
+            e.printStackTrace(AmazonInspectorBuilder.getLogger());
         }
 
         return "N/A";
