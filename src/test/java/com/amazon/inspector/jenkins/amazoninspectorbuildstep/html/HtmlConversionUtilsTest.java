@@ -188,6 +188,34 @@ class HtmlConversionUtilsTest {
     }
 
     @Test
+    void testConvertDocker_nullLineComponentDoesNotThrow() {
+        // A null entry among the dockerfile components must be skipped, not dereferenced.
+        Vulnerability vulnerability = Vulnerability.builder()
+                .id("IN-DOCKER")
+                .ratings(List.of(Rating.builder().source(
+                                Source.builder().name("NVD").build()
+                        )
+                        .method("CVSSv4")
+                        .severity("HIGH").build()))
+                .affects(List.of(Affect.builder().ref("bom").build()))
+                .build();
+        List<Vulnerability> vulnerabilities = List.of(vulnerability);
+
+        Component realDockerfile = Component.builder()
+                .bomRef("bom")
+                .name("dockerfile")
+                .purl("purl")
+                .build();
+        // Arrays.asList allows a null element, unlike List.of.
+        List<Component> components = java.util.Arrays.asList(null, realDockerfile);
+
+        List<DockerVulnerability> dockerVulnerabilities =
+                HtmlConversionUtils.convertDocker(vulnerabilities, components);
+
+        assertEquals(1, dockerVulnerabilities.size());
+    }
+
+    @Test
     void testConvertDocker_derivedDockerfile() {
         Vulnerability vulnerability = Vulnerability.builder()
                 .id("IN-DOCKER")
@@ -245,6 +273,39 @@ class HtmlConversionUtilsTest {
                 .name(id)
                 .build());
         assertEquals("N/A", HtmlConversionUtils.getLines("invalid", properties));
+    }
+
+    @Test
+    void testGetLines_valueWithoutColon() {
+        // Malformed property value with no ":" must not throw ArrayIndexOutOfBoundsException.
+        String id = "testId";
+        List<Property> properties = List.of(Property.builder()
+                .value("noColonHere")
+                .name(id)
+                .build());
+        assertEquals("N/A", HtmlConversionUtils.getLines(id, properties));
+    }
+
+    @Test
+    void testGetLines_nullValue() {
+        // Property with a null value must degrade to N/A rather than NPE.
+        String id = "testId";
+        List<Property> properties = List.of(Property.builder()
+                .value(null)
+                .name(id)
+                .build());
+        assertEquals("N/A", HtmlConversionUtils.getLines(id, properties));
+    }
+
+    @Test
+    void testGetLines_valueWithoutDash() {
+        // Value with a ":" but no "-" segment returns the raw segment instead of crashing.
+        String id = "testId";
+        List<Property> properties = List.of(Property.builder()
+                .value("affected_lines:6")
+                .name(id)
+                .build());
+        assertEquals("6", HtmlConversionUtils.getLines(id, properties));
     }
 
     @Test

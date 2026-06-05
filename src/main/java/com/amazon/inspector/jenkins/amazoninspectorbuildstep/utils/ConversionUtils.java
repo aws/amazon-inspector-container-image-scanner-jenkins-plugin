@@ -1,6 +1,5 @@
 package com.amazon.inspector.jenkins.amazoninspectorbuildstep.utils;
 
-import com.amazon.inspector.jenkins.amazoninspectorbuildstep.AmazonInspectorBuilder;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Components.Rating;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Components.Vulnerability;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomparsing.Severity;
@@ -30,15 +29,18 @@ public class ConversionUtils {
 
         Map<String, Severity> severityMap = new HashMap<>();
         for (Rating rating : ratings) {
-            if (rating == null) {
+            if (rating == null || rating.getSource() == null || rating.getMethod() == null) {
                 continue;
             }
 
             String sourceName = rating.getSource().getName();
             String method = rating.getMethod();
 
-            if (sourceName.equals(NVD)) {
-                severityMap.put(getCvssMethod(method), Severity.getSeverityFromString(rating.getSeverity()));
+            if (NVD.equals(sourceName)) {
+                String cvssMethod = getCvssMethod(method);
+                if (cvssMethod != null) {
+                    severityMap.put(cvssMethod, Severity.getSeverityFromString(rating.getSeverity()));
+                }
             }
         }
 
@@ -56,7 +58,8 @@ public class ConversionUtils {
             return CVSS2;
         }
 
-        throw new RuntimeException("Unsupported CVSS method: " + method);
+        // Unknown/unsupported CVSS method: skip this rating rather than failing the whole scan.
+        return null;
     }
 
     private static Severity getHighestCvssMethodSeverity(Map<String, Severity> severityMap) {
