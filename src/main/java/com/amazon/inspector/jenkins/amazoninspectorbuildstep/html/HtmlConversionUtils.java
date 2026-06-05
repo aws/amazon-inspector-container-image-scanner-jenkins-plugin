@@ -73,9 +73,19 @@ public class HtmlConversionUtils {
 
         for (Property property : properties) {
             if (property.getName().contains(id)) {
-                String lines = property.getValue().split(":")[1];
+                String value = property.getValue();
+                if (value == null) {
+                    return "N/A";
+                }
+
+                String[] valueParts = value.split(":");
+                if (valueParts.length < 2) {
+                    return "N/A";
+                }
+
+                String lines = valueParts[1];
                 String[] splitLines = lines.split("-");
-                if (splitLines[0].equals(splitLines[1])) {
+                if (splitLines.length >= 2 && splitLines[0].equals(splitLines[1])) {
                     return splitLines[0];
                 } else {
                     return lines;
@@ -94,7 +104,7 @@ public class HtmlConversionUtils {
         }
 
         for (Component component : components) {
-            if (component.getName() != null && component.getName().contains("dockerfile")) {
+            if (component != null && component.getName() != null && component.getName().contains("dockerfile")) {
                 lineComponents.add(component);
             }
         }
@@ -131,10 +141,10 @@ public class HtmlConversionUtils {
                 if (lineComponent != null)  {
                     lines = getLines(vulnerability.getId(), lineComponent.getProperties());
                     filename = lineComponent.getName();
-                }
 
-                if (lineComponent.getName().equals("dockerfile:comp-1.Dockerfile")) {
-                    lines += " - Derived";
+                    if ("dockerfile:comp-1.Dockerfile".equals(lineComponent.getName())) {
+                        lines += " - Derived";
+                    }
                 }
             }
 
