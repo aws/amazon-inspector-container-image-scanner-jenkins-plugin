@@ -3,6 +3,8 @@ package com.amazon.inspector.jenkins.amazoninspectorbuildstep.csvconversion;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.TestUtils;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Components.Component;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Components.Property;
+import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Components.Rating;
+import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Components.Source;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.Components.Vulnerability;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.models.sbom.SbomData;
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomparsing.SeverityCounts;
@@ -110,6 +112,25 @@ class CsvConverterTest {
         csvConverter = new CsvConverter(sbomData);
         Vulnerability vulnerability = Vulnerability.builder().ratings(new ArrayList<>()).build();
         assertEquals(csvConverter.getSeverity(vulnerability), OTHER.name());
+    }
+
+    @Test
+    void buildVulnerabilityDataLines_capitalizesSeverity() {
+        csvConverter = new CsvConverter(sbomData);
+        Rating rating = Rating.builder()
+                .source(Source.builder().name("NVD").build())
+                .method("CVSSv3")
+                .severity("critical")
+                .build();
+        Vulnerability vulnerability = Vulnerability.builder().id("CVE-0000-0001").ratings(List.of(rating)).build();
+        Component component = Component.builder().build();
+        component.setPurl("InstalledVersion");
+        csvConverter.routeVulnCsvData(vulnerability, component);
+
+        List<String[]> dataLines = csvConverter.buildVulnerabilityDataLines();
+
+        assertEquals("Severity", dataLines.get(0)[1]);
+        assertEquals("Critical", dataLines.get(1)[1]);
     }
 
     @Test
