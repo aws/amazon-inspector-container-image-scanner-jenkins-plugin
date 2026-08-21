@@ -857,9 +857,6 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
         @Override
         public AmazonInspectorBuilder newInstance(StaplerRequest2 req, JSONObject formData) throws FormException {
-            String sourceVal = formData.optString("sbomgenSource", null);
-            formData.put("sbomgenSource", sourceVal);
-
             JSONObject selectionObj = formData.optJSONObject("sbomgenSelection");
             if (selectionObj != null && selectionObj.has("value")) {
                 String sbomValue = selectionObj.getString("value");
