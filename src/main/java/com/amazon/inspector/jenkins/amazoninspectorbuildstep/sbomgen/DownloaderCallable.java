@@ -33,10 +33,6 @@ class DownloaderCallable implements FilePath.FileCallable {
             ZipEntry zipEntry = zis.getNextEntry();
             while (zipEntry != null) {
                 File newFile = newFile(new File(destinationPath), zipEntry);
-                if (zipEntry.getName().endsWith("inspector-sbomgen")) {
-                    sbomgenPath = newFile.getAbsolutePath();
-                    newFile.setExecutable(true);
-                }
 
                 if (zipEntry.isDirectory()) {
                     if (!newFile.isDirectory() && !newFile.mkdirs()) {
@@ -53,6 +49,11 @@ class DownloaderCallable implements FilePath.FileCallable {
                         while ((len = zis.read(buffer)) > 0) {
                             fos.write(buffer, 0, len);
                         }
+                    }
+
+                    if (zipEntry.getName().endsWith("inspector-sbomgen")) {
+                        sbomgenPath = newFile.getAbsolutePath();
+                        newFile.setExecutable(true);
                     }
                 }
                 zipEntry = zis.getNextEntry();
