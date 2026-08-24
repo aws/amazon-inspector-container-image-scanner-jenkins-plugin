@@ -49,7 +49,8 @@ class SdkRequestsTest {
 
         SdkRequests sdkRequests = new SdkRequests("us-east-1", credential, null, null, null);
 
-        AwsCredentialsProvider provider = sdkRequests.getCredentialProvider(null, null, credential);
+        AwsCredentialsProvider provider =
+                sdkRequests.getCredentialProvider(mock(SdkHttpClient.class), null, null, credential);
 
         assertInstanceOf(StaticCredentialsProvider.class, provider);
     }
@@ -58,7 +59,8 @@ class SdkRequestsTest {
     void getCredentialProvider_withProfileName_usesProfileProvider() {
         SdkRequests sdkRequests = new SdkRequests("us-east-1", null, null, "my-profile", null);
 
-        AwsCredentialsProvider provider = sdkRequests.getCredentialProvider("my-profile", null, null);
+        AwsCredentialsProvider provider =
+                sdkRequests.getCredentialProvider(mock(SdkHttpClient.class), "my-profile", null, null);
 
         assertInstanceOf(ProfileCredentialsProvider.class, provider);
     }
@@ -67,7 +69,8 @@ class SdkRequestsTest {
     void getCredentialProvider_withNothingProvided_usesDefaultChain() {
         SdkRequests sdkRequests = new SdkRequests("us-east-1", null, null, null, null);
 
-        AwsCredentialsProvider provider = sdkRequests.getCredentialProvider(null, null, null);
+        AwsCredentialsProvider provider =
+                sdkRequests.getCredentialProvider(mock(SdkHttpClient.class), null, null, null);
 
         assertInstanceOf(DefaultCredentialsProvider.class, provider);
     }
@@ -77,7 +80,8 @@ class SdkRequestsTest {
         String roleArn = "arn:aws:iam::123456789012:role/inspector";
         SdkRequests sdkRequests = new SdkRequests("us-east-1", null, null, null, roleArn);
 
-        AwsCredentialsProvider provider = sdkRequests.getCredentialProvider(null, null, null);
+        AwsCredentialsProvider provider =
+                sdkRequests.getCredentialProvider(mock(SdkHttpClient.class), null, null, null);
 
         assertInstanceOf(StsAssumeRoleCredentialsProvider.class, provider);
     }
@@ -87,7 +91,8 @@ class SdkRequestsTest {
         String roleArn = "arn:aws:iam::123456789012:role/inspector";
         SdkRequests sdkRequests = new SdkRequests("us-east-1", null, "oidc-token", null, roleArn);
 
-        AwsCredentialsProvider provider = sdkRequests.getCredentialProvider(null, "oidc-token", null);
+        AwsCredentialsProvider provider =
+                sdkRequests.getCredentialProvider(mock(SdkHttpClient.class), null, "oidc-token", null);
 
         assertInstanceOf(StsAssumeRoleWithWebIdentityCredentialsProvider.class, provider);
     }
@@ -96,7 +101,8 @@ class SdkRequestsTest {
     void getCredentialProvider_emptyProfileName_fallsBackToDefaultChain() {
         SdkRequests sdkRequests = new SdkRequests("us-east-1", null, null, "", null);
 
-        AwsCredentialsProvider provider = sdkRequests.getCredentialProvider("", null, null);
+        AwsCredentialsProvider provider =
+                sdkRequests.getCredentialProvider(mock(SdkHttpClient.class), "", null, null);
 
         assertInstanceOf(DefaultCredentialsProvider.class, provider);
     }

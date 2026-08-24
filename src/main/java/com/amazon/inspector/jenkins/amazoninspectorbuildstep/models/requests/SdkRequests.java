@@ -90,7 +90,7 @@ public class SdkRequests {
         return InspectorScanClient.builder()
                 .region(Region.of(region))
                 .httpClient(client)
-                .credentialsProvider(getCredentialProvider(workingProfileName, workingOidc, workingCredential))
+                .credentialsProvider(getCredentialProvider(client, workingProfileName, workingOidc, workingCredential))
                 .overrideConfiguration(ClientOverrideConfiguration.builder()
                         .putHeader("Accept-Encoding", "gzip")
                         .build())
@@ -98,7 +98,7 @@ public class SdkRequests {
     }
 
     @VisibleForTesting
-    AwsCredentialsProvider getCredentialProvider(String workingProfileName, String workingOidc,
+    AwsCredentialsProvider getCredentialProvider(SdkHttpClient client, String workingProfileName, String workingOidc,
                                                  AmazonWebServicesCredentials workingCredential) {
         if (workingCredential != null) {
             AmazonInspectorBuilder.getLogger().println("Using explicitly provided AWS credentials to authenticate.");
@@ -109,6 +109,7 @@ public class SdkRequests {
             // No credentials provider needed: AssumeRoleWithWebIdentity is an unsigned STS call.
             StsClient stsClient = StsClient.builder()
                     .region(Region.of(region))
+                    .httpClient(client)
                     .build();
             AssumeRoleWithWebIdentityRequest webIdentityRequest = AssumeRoleWithWebIdentityRequest.builder()
                     .roleArn(roleArn)
@@ -121,7 +122,10 @@ public class SdkRequests {
                     .build();
         } else if (roleArn != null && !roleArn.isEmpty()) {
             AmazonInspectorBuilder.getLogger().println("Authenticating to STS via a role and default credential provider chain.");
-            StsClient stsClient = StsClient.builder().region(Region.of(region)).build();
+            StsClient stsClient = StsClient.builder()
+                    .region(Region.of(region))
+                    .httpClient(client)
+                    .build();
             return StsAssumeRoleCredentialsProvider.builder()
                     .stsClient(stsClient)
                     .refreshRequest(AssumeRoleRequest.builder()
