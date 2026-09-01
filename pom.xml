@@ -90,21 +90,22 @@
         </dependency>
 
         <dependency>
-            <groupId>com.google.code.gson</groupId>
-            <artifactId>gson</artifactId>
-            <version>2.14.0</version>
+            <groupId>io.jenkins.plugins</groupId>
+            <artifactId>gson-api</artifactId>
         </dependency>
 
         <dependency>
             <groupId>com.google.errorprone</groupId>
             <artifactId>error_prone_annotations</artifactId>
             <version>2.49.0</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>javax.annotation</groupId>
             <artifactId>javax.annotation-api</artifactId>
             <version>1.3.2</version>
+            <scope>provided</scope>
         </dependency>
 
         <!-- opencsv pulls commons-lang3 and commons-text at compile scope, which
@@ -135,13 +136,14 @@
             <artifactId>commons-text-api</artifactId>
         </dependency>
 
-        <!-- opencsv 5.12 requires commons-beanutils 1.11.0; parent POM manages
-             1.9.4. Exclude commons-logging because the 1.3.5 it pulls is banned
-             by the parent's BannedDependencies rule. -->
+        <!-- Declared only to override the compile-scope copy opencsv pulls in.
+             Core supplies the same 1.11.0 at runtime. Exclude commons-logging
+             because the 1.3.5 it pulls is banned by the parent's
+             BannedDependencies rule. -->
         <dependency>
             <groupId>commons-beanutils</groupId>
             <artifactId>commons-beanutils</artifactId>
-            <version>1.11.0</version>
+            <scope>provided</scope>
             <exclusions>
                 <exclusion>
                     <groupId>commons-logging</groupId>
@@ -150,14 +152,37 @@
             </exclusions>
         </dependency>
 
+        <!-- Safe to exclude only because SdkRequests passes an explicit
+             ApacheHttpClient to every client it builds. A client constructed
+             without .httpClient() resolves a transport by classpath discovery. -->
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>sts</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>software.amazon.awssdk</groupId>
+                    <artifactId>apache5-client</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>software.amazon.awssdk</groupId>
+                    <artifactId>netty-nio-client</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>inspectorscan</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>software.amazon.awssdk</groupId>
+                    <artifactId>apache5-client</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>software.amazon.awssdk</groupId>
+                    <artifactId>netty-nio-client</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -182,12 +207,15 @@
 
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
-            <artifactId>structs</artifactId>
+            <artifactId>credentials</artifactId>
         </dependency>
 
+        <!-- Declared only to override the compile-scope copies apache-client and
+             httpclient pull in. Core supplies this at runtime. -->
         <dependency>
-            <groupId>org.jenkins-ci.plugins</groupId>
-            <artifactId>credentials</artifactId>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
@@ -205,19 +233,6 @@
         <dependency>
             <groupId>io.jenkins.plugins</groupId>
             <artifactId>javax-activation-api</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>commons-codec</groupId>
-            <artifactId>commons-codec</artifactId>
-            <version>1.21.0</version>
-        </dependency>
-
-        <dependency>
-            <groupId>jakarta.servlet</groupId>
-            <artifactId>jakarta.servlet-api</artifactId>
-            <version>6.1.0</version>
-            <scope>provided</scope>
         </dependency>
     </dependencies>
 
@@ -259,19 +274,6 @@
                         </configuration>
                     </execution>
                 </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <basedir/>
-                    <mainOutputDirectory/>
-                    <mojoStatusPath/>
-                    <outputDirectory/>
-                    <projectArtifact/>
-                    <source>17</source>
-                    <target>17</target>
-                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
