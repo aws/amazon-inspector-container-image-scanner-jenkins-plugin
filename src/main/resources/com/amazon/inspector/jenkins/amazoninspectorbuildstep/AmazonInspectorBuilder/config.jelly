@@ -180,6 +180,14 @@
             <f:textarea placeholder="CVE-2023-9999, CVE-2024-0001" rows="3" />
         </f:entry>
     </div>
+
+    <f:entry field="isMaliciousPackageBlockingEnabled">
+        <f:checkbox id="isMaliciousPackageBlockingEnabled"
+                    class="bold"
+                    checked="${instance.isMaliciousPackageBlockingEnabled}"
+                    title="Enable malicious package blocking"
+                    tooltip="Fail the build when the scan finds any malicious packages." />
+    </f:entry>
     
     <f:entry field="isLicenseCollectionEnabled">
         <f:checkbox id="isLicenseCollectionEnabled"
