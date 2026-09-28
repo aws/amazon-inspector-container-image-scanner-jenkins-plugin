@@ -107,6 +107,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     private final String oidcCredentialId;
     private boolean isSeverityThresholdEnabled;
     private boolean isEpssThresholdEnabled;
+    private boolean isMaliciousPackageBlockingEnabled;
     private final boolean isSuppressedCveEnabled;
     private final boolean isAutoFailCveEnabled;
     private final boolean isLicenseCollectionEnabled;
@@ -398,6 +399,24 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         return false;
     }
 
+    @VisibleForTesting
+    boolean checkForMaliciousPackages(SbomOutputParser parser, TaskListener listener) {
+        if (!isMaliciousPackageBlockingEnabled) {
+            return false;
+        }
+        Integer maliciousCount = parser.getMaliciousPackageCount();
+        if (maliciousCount == null) {
+            listener.getLogger().println("Malicious package count missing or unreadable in scan response. Skipping malicious package check.");
+            return false;
+        }
+        if (maliciousCount > 0) {
+            listener.getLogger().println("BUILD FAILED: Found " + maliciousCount + " malicious package(s).");
+            return true;
+        }
+        listener.getLogger().println("No malicious packages found.");
+        return false;
+    }
+
     private void logSecurityAssessmentSummary(TaskListener listener, Set<String> suppressedCveSet, int suppressedCount) {
         listener.getLogger().println("");
         listener.getLogger().println("=== SECURITY ASSESSMENT SUMMARY ===");
@@ -406,7 +425,8 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                                     ", EPSS=" + (isEpssThresholdEnabled ? "✓" : "✗") + 
                                     ", CVE Suppression=" + (isSuppressedCveEnabled ? "✓" : "✗") + 
                                     ", CVE Auto-fail=" + (isAutoFailCveEnabled ? "✓" : "✗") + 
-                                    ", License Collection=" + (isLicenseCollectionEnabled ? "✓" : "✗"));
+                                    ", License Collection=" + (isLicenseCollectionEnabled ? "✓" : "✗") +
+                                    ", Malicious Package Blocking=" + (isMaliciousPackageBlockingEnabled ? "✓" : "✗"));
         
         if (isSuppressedCveEnabled && suppressedCount > 0 && suppressedCveSet != null) {
             listener.getLogger().println("CVE Suppression List (" + suppressedCount + " CVEs ignored from thresholds):");
@@ -456,6 +476,11 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
     }
 
     @DataBoundSetter
+    public void setIsMaliciousPackageBlockingEnabled(boolean isMaliciousPackageBlockingEnabled) {
+        this.isMaliciousPackageBlockingEnabled = isMaliciousPackageBlockingEnabled;
+    }
+
+    @DataBoundSetter
     public void setIsThresholdEnabled(boolean isThresholdEnabled) {
         this.isSeverityThresholdEnabled = isThresholdEnabled;
     }
@@ -488,6 +513,10 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
     public boolean getIsLicenseCollectionEnabled() {
         return this.isLicenseCollectionEnabled;
+    }
+
+    public boolean getIsMaliciousPackageBlockingEnabled() {
+        return this.isMaliciousPackageBlockingEnabled;
     }
 
     public String getSuppressedCveList() {
@@ -672,7 +701,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
             @SuppressFBWarnings
             HtmlData htmlData = HtmlData.builder()
-                    .artifactsPath(sanitizeUrl(env.get("RUN_ARTIFACTS_DISPLAY_URL"))) //jenkins specific
+                    .artifactsPath(sanitizeUrl(env.get("RUN_ARTIFACTS_DISPLAY_URL", ""))) //jenkins specific
                     .updatedAt(new SimpleDateFormat("MM/dd/yyyy, hh:mm:ss aa").format(Calendar.getInstance().getTime()))
                     .imageMetadata(ImageMetadata.builder()
                             .id(splitName[0])
@@ -710,6 +739,10 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                 if (foundAutoFailCves) {
                     doesBuildPass = false;
                 }
+            }
+
+            if (checkForMaliciousPackages(parser, listener)) {
+                doesBuildPass = false;
             }
 
             if (isSeverityThresholdEnabled) {
