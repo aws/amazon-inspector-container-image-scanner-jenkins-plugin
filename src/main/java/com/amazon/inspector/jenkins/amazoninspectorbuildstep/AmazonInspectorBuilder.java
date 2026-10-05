@@ -560,13 +560,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                 getLogger().println("Automatic SBOMGen selected, downloading using default settings...");
                 activeSbomgenPath = SbomgenDownloader.getBinary(workspace, env, launcher);
             } else if ("manual".equalsIgnoreCase(sbomgenSelection)) {
-                if (sbomgenPath == null || sbomgenPath.isEmpty()) {
-                    throw new IllegalArgumentException("Manual SBOMGen selected but no path provided.");
-                }
-                File sbomgenFile = new File(sbomgenPath);
-                if (!sbomgenFile.exists() || !sbomgenFile.canExecute()) {
-                    throw new IllegalArgumentException("Provided SBOMgen path is invalid or not executable: " + sbomgenPath);
-                }
+                validateManualSbomgenPath(sbomgenPath);
                 getLogger().println("Manual SBOMGen selected, using provided path: " + sbomgenPath);
                 activeSbomgenPath = sbomgenPath;
             } else {
@@ -858,6 +852,20 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
         }
 
         return null;
+    }
+
+    @VisibleForTesting
+    static void validateManualSbomgenPath(String sbomgenPath) {
+        if (sbomgenPath == null || sbomgenPath.isEmpty()) {
+            throw new IllegalArgumentException("Manual SBOMGen selected but no path provided.");
+        }
+        File sbomgenFile = new File(sbomgenPath);
+        if (!sbomgenFile.exists() || !sbomgenFile.canExecute()) {
+            throw new IllegalArgumentException("Provided SBOMgen path is invalid or not executable: " + sbomgenPath);
+        }
+        if (!SbomgenRunner.isValidPath(sbomgenPath)) {
+            throw new IllegalArgumentException("Invalid sbomgen path: " + sbomgenPath);
+        }
     }
 
     public static String getImageSha(String sbom) {
