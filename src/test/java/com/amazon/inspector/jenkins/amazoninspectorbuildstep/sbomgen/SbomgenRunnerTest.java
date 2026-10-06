@@ -1,8 +1,18 @@
 package com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomgen;
 
 import hudson.FilePath;
+import hudson.Launcher;
+import hudson.model.TaskListener;
 import hudson.remoting.VirtualChannel;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.api.io.TempDir;
+
+import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
@@ -12,53 +22,48 @@ class SbomgenRunnerTest {
 
     @Test
     void testIsValidPath() {
-        SbomgenRunner runner = new SbomgenRunner(null, null, null, null, null, null, null, null, false);
-        
         // Valid paths (matching regex: ^[a-zA-Z0-9/._\-: ]+$)
-        assertTrue(runner.isValidPath("alpine:latest"));
-        assertTrue(runner.isValidPath("/path/with spaces/workspace"));
-        assertTrue(runner.isValidPath("/jenkins/workspace/test r7a.xlarge"));
-        assertTrue(runner.isValidPath("my_image-v1.0:latest"));
-        assertTrue(runner.isValidPath("/tmp/docker_image-123.tar"));
-        assertTrue(runner.isValidPath("registry.example.com/namespace/image:tag"));
+        assertTrue(SbomgenRunner.isValidPath("alpine:latest"));
+        assertTrue(SbomgenRunner.isValidPath("/path/with spaces/workspace"));
+        assertTrue(SbomgenRunner.isValidPath("/jenkins/workspace/test r7a.xlarge"));
+        assertTrue(SbomgenRunner.isValidPath("my_image-v1.0:latest"));
+        assertTrue(SbomgenRunner.isValidPath("/tmp/docker_image-123.tar"));
+        assertTrue(SbomgenRunner.isValidPath("registry.example.com/namespace/image:tag"));
         
         // Test colon characters
-        assertTrue(runner.isValidPath("ubuntu:22.04"));
-        assertTrue(runner.isValidPath("C:/build/app.tar"));
-        assertTrue(runner.isValidPath("/opt/data/container:v1.0.tar"));
+        assertTrue(SbomgenRunner.isValidPath("ubuntu:22.04"));
+        assertTrue(SbomgenRunner.isValidPath("C:/build/app.tar"));
+        assertTrue(SbomgenRunner.isValidPath("/opt/data/container:v1.0.tar"));
         
         // Invalid paths (containing characters not in regex)
-        assertFalse(runner.isValidPath("alpine:latest&&ls"));
-        assertFalse(runner.isValidPath("path;rm -rf /"));
-        assertFalse(runner.isValidPath("path|cat /etc/passwd"));
-        assertFalse(runner.isValidPath("path$(whoami)"));
-        assertFalse(runner.isValidPath("path`id`"));
-        assertFalse(runner.isValidPath("path@hostname"));
+        assertFalse(SbomgenRunner.isValidPath("alpine:latest&&ls"));
+        assertFalse(SbomgenRunner.isValidPath("path;rm -rf /"));
+        assertFalse(SbomgenRunner.isValidPath("path|cat /etc/passwd"));
+        assertFalse(SbomgenRunner.isValidPath("path$(whoami)"));
+        assertFalse(SbomgenRunner.isValidPath("path`id`"));
+        assertFalse(SbomgenRunner.isValidPath("path@hostname"));
     }
 
     @Test
     void testIsValidPathEdgeCases() {
-        SbomgenRunner runner = new SbomgenRunner(null, null, null, null, null, null, null, null, false);
-        
         // Edge cases that should be invalid
-        assertFalse(runner.isValidPath(""));
+        assertFalse(SbomgenRunner.isValidPath(""));
         
         // Edge cases that should be valid
-        assertTrue(runner.isValidPath("   "));
-        assertTrue(runner.isValidPath("a"));
-        assertTrue(runner.isValidPath("123"));
+        assertTrue(SbomgenRunner.isValidPath("   "));
+        assertTrue(SbomgenRunner.isValidPath("a"));
+        assertTrue(SbomgenRunner.isValidPath("123"));
         
         // Non-existent but format-valid paths
-        assertTrue(runner.isValidPath("/non/existent/path/image.tar"));
-        assertTrue(runner.isValidPath("never_used_registry.com/fake:tag"));
-        assertTrue(runner.isValidPath("/tmp/this_file_does_not_exist.tar"));
+        assertTrue(SbomgenRunner.isValidPath("/non/existent/path/image.tar"));
+        assertTrue(SbomgenRunner.isValidPath("never_used_registry.com/fake:tag"));
+        assertTrue(SbomgenRunner.isValidPath("/tmp/this_file_does_not_exist.tar"));
     }
 
     @Test
     void testIsValidPathWithNull() {
-        SbomgenRunner runner = new SbomgenRunner(null, null, null, null, null, null, null, null, false);
         assertThrows(NullPointerException.class, () ->
-            runner.isValidPath(null));
+            SbomgenRunner.isValidPath(null));
     }
 
     @Test
@@ -84,5 +89,20 @@ class SbomgenRunnerTest {
 
         // Verify the runner correctly identifies local execution scenario
         assertNull(runner.getWorkspace().getChannel(), "Should detect local execution when workspace has no channel");
+    }
+
+    @Test
+    @DisabledOnOs(OS.WINDOWS)
+    void testRunAcceptsSbomgenInWorkspaceContainingAtSign(@TempDir Path temp) throws Exception {
+        File workspace = temp.resolve("job@2").toFile();
+        assertTrue(workspace.mkdirs());
+        File sbomgen = new File(workspace, "inspector-sbomgen");
+        Files.write(sbomgen.toPath(), "#!/bin/sh\necho '{\"components\":[]}'\n".getBytes(StandardCharsets.UTF_8));
+        assertTrue(sbomgen.setExecutable(true));
+
+        SbomgenRunner runner = new SbomgenRunner(new Launcher.LocalLauncher(TaskListener.NULL), new FilePath(workspace),
+                sbomgen.getAbsolutePath(), "container", "alpine:latest", null, null, "", false);
+
+        assertEquals("{\"components\":[]}", runner.run());
     }
 }

@@ -1,7 +1,6 @@
 package com.amazon.inspector.jenkins.amazoninspectorbuildstep.sbomgen;
 
 import com.amazon.inspector.jenkins.amazoninspectorbuildstep.AmazonInspectorBuilder;
-import com.google.common.annotations.VisibleForTesting;
 import hudson.FilePath;
 import hudson.Launcher;
 import lombok.Getter;
@@ -51,10 +50,6 @@ public class SbomgenRunner {
             sbomgenFilePath = new FilePath(workspace.getChannel(), sbomgenPath);
         } else {
             sbomgenFilePath = new FilePath(new File(sbomgenPath));
-        }
-
-        if (!isValidPath(sbomgenFilePath.getRemote())) {
-            throw new IllegalArgumentException("Invalid sbomgen path: " + sbomgenPath);
         }
 
         Map<String, String> environment = new HashMap<>();
@@ -117,8 +112,7 @@ public class SbomgenRunner {
         return SbomgenUtils.processSbomgenOutput(output);
     }
 
-    @VisibleForTesting
-    protected boolean isValidPath(String path) {
+    public static boolean isValidPath(String path) {
         // Validates paths for container images and file paths while preventing command injection
         // Allows: alphanumeric, forward slashes, dots, underscores, hyphens, colons, and spaces
         // Blocks: shell metacharacters like &&, ;, |, $(), backticks, @ to prevent injection attacks
