@@ -1,6 +1,8 @@
 <div title="Help for feature: Enable severity thresholds">
     <p>
-        <strong>Severity thresholds:</strong> Specifies whether scanned vulnerabilities exceeding a value will cause a build failure.
+        <strong>Severity thresholds:</strong> Fails the build when the scan finds more findings of a severity than the limit you set for it in <b>Critical</b>, <b>High</b>, <b>Medium</b> or <b>Low</b>.
+        For example, a <b>Critical</b> limit of <code>0</code> fails the build on any critical-severity finding.
+        CVEs in the CVE suppression list don't count.
     </p>
     <p>
         For more info: <a href="https://docs.aws.amazon.com/inspector/latest/user/cicd-jenkins.html">https://docs.aws.amazon.com/inspector/latest/user/cicd-jenkins.html</a>

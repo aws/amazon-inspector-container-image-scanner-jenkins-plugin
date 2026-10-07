@@ -1,0 +1,14 @@
+<div>
+    <p>
+        Optional. The ARN of an IAM role for the plugin to assume, such as <code>arn:aws:iam::111122223333:role/InspectorCICDscan-role</code>.
+        If you choose <b>OIDC Credentials</b>, the plugin assumes the role with that ID token.
+        Otherwise it uses the credentials that the Jenkins controller already has, such as an EC2 instance profile, and those need permission to call <code>sts:AssumeRole</code> on the role.
+    </p>
+    <p>
+        If you set more than one authentication option, the plugin uses the first one in this order: <b>AWS Credentials</b>, <b>IAM Role</b> with <b>OIDC Credentials</b>, <b>IAM Role</b>, and then <b>AWS Profile Name</b>.
+        If you set none of them, it uses the default credential provider chain on the Jenkins controller.
+    </p>
+    <p>
+        For more info: <a href="https://docs.aws.amazon.com/inspector/latest/user/cicd-jenkins.html">https://docs.aws.amazon.com/inspector/latest/user/cicd-jenkins.html</a>
+    </p>
+</div>
