@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -153,6 +154,32 @@ class SdkRequestsTest {
         verify(failingClient).close();
         verify(succeedingClient).close();
         verify(httpClient).close();
+    }
+
+    @Test
+    void requestSbom_firstAttemptFails_retriesWithDefaultChainInputs() {
+        SdkHttpClient httpClient = mock(SdkHttpClient.class);
+        InspectorScanClient failingClient = mock(InspectorScanClient.class);
+        InspectorScanClient succeedingClient = mock(InspectorScanClient.class);
+        when(failingClient.scanSbom(any(ScanSbomRequest.class)))
+                .thenThrow(new RuntimeException("auth failure"));
+        ScanSbomResponse response = mock(ScanSbomResponse.class);
+        when(response.sbom()).thenReturn(software.amazon.awssdk.core.document.Document.fromString("recovered"));
+        when(succeedingClient.scanSbom(any(ScanSbomRequest.class))).thenReturn(response);
+
+        AmazonWebServicesCredentials credential = mock(AmazonWebServicesCredentials.class);
+        SdkRequests sdkRequests = spy(new SdkRequests("us-east-1", credential, "oidc-token", "missing-profile", null));
+        doReturn(httpClient).when(sdkRequests).buildHttpClient();
+        doReturn(failingClient).when(sdkRequests)
+                .buildScanClient(httpClient, "missing-profile", "oidc-token", credential);
+        doReturn(succeedingClient).when(sdkRequests)
+                .buildScanClient(eq(httpClient), isNull(), isNull(), isNull());
+
+        String result = sdkRequests.requestSbom("{\"bomFormat\":\"CycloneDX\"}");
+
+        assertEquals("\"recovered\"", result);
+        verify(sdkRequests).buildScanClient(httpClient, "missing-profile", "oidc-token", credential);
+        verify(sdkRequests).buildScanClient(eq(httpClient), isNull(), isNull(), isNull());
     }
 
     @Test

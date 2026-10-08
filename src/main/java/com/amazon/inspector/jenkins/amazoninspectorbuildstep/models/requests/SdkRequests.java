@@ -71,7 +71,7 @@ public class SdkRequests {
                     retry = false;
                     AmazonInspectorBuilder.getLogger().println("An issue occurred while authenticating, attempting to " +
                             "authenticate with default credential provider chain");
-                    workingProfileName = "default";
+                    workingProfileName = null;
                     workingCredential = null;
                     workingOidc = null;
                 }
