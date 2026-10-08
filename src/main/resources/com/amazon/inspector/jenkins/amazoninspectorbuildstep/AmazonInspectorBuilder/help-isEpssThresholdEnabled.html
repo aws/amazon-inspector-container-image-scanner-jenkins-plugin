@@ -1,6 +1,8 @@
 <div title="Help for feature: Enable EPSS threshold">
     <p>
-        <strong>EPSS threshold:</strong> EPSS scores range from 0-1, enter a value between 0 and 1 (e.g., 0.6).
+        <strong>EPSS threshold:</strong> Fails the build when any vulnerability has an EPSS score greater than or equal to the <b>EPSS Threshold</b> value.
+        EPSS scores range from 0 to 1, so enter a value between 0 and 1, such as <code>0.6</code>. If the value is empty, the check is skipped.
+        Vulnerabilities without an EPSS score and CVEs in the CVE suppression list don't count.
     </p>
     <p>
         For more info: <a href="https://docs.aws.amazon.com/inspector/latest/user/cicd-jenkins.html">https://docs.aws.amazon.com/inspector/latest/user/cicd-jenkins.html</a>
