@@ -296,7 +296,7 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
                             listener.getLogger().println("  - " + cve);
                             count++;
                         } else {
-                            listener.getLogger().println("  ... and " + (cves.size() - count) + " more " + severity.name() + " CVEs (check SBOM file for complete list)");
+                            listener.getLogger().println("  ... and " + (cves.size() - count) + " more " + severity.name() + " CVEs (see the CSV and HTML reports for the complete list)");
                             break;
                         }
                     }
@@ -718,7 +718,10 @@ public class AmazonInspectorBuilder extends Builder implements SimpleBuildStep {
 
             build.getArtifactManager().archive(workspace, launcher, new BuildListenerAdapter(listener), artifactMap);
 
-            listener.getLogger().println("Build Artifacts: " + env.get("RUN_ARTIFACTS_DISPLAY_URL"));
+            String artifactsDisplayUrl = env.get("RUN_ARTIFACTS_DISPLAY_URL");
+            if (artifactsDisplayUrl != null && !artifactsDisplayUrl.isEmpty()) {
+                listener.getLogger().println("Build Artifacts: " + artifactsDisplayUrl);
+            }
 
             boolean doesBuildPass = true;
 

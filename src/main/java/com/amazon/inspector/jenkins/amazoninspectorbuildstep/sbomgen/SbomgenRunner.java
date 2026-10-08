@@ -58,7 +58,7 @@ public class SbomgenRunner {
             environment.put("INSPECTOR_SBOMGEN_PASSWORD", dockerPassword);
         }
 
-        AmazonInspectorBuilder.getLogger().println("Making downloaded SBOMGen executable...");
+        AmazonInspectorBuilder.getLogger().println("Making SBOMGen executable...");
         SbomgenUtils.runCommand(new String[]{"chmod", "+x", sbomgenFilePath.getRemote()},
                 launcher, environment);
 
